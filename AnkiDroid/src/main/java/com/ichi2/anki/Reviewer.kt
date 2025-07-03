@@ -55,6 +55,7 @@ import androidx.appcompat.widget.Toolbar
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.core.view.isGone
+import androidx.core.view.isVisible
 import androidx.lifecycle.lifecycleScope
 import anki.frontend.SetSchedulingStatesRequest
 import com.google.android.material.color.MaterialColors
@@ -1058,6 +1059,10 @@ open class Reviewer :
         easeButton4!!.setVisibility(View.VISIBLE)
         easeButton3!!.requestFocus()
 
+        if (sharedPrefs().getBoolean(getString(R.string.hide_hard_and_easy_key), false)) {
+            easeButton2!!.setVisibility(View.GONE)
+            easeButton4!!.setVisibility(View.GONE)
+        }
         // Show next review time
         if (shouldShowNextReviewTime()) {
             val state = queueState!!
