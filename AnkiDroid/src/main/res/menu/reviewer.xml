@@ -198,6 +198,10 @@
         android:icon="@drawable/ic_tune_white"
         android:title="@string/menu__deck_options" />
     <item
+        android:id="@+id/action_immersion_kit"
+        android:icon="@drawable/ic_lightbulb_stars"
+        android:title="@string/menu_immersion_kit" />
+    <item
         android:id="@+id/action_toggle_auto_advance"
         android:icon="@drawable/ic_fast_forward"
         android:title="@string/toggle_auto_advance" />
