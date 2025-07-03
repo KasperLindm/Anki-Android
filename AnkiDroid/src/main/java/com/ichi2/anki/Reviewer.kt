@@ -63,6 +63,7 @@ import com.google.android.material.snackbar.Snackbar
 import com.ichi2.anim.ActivityTransitionAnimation.getInverseTransition
 import com.ichi2.anki.CollectionManager.TR
 import com.ichi2.anki.CollectionManager.withCol
+import com.ichi2.anki.ImmersiveKit
 import com.ichi2.anki.Whiteboard.Companion.createInstance
 import com.ichi2.anki.Whiteboard.OnPaintColorChangeListener
 import com.ichi2.anki.cardviewer.Gesture
@@ -514,6 +515,11 @@ open class Reviewer :
                     com.ichi2.anki.pages.DeckOptions
                         .getIntent(this, getColUnsafe.decks.current().id)
                 deckOptionsLauncher.launch(i)
+            }
+            R.id.action_immersion_kit -> {
+                Timber.i("NoteEditor:: Immersive Kit button pressed")
+                ImmersiveKit.showImmersiveKit(this)
+                return true
             }
             R.id.action_select_tts -> {
                 Timber.i("Reviewer:: Select TTS button pressed")

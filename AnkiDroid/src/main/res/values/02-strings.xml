@@ -222,6 +222,7 @@
     <string name="menu_font_size" maxLength="28">Font size</string>
 
     <string name="menu_show_toolbar" comment="Checkable item stating whether the note editor toolbar should be shown" maxLength="28">Show toolbar</string>
+    <string name="menu_immersion_kit" comment="Reroll example sentence" maxLength="28">Get ImmersionKit Sentence</string>
 
     <string name="format_insert_bold">Format as Bold</string>
     <string name="format_insert_italic">Format as Italic</string>
