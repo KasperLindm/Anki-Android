@@ -1526,6 +1526,11 @@ class NoteEditor :
                 }
                 updateToolbar()
             }
+            R.id.action_immersion_kit -> {
+                Timber.i("NoteEditor:: Immersive Kit button pressed")
+                ImmersiveKit.showImmersiveKit(requireContext())
+                return true
+            }
         }
         return false
     }

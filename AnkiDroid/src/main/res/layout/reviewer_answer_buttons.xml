@@ -66,7 +66,7 @@
                 android:nextFocusRight="@id/flashcard_layout_ease2"
                 android:layout_width="0dip"
                 android:layout_height="?minTouchTargetSize"
-                android:layout_weight="1"
+                android:layout_weight="0.66"
                 android:orientation="vertical"
                 android:theme="@style/AgainButton"
                 >

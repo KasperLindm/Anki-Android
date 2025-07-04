@@ -12,8 +12,11 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.json.JSONObject
 import timber.log.Timber
+import java.io.File
 import java.net.HttpURLConnection
 import java.net.URL
+import java.util.UUID
+import kotlin.let
 
 object ImmersiveKit {
     fun showImmersiveKit(context: Context) {
@@ -37,17 +40,19 @@ object ImmersiveKit {
             CheckBox(context).apply {
                 text = "Highlighting"
                 textSize = 16f
-            }
-
-        val animeCheckbox =
-            CheckBox(context).apply {
-                text = "Check Anime"
-                textSize = 16f
+                isChecked = true
             }
 
         val dramaCheckbox =
             CheckBox(context).apply {
                 text = "Check Drama"
+                textSize = 16f
+                isChecked = true
+            }
+
+        val animeCheckbox =
+            CheckBox(context).apply {
+                text = "Check Anime"
                 textSize = 16f
             }
 
@@ -76,7 +81,7 @@ object ImmersiveKit {
         val dialog =
             AlertDialog
                 .Builder(context)
-                .setTitle("Immersive Kit Settings")
+                .setTitle("Immersion Kit Settings")
                 .setView(dialogLayout)
                 .setNegativeButton("Cancel") { dialog, _ ->
                     dialog.dismiss()
@@ -91,7 +96,7 @@ object ImmersiveKit {
             val drama = dramaCheckbox.isChecked
             val games = gamesCheckbox.isChecked
 
-            Timber.i("ImmersiveKit:: Running with settings - Exact: $exactSearch, Highlighting: $highlighting")
+            Timber.i("ImmersionKit:: Running with settings - Exact: $exactSearch, Highlighting: $highlighting")
 
             // Make API call with these settings
             makeApiCall(context, exactSearch, highlighting, anime, drama, games)
@@ -100,6 +105,62 @@ object ImmersiveKit {
         }
 
         dialog.show()
+    }
+
+    fun downloadFile(
+        name: String,
+        urlString: String,
+        folder: File,
+        fileExtension: String,
+    ): String? =
+        try {
+            val url = URL(urlString)
+            val connection = url.openConnection() as HttpURLConnection
+            connection.requestMethod = "GET"
+            connection.connect()
+            Timber.i("Response code for $urlString: ${connection.responseCode}")
+            if (connection.responseCode == HttpURLConnection.HTTP_OK) {
+                // Make sure folder exists
+                if (!folder.exists()) {
+                    folder.mkdirs()
+                }
+
+                // Create unique file name
+                val randomString = UUID.randomUUID().toString().take(8)
+                val fileName = "$name" + "_" + "$randomString.$fileExtension"
+
+                val file = File(folder, fileName)
+
+                connection.inputStream.use { input ->
+                    file.outputStream().use { output ->
+                        input.copyTo(output)
+                    }
+                }
+                fileName
+            } else {
+                null
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            null
+        }
+
+    fun boldKeywords(
+        sentence: String,
+        keywords: List<String>,
+        highlight: Boolean,
+    ): String {
+        if (!highlight) {
+            return sentence
+        }
+
+        var result = sentence
+        for (keyword in keywords) {
+            // Use Regex to match the keyword as a whole word and ignore case if needed
+            val regex = Regex("\\b${Regex.escape(keyword)}\\b")
+            result = result.replace(regex, "<b>$keyword</b>")
+        }
+        return result
     }
 
     private fun makeApiCall(
@@ -116,66 +177,110 @@ object ImmersiveKit {
         // Use coroutines for async API call
         CoroutineScope(Dispatchers.IO).launch {
             try {
-                // Example keyword - you can get this from the current note
-                val keyword = "情報"
+                if (context is AbstractFlashcardViewer) {
+                    // Example keyword - you can get this from the current note
+                    val card = context.currentCard
+                    val col = context.getColUnsafe // Get collection from viewer
+                    val note = card?.note(col) // Pass collection to note()
 
-                // Build API URL
-                val apiUrl =
-                    if (exactSearch) {
-                        "https://api.immersionkit.com/look_up_dictionary?keyword=「$keyword」&sort=shortness"
-                    } else {
-                        "https://api.immersionkit.com/look_up_dictionary?keyword=$keyword&sort=shortness"
-                    }
+                    val fieldNames = note?.keys()
+                    val fieldValues = note?.fields?.toMutableList()
 
-                // Make API call
-                val response = makeHttpRequest(apiUrl)
+                    val keyword =
+                        fieldNames?.indexOf("Entry")?.takeIf { it >= 0 }?.let { index ->
+                            fieldValues?.get(index)?.split(",")[0]
+                        }
+                    // Build API URL
+                    val apiUrl =
+                        if (exactSearch) {
+                            "https://api.immersionkit.com/look_up_dictionary?keyword=「$keyword」&sort=shortness"
+                        } else {
+                            "https://api.immersionkit.com/look_up_dictionary?keyword=$keyword &sort="
+                        }
 
-                if (response != null) {
-                    val jsonResponse = JSONObject(response)
-                    val data = jsonResponse.optJSONArray("data")
+                    // Make API call
+                    val response = makeHttpRequest(apiUrl)
 
-                    if (data != null && data.length() > 0) {
-                        val firstResult = data.getJSONObject(0)
-                        val examples = firstResult.optJSONArray("examples")
+                    if (response != null) {
+                        val jsonResponse = JSONObject(response)
+                        val data = jsonResponse.optJSONArray("data")
 
-                        if (examples != null && examples.length() > 0) {
-                            val example = examples.getJSONObject(0)
+                        if (data != null && data.length() > 0) {
+                            val firstResult = data.getJSONObject(0)
+                            val examples = firstResult.optJSONArray("examples")
 
-                            // Extract data
-                            val sentence = example.optString("sentence", "")
-                            val sentenceWithFurigana = example.optString("sentence_with_furigana", "")
-                            val translation = example.optString("translation", "")
-                            val deckName = example.optString("deck_name", "")
-                            val audioUrl = example.optString("sound_url", "")
-                            val imageUrl = "https://api.immersionkit.com/download_sentence_image?id=${example.optString("id", "")}"
+                            if (examples != null && examples.length() > 0) {
+                                val allowedSources = mutableSetOf<String>()
+                                if (anime) allowedSources.add("anime")
+                                if (drama) allowedSources.add("drama")
+                                if (games) allowedSources.add("games")
+                                val filteredExamples = mutableListOf<JSONObject>()
+                                for (i in 0 until examples.length()) {
+                                    val item = examples.optJSONObject(i)
+                                    val sourceType = item?.optString("source_type")
+                                    if (sourceType in allowedSources) {
+                                        filteredExamples.add(item)
+                                    }
+                                }
 
-                            // Update UI on main thread
-                            withContext(Dispatchers.Main) {
-                                updateNoteFields(
-                                    context,
-                                    sentence,
-                                    sentenceWithFurigana,
-                                    translation,
-                                    deckName,
-                                    audioUrl,
-                                    imageUrl,
-                                    highlighting,
-                                    keyword,
-                                )
+                                // Pick example: from filteredExamples if not empty, else from original examples
+                                val example =
+                                    if (filteredExamples.isNotEmpty()) {
+                                        filteredExamples.random()
+                                    } else {
+                                        examples.getJSONObject((0 until examples.length()).random())
+                                    }
+
+                                // Extract data
+                                val sentenceWithFurigana =
+                                    boldKeywords(example.optString("sentence_with_furigana", ""), listOf(keyword!!), highlighting)
+                                val translation = example.optString("translation", "")
+                                val prevSentence = example.optString("prev_sentence", "")
+                                val nextSentence = example.optString("next_sentence", "")
+                                val source = example.optString("source", "")
+                                val audioUrl = example.optString("sound_url", "")
+                                val imageUrl =
+                                    "https://api.immersionkit.com/download_sentence_image?id=${
+                                        example.optString(
+                                            "id",
+                                            "",
+                                        )
+                                    }"
+
+                                // Update UI on main thread
+                                withContext(Dispatchers.Main) {
+                                    updateNoteFields(
+                                        context,
+                                        sentenceWithFurigana,
+                                        translation,
+                                        imageUrl,
+                                        audioUrl,
+                                        source,
+                                        prevSentence,
+                                        nextSentence,
+                                    )
+                                }
+                            } else {
+                                withContext(Dispatchers.Main) {
+                                    Toast
+                                        .makeText(context, "No examples found", Toast.LENGTH_SHORT)
+                                        .show()
+                                }
                             }
                         } else {
                             withContext(Dispatchers.Main) {
-                                Toast.makeText(context, "No examples found", Toast.LENGTH_SHORT).show()
+                                Toast
+                                    .makeText(
+                                        context,
+                                        "No data found for keyword",
+                                        Toast.LENGTH_SHORT,
+                                    ).show()
                             }
                         }
                     } else {
                         withContext(Dispatchers.Main) {
-                            Toast.makeText(context, "No data found for keyword", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(context, "API request failed", Toast.LENGTH_SHORT).show()
                         }
-                    }
-                } else {
-                    withContext(Dispatchers.Main) {
-                        Toast.makeText(context, "API request failed", Toast.LENGTH_SHORT).show()
                     }
                 }
             } catch (e: Exception) {
@@ -205,41 +310,83 @@ object ImmersiveKit {
             null
         }
 
-    private fun getContext(id: String): JSONObject? =
-        try {
-            val url = "https://api.immersionkit.com/sentence_with_context?id=$id"
-            val response = makeHttpRequest(url)
-            if (response != null) {
-                JSONObject(response)
-            } else {
-                null
-            }
-        } catch (e: Exception) {
-            Timber.e(e, "Failed to get context")
-            null
-        }
-
     private fun updateNoteFields(
         context: Context,
-        sentence: String,
         sentenceWithFurigana: String,
         translation: String,
-        deckName: String,
+        pictureUrl: String,
         audioUrl: String,
-        imageUrl: String,
-        highlighting: Boolean,
-        keyword: String,
+        source: String,
+        prevSentence: String,
+        nextSentence: String,
     ) {
-        // This is where you would update the actual note fields
-        // For now, just show the results
+        if (context is AbstractFlashcardViewer) {
+            val card = context.currentCard ?: return
+            val col = context.getColUnsafe ?: return // Get collection from viewer
+            val note = card.note(col) ?: return // Pass collection to note()
 
-        val resultMessage =
-            buildString {
-                append("Sentence: $sentence\n")
-                append("Translation: $translation\n")
-                append("Source: $deckName\n")
+            val fieldNames = note.keys()
+            val fieldValues = note.fields.toMutableList()
+
+            val keyword =
+                fieldNames
+                    .indexOf("Entry")
+                    .takeIf { it >= 0 }
+                    ?.let { index -> fieldValues.get(index).split(",")[0] }
+
+            fieldNames.indexOf("KitSentence").takeIf { it >= 0 }?.let { fieldValues[it] = sentenceWithFurigana }
+            fieldNames.indexOf("KitTrans").takeIf { it >= 0 }?.let { fieldValues[it] = translation }
+            fieldNames.indexOf("KitSource").takeIf { it >= 0 }?.let { fieldValues[it] = source }
+            fieldNames.indexOf("KitPrev").takeIf { it >= 0 }?.let { fieldValues[it] = prevSentence }
+            fieldNames.indexOf("KitNext").takeIf { it >= 0 }?.let { fieldValues[it] = nextSentence }
+
+            val folderPath = col.media.dir
+            fieldNames.indexOf("KitPic").takeIf { it >= 0 }?.let { index ->
+                CoroutineScope(Dispatchers.IO).launch {
+                    val result = downloadFile(keyword!!, pictureUrl, folderPath, "jpg")
+                    withContext(Dispatchers.Main) {
+                        if (result != null) {
+                            val fileName = File(result).name
+                            fieldValues[index] = """<img src="$fileName">"""
+                            note.fields = fieldValues.toMutableList()
+                            val no = col.updateNote(note)
+                            note.setField(index, """<img src="$fileName">""")
+
+                            Timber.i("Image added successfully: $fileName")
+                        }
+                    }
+                }
             }
+            fieldNames.indexOf("KitSound").takeIf { it >= 0 }?.let { index ->
+                CoroutineScope(Dispatchers.IO).launch {
+                    val result = downloadFile(keyword!!, audioUrl, folderPath, "mp3") // <-- use audioUrl here!
+                    withContext(Dispatchers.Main) {
+                        if (result != null) {
+                            val fileName = File(result).name
+                            val audioTag = "[sound:$fileName]"
+                            fieldValues[index] = audioTag
 
-        Toast.makeText(context, resultMessage, Toast.LENGTH_LONG).show()
+                            note.fields = fieldValues.toMutableList()
+                            val no = col.updateNote(note)
+                            note.setField(index, audioTag)
+
+                            context.updateCardAndRedraw()
+                            Timber.i("Audio added successfully: $fileName")
+                        }
+                    }
+                }
+            }
+            note.fields = fieldValues.toMutableList()
+            val updatedCount = col.updateNote(note)
+            Timber.d("Note updated: $updatedCount card(s) affected")
+
+            // Refresh the card display
+            context.runOnUiThread {
+                context.runOnUiThread {
+                    (context as Reviewer).refreshRequired
+                }
+                Toast.makeText(context, "Fields updated!", Toast.LENGTH_SHORT).show()
+            }
+        }
     }
 }

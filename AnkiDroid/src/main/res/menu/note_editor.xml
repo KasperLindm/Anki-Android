@@ -41,4 +41,8 @@
         android:checkable="true"
         android:checked="true"
         ankidroid:showAsAction="never"/>
+    <item
+        android:id="@+id/action_immersion_kit"
+        android:icon="@drawable/ic_lightbulb_stars"
+        android:title="@string/menu_immersion_kit" />
 </menu>
