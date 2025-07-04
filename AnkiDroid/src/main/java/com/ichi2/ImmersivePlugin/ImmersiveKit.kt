@@ -1,10 +1,29 @@
+/* **************************************************************************************
+ * Copyright (c) 2011 Kostas Spyropoulos <inigo.aldana@gmail.com>                       *
+ * Copyright (c) 2014 Bruno Romero de Azevedo <brunodea@inf.ufsm.br>                    *
+ * Copyright (c) 2014–15 Roland Sieker <ospalh@gmail.com>                               *
+ * Copyright (c) 2015 Timothy Rae <perceptualchaos2@gmail.com>                          *
+ * Copyright (c) 2016 Mark Carter <mark@marcardar.com>                                  *
+ *                                                                                      *
+ * This program is free software; you can redistribute it and/or modify it under        *
+ * the terms of the GNU General Public License as published by the Free Software        *
+ * Foundation; either version 3 of the License, or (at your option) any later           *
+ * version.                                                                             *
+ *                                                                                      *
+ * This program is distributed in the hope that it will be useful, but WITHOUT ANY      *
+ * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A      *
+ * PARTICULAR PURPOSE. See the GNU General Public License for more details.             *
+ *                                                                                      *
+ * You should have received a copy of the GNU General Public License along with         *
+ * this program.  If not, see <http://www.gnu.org/licenses/>.                           *
+ ****************************************************************************************/
+
 package com.ichi2.anki
 
 import android.content.Context
 import android.widget.Button
 import android.widget.CheckBox
 import android.widget.LinearLayout
-import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -141,7 +160,7 @@ object ImmersiveKit {
                 null
             }
         } catch (e: Exception) {
-            e.printStackTrace()
+            Timber.i("Error downloading file: $urlString")
             null
         }
 
@@ -172,7 +191,7 @@ object ImmersiveKit {
         games: Boolean,
     ) {
         // Show loading message
-        Toast.makeText(context, "Fetching sentence...", Toast.LENGTH_SHORT).show()
+        showThemedToast(context, "Fetching sentence...", true)
 
         // Use coroutines for async API call
         CoroutineScope(Dispatchers.IO).launch {
@@ -262,31 +281,24 @@ object ImmersiveKit {
                                 }
                             } else {
                                 withContext(Dispatchers.Main) {
-                                    Toast
-                                        .makeText(context, "No examples found", Toast.LENGTH_SHORT)
-                                        .show()
+                                    showThemedToast(context, "No examples found", true)
                                 }
                             }
                         } else {
                             withContext(Dispatchers.Main) {
-                                Toast
-                                    .makeText(
-                                        context,
-                                        "No data found for keyword",
-                                        Toast.LENGTH_SHORT,
-                                    ).show()
+                                showThemedToast(context, "No examples found", true)
                             }
                         }
                     } else {
                         withContext(Dispatchers.Main) {
-                            Toast.makeText(context, "API request failed", Toast.LENGTH_SHORT).show()
+                            showThemedToast(context, "No examples found", true)
                         }
                     }
                 }
             } catch (e: Exception) {
                 Timber.e(e, "ImmersiveKit:: Error making API call")
                 withContext(Dispatchers.Main) {
-                    Toast.makeText(context, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
+                    showThemedToast(context, "Error: ${e.message}", true)
                 }
             }
         }
@@ -385,7 +397,7 @@ object ImmersiveKit {
                 context.runOnUiThread {
                     (context as Reviewer).refreshRequired
                 }
-                Toast.makeText(context, "Fields updated!", Toast.LENGTH_SHORT).show()
+                showThemedToast(context, "Fields updated!", true)
             }
         }
     }
