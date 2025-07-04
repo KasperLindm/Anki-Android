@@ -176,7 +176,7 @@ object ImmersiveKit {
         var result = sentence
         for (keyword in keywords) {
             // Use Regex to match the keyword as a whole word and ignore case if needed
-            val regex = Regex("\\b${Regex.escape(keyword)}\\b")
+            val regex = Regex("$keyword\\[(.*?)]")
             result = result.replace(regex, "<b>$keyword</b>")
         }
         return result
@@ -256,7 +256,7 @@ object ImmersiveKit {
                                 val translation = example.optString("translation", "")
                                 val prevSentence = example.optString("prev_sentence", "")
                                 val nextSentence = example.optString("next_sentence", "")
-                                val source = example.optString("source", "")
+                                val source = example.optString("deck_name", "")
                                 val audioUrl = example.optString("sound_url", "")
                                 val imageUrl =
                                     "https://api.immersionkit.com/download_sentence_image?id=${

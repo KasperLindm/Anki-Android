@@ -37,6 +37,7 @@ import com.google.android.material.slider.Slider
 import com.google.android.material.textview.MaterialTextView
 import com.ichi2.anki.DispatchKeyEventListener
 import com.ichi2.anki.Flag
+import com.ichi2.anki.ImmersiveKit
 import com.ichi2.anki.R
 import com.ichi2.anki.browser.IdsFile
 import com.ichi2.anki.common.annotations.NeedsTest
@@ -218,6 +219,10 @@ class PreviewerFragment :
             R.id.flag_pink -> viewModel.setFlag(Flag.PINK)
             R.id.flag_turquoise -> viewModel.setFlag(Flag.TURQUOISE)
             R.id.flag_purple -> viewModel.setFlag(Flag.PURPLE)
+            R.id.action_immersion_kit -> {
+                ImmersiveKit.showImmersiveKit(requireActivity())
+                return true
+            }
         }
         return true
     }
