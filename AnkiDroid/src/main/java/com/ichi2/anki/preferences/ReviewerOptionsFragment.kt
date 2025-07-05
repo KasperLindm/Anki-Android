@@ -91,10 +91,8 @@ class ReviewerOptionsFragment :
         }
 
         setPrefsEnableState(newReviewerPref.isChecked)
-        newReviewerPref.setOnPreferenceChangeListener { _, newValue ->
-            val boolValue = (newValue as? Boolean) ?: return@setOnPreferenceChangeListener false
-            setPrefsEnableState(boolValue)
-            true
+        newReviewerPref.setOnPreferenceChangeListener { newValue ->
+            setPrefsEnableState(newValue)
         }
 
         // Show play buttons on cards with audio
@@ -102,10 +100,8 @@ class ReviewerOptionsFragment :
         requirePreference<SwitchPreferenceCompat>(R.string.show_audio_play_buttons_key).apply {
             title = CollectionManager.TR.preferencesShowPlayButtonsOnCardsWith()
             launchCatchingTask { isChecked = !CollectionPreferences.getHidePlayAudioButtons() }
-            setOnPreferenceChangeListener { _, newValue ->
-                val newValueBool = newValue as? Boolean ?: return@setOnPreferenceChangeListener false
-                launchCatchingTask { CollectionPreferences.setHideAudioPlayButtons(!newValueBool) }
-                true
+            setOnPreferenceChangeListener { newValue ->
+                launchCatchingTask { CollectionPreferences.setHideAudioPlayButtons(!newValue) }
             }
         }
 
@@ -113,10 +109,18 @@ class ReviewerOptionsFragment :
         requirePreference<SwitchPreferenceCompat>(R.string.show_progress_preference).apply {
             title = CollectionManager.TR.preferencesShowRemainingCardCount()
             launchCatchingTask { isChecked = CollectionPreferences.getShowRemainingDueCounts() }
-            setOnPreferenceChangeListener { _, newDueCountsValue ->
-                val newDueCountsValueBool = newDueCountsValue as? Boolean ?: return@setOnPreferenceChangeListener false
-                launchCatchingTask { CollectionPreferences.setShowRemainingDueCounts(newDueCountsValueBool) }
-                true
+            setOnPreferenceChangeListener { newValue ->
+                launchCatchingTask { CollectionPreferences.setShowRemainingDueCounts(newValue) }
+            }
+        }
+
+        // Show estimate time
+        // Represents the collection pref "estTime": i.e.
+        // whether the buttons should indicate the duration of the interval if we click on them.
+        requirePreference<SwitchPreferenceCompat>(R.string.show_estimates_preference).apply {
+            launchCatchingTask { isChecked = CollectionPreferences.getShowIntervalOnButtons() }
+            setOnPreferenceChangeListener { newValue ->
+                launchCatchingTask { CollectionPreferences.setShowIntervalsOnButtons(newValue) }
             }
         }
     }

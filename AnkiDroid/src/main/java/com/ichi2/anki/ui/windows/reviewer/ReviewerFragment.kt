@@ -38,6 +38,7 @@ import androidx.annotation.StringRes
 import androidx.appcompat.view.menu.SubMenuBuilder
 import androidx.appcompat.widget.ActionMenuView
 import androidx.appcompat.widget.AppCompatImageButton
+import androidx.appcompat.widget.AppCompatImageView
 import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.constraintlayout.widget.ConstraintSet
 import androidx.coordinatorlayout.widget.CoordinatorLayout
@@ -64,6 +65,7 @@ import com.google.android.material.textfield.TextInputEditText
 import com.google.android.material.textview.MaterialTextView
 import com.ichi2.anki.CollectionManager
 import com.ichi2.anki.DispatchKeyEventListener
+import com.ichi2.anki.Flag
 import com.ichi2.anki.R
 import com.ichi2.anki.cardviewer.CardMediaPlayer
 import com.ichi2.anki.cardviewer.Gesture
@@ -117,6 +119,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import timber.log.Timber
+import java.lang.IllegalArgumentException
 import java.net.BindException
 import java.net.ServerSocket
 
@@ -128,8 +131,7 @@ class ReviewerFragment :
     TagsDialogListener,
     ShakeDetector.Listener {
     override val viewModel: ReviewerViewModel by viewModels {
-        val repository = StudyScreenRepository(sharedPrefs())
-        ReviewerViewModel.factory(CardMediaPlayer(), getServerPort(), repository)
+        ReviewerViewModel.factory(CardMediaPlayer(), getServerPort())
     }
 
     override val webView: WebView get() = requireView().findViewById(R.id.webview)
@@ -206,6 +208,7 @@ class ReviewerFragment :
         setupMenu(view)
         setupToolbarPosition(view)
         setupAnswerTimer(view)
+        setupMargins(view)
 
         viewModel.actionFeedbackFlow
             .flowWithLifecycle(lifecycle)
@@ -251,6 +254,49 @@ class ReviewerFragment :
             val dialogFragment = SetDueDateDialog.newInstance(listOf(cardId))
             showDialogFragment(dialogFragment)
         }
+
+        if (Prefs.showAnswerFeedback) {
+            viewModel.answerFeedbackFlow.collectIn(lifecycleScope) { ease ->
+                if (ease == Ease.AGAIN) {
+                    view.findViewById<AnswerFeedbackView>(R.id.wrong_answer_feedback).toggle()
+                    return@collectIn
+                }
+                val drawableId =
+                    when (ease) {
+                        Ease.HARD -> R.drawable.ic_ease_hard
+                        Ease.GOOD -> R.drawable.ic_ease_good
+                        Ease.EASY -> R.drawable.ic_ease_easy
+                        Ease.AGAIN -> throw IllegalArgumentException("Shouldn't try to get the 'Again' drawable ID")
+                    }
+                view.findViewById<AnswerFeedbackView>(R.id.correct_answer_feedback).apply {
+                    setImageResource(drawableId)
+                    toggle()
+                }
+            }
+        }
+
+        val repository = StudyScreenRepository(sharedPrefs())
+        val markView = view.findViewById<AppCompatImageView>(R.id.mark_icon)
+        viewModel.isMarkedFlow
+            .flowWithLifecycle(lifecycle)
+            .collectIn(lifecycleScope) { isMarked ->
+                if (!repository.isMarkShownInToolbar) {
+                    markView.isVisible = isMarked
+                }
+            }
+        val flagView = view.findViewById<AppCompatImageView>(R.id.flag_icon)
+        viewModel.flagFlow
+            .flowWithLifecycle(lifecycle)
+            .collectIn(lifecycleScope) { flag ->
+                if (!repository.isFlagShownInToolbar) {
+                    if (flag == Flag.NONE) {
+                        flagView.isVisible = false
+                    } else {
+                        flagView.setImageDrawable(ContextCompat.getDrawable(requireContext(), flag.drawableRes))
+                        flagView.isVisible = true
+                    }
+                }
+            }
     }
 
     private fun setupTypeAnswer(view: View) {
@@ -346,21 +392,6 @@ class ReviewerFragment :
         val answerArea = view.findViewById<FrameLayout>(R.id.answer_area)
         if (prefs.getBoolean(getString(R.string.hide_answer_buttons_key), false)) {
             answerArea.isVisible = false
-            if (!resources.isWindowCompact()) {
-                val constraintLayout = view.findViewById<ConstraintLayout>(R.id.tools_layout)
-                // Expand the menu if there is no answer buttons in big screens
-                with(ConstraintSet()) {
-                    clone(constraintLayout)
-                    clear(R.id.reviewer_menu_view, ConstraintSet.START)
-                    connect(
-                        R.id.reviewer_menu_view,
-                        ConstraintSet.START,
-                        R.id.guideline_counts,
-                        ConstraintSet.END,
-                    )
-                    applyTo(constraintLayout)
-                }
-            }
             return
         }
 
@@ -430,8 +461,8 @@ class ReviewerFragment :
             easyButton.isVisible = false
         }
 
-        val buttonsHeight = Prefs.answerButtonsSize
-        if (buttonsHeight != 100) {
+        val buttonsHeight = Prefs.newStudyScreenAnswerButtonSize
+        if (buttonsHeight > 100) {
             answerButtonsLayout.post {
                 answerButtonsLayout.updateLayoutParams {
                     height = answerButtonsLayout.measuredHeight * buttonsHeight / 100
@@ -598,7 +629,6 @@ class ReviewerFragment :
         if (Prefs.frameStyle == FrameStyle.BOX) {
             view.findViewById<MaterialCardView>(R.id.webview_container).apply {
                 updateLayoutParams<MarginLayoutParams> {
-                    topMargin = 0
                     leftMargin = 0
                     rightMargin = 0
                 }
@@ -611,28 +641,52 @@ class ReviewerFragment :
     private fun setupToolbarPosition(view: View) {
         if (!resources.isWindowCompact()) return
         when (Prefs.toolbarPosition) {
-            ToolbarPosition.NONE -> {
-                view.findViewById<View>(R.id.tools_layout).isVisible = false
-                view.findViewById<MaterialCardView>(R.id.webview_container).updateLayoutParams<MarginLayoutParams> {
-                    topMargin = 8F.dp.toPx(requireContext())
-                }
-            }
+            ToolbarPosition.TOP -> return
+            ToolbarPosition.NONE -> view.findViewById<View>(R.id.tools_layout).isVisible = false
             ToolbarPosition.BOTTOM -> {
                 val mainLayout = view.findViewById<LinearLayout>(R.id.main_layout)
                 val toolbar = view.findViewById<View>(R.id.tools_layout)
-                val answerArea = view.findViewById<FrameLayout>(R.id.answer_area)
-
                 mainLayout.removeView(toolbar)
-                mainLayout.addView(toolbar, mainLayout.indexOfChild(answerArea) + 1)
-
-                answerArea.updateLayoutParams<MarginLayoutParams> {
-                    bottomMargin = 0
-                }
-                view.findViewById<MaterialCardView>(R.id.webview_container).updateLayoutParams<MarginLayoutParams> {
-                    topMargin = 8F.dp.toPx(requireContext())
-                }
+                mainLayout.addView(toolbar, mainLayout.childCount)
             }
-            ToolbarPosition.TOP -> return
+        }
+    }
+
+    /**
+     * Updates margins based on the possible combinations
+     * of [Prefs.toolbarPosition] and `Hide answer buttons`
+     */
+    private fun setupMargins(view: View) {
+        val hideAnswerButtons = sharedPrefs().getBoolean(getString(R.string.hide_answer_buttons_key), false)
+        // In big screens, let the menu expand if there are no answer buttons
+        if (hideAnswerButtons && !resources.isWindowCompact()) {
+            val constraintLayout = view.findViewById<ConstraintLayout>(R.id.tools_layout)
+            with(ConstraintSet()) {
+                clone(constraintLayout)
+                clear(R.id.reviewer_menu_view, ConstraintSet.START)
+                connect(
+                    R.id.reviewer_menu_view,
+                    ConstraintSet.START,
+                    R.id.guideline_counts,
+                    ConstraintSet.END,
+                )
+                applyTo(constraintLayout)
+            }
+            return
+        }
+
+        val toolbarPosition = Prefs.toolbarPosition
+        val webViewContainer = view.findViewById<MaterialCardView>(R.id.webview_container)
+        val answerArea = view.findViewById<FrameLayout>(R.id.answer_area)
+        val typeAnswerContainer = view.findViewById<MaterialCardView>(R.id.type_answer_container)
+
+        if (toolbarPosition == ToolbarPosition.BOTTOM) {
+            if (hideAnswerButtons) {
+                webViewContainer.updateLayoutParams<MarginLayoutParams> { bottomMargin = 0 }
+                typeAnswerContainer.updateLayoutParams<MarginLayoutParams> { topMargin = 8F.dp.toPx(requireContext()) }
+            } else {
+                answerArea.updateLayoutParams<MarginLayoutParams> { bottomMargin = 0 }
+            }
         }
     }
 
