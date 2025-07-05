@@ -18,13 +18,22 @@
  * this program.  If not, see <http://www.gnu.org/licenses/>.                           *
  ****************************************************************************************/
 
-package com.ichi2.anki
+package com.ichi2.immersivePlugin
 
+import android.annotation.SuppressLint
 import android.content.Context
+import android.graphics.Color
+import android.view.View
+import android.widget.ArrayAdapter
 import android.widget.Button
 import android.widget.CheckBox
 import android.widget.LinearLayout
+import android.widget.LinearLayout.*
+import android.widget.ScrollView
+import android.widget.Spinner
+import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
+import androidx.core.graphics.toColorInt
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -36,91 +45,273 @@ import java.net.HttpURLConnection
 import java.net.URL
 import java.util.UUID
 import kotlin.let
+import android.R.layout
+import com.ichi2.anki.AbstractFlashcardViewer
+import com.ichi2.anki.Reviewer
+import com.ichi2.anki.showThemedToast
 
 object ImmersiveKit {
+
+    data class ImmersiveKitSettings(
+        // Checkbox settings
+        val exactSearch: Boolean = false,
+        val highlighting: Boolean = true,
+        val drama: Boolean = true,
+        val anime: Boolean = false,
+        val games: Boolean = false,
+
+        // Spinner selections (field names)
+        val keywordField: String = "",
+        val sentenceField: String = "",
+        val translationField: String = "",
+        val pictureField: String = "",
+        val audioField: String = "",
+        val sourceField: String = "",
+        val prevSentenceField: String = "",
+        val nextSentenceField: String = "")
+
     fun showImmersiveKit(context: Context) {
         Timber.i("ImmersiveKit:: Showing immersive kit settings")
 
-        // Create the dialog layout
-        val dialogLayout =
-            LinearLayout(context).apply {
-                orientation = LinearLayout.VERTICAL
-                setPadding(50, 50, 50, 50)
+        // Get SharedPreferences for saving selections
+        val prefs = context.getSharedPreferences("immersive_kit_prefs", Context.MODE_PRIVATE)
+
+        // Create a ScrollView to handle potential overflow
+        val scrollView = ScrollView(context)
+        val dialogLayout = LinearLayout(context).apply {
+            orientation = VERTICAL
+            setPadding(32, 24, 32, 24) // Better padding
+        }
+
+        // Helper function to create labeled spinners
+        fun createLabeledSpinner(labelText: String): Pair<LinearLayout, Spinner> {
+            val container = LinearLayout(context).apply {
+                orientation = VERTICAL
+                setPadding(0, 12, 0, 12) // Vertical spacing between items
             }
 
-        // Create checkboxes
-        val exactSearchCheckbox =
-            CheckBox(context).apply {
-                text = "Exact Search"
-                textSize = 16f
+            val label = TextView(context).apply {
+                text = labelText
+                textSize = 14f
+                setTextColor("#666666".toColorInt()) // Gray color for labels
+                setPadding(0, 0, 0, 8) // Space between label and spinner
             }
 
-        val highlightingCheckbox =
-            CheckBox(context).apply {
-                text = "Highlighting"
-                textSize = 16f
-                isChecked = true
+            val spinner = Spinner(context).apply {
+                setPadding(0, 8, 0, 8) // Padding inside spinner
             }
 
-        val dramaCheckbox =
-            CheckBox(context).apply {
-                text = "Check Drama"
-                textSize = 16f
-                isChecked = true
+            container.addView(label)
+            container.addView(spinner)
+            return Pair(container, spinner)
+        }
+
+        // Create checkboxes with better styling and load saved values
+        val exactSearchCheckbox = CheckBox(context).apply {
+            text = "Exact Search"
+            textSize = 16f
+            setPadding(0, 8, 0, 8)
+            isChecked = prefs.getBoolean("exact_search", false)
+        }
+
+        val highlightingCheckbox = CheckBox(context).apply {
+            text = "Highlighting"
+            textSize = 16f
+            setPadding(0, 8, 0, 8)
+            isChecked = prefs.getBoolean("highlighting", true)
+        }
+
+        val dramaCheckbox = CheckBox(context).apply {
+            text = "Check Drama"
+            textSize = 16f
+            setPadding(0, 8, 0, 8)
+            isChecked = prefs.getBoolean("drama", true)
+        }
+
+        val animeCheckbox = CheckBox(context).apply {
+            text = "Check Anime"
+            textSize = 16f
+            setPadding(0, 8, 0, 8)
+            isChecked = prefs.getBoolean("anime", false)
+        }
+
+        val gamesCheckbox = CheckBox(context).apply {
+            text = "Check Games"
+            textSize = 16f
+            setPadding(0, 8, 0, 8)
+            isChecked = prefs.getBoolean("games", false)
+        }
+
+        // Add a separator line
+        val separator = View(context).apply {
+            setBackgroundColor("#E0E0E0".toColorInt())
+            layoutParams = LayoutParams(
+                LayoutParams.MATCH_PARENT,
+                2
+            ).apply {
+                setMargins(0, 16, 0, 16)
+            }
+        }
+
+        // Add toggle button for field mappings
+        val toggleFieldsButton = Button(context).apply {
+            text = "Show Field Mappings"
+            textSize = 14f
+            setPadding(16, 12, 16, 12)
+            setBackgroundColor("#4CAF50".toColorInt()) // Green background
+            setTextColor(Color.WHITE)
+            layoutParams = LayoutParams(
+                LayoutParams.MATCH_PARENT,
+                LayoutParams.WRAP_CONTENT
+            ).apply {
+                setMargins(0, 8, 0, 8)
+            }
+        }
+
+        // Create dropdown options from card field names
+        val dropdownItems = (context as AbstractFlashcardViewer).currentCard?.note?.keys()?: arrayOf("No fields available")
+        val spinnerLabels = listOf(
+            "Keyword",
+            "Sentence Furigana",
+            "Translation",
+            "Picture",
+            "Audio",
+            "Source",
+            "Previous sentence",
+            "Next sentence"
+        )
+
+        val spinners = mutableListOf<Spinner>()
+        val spinnerContainers = mutableListOf<LinearLayout>()
+
+        spinnerLabels.forEach { label ->
+            val (container, spinner) = createLabeledSpinner(label)
+            val adapter = ArrayAdapter(context, layout.simple_spinner_item, dropdownItems)
+            adapter.setDropDownViewResource(layout.simple_spinner_dropdown_item)
+            spinner.adapter = adapter
+
+            container.visibility = GONE
+
+            // Load saved spinner selection
+            val savedSelection = prefs.getInt("spinner_${label.replace(" ", "_").lowercase()}", 0)
+            if (savedSelection < dropdownItems.size) {
+                spinner.setSelection(savedSelection)
             }
 
-        val animeCheckbox =
-            CheckBox(context).apply {
-                text = "Check Anime"
-                textSize = 16f
-            }
+            spinners.add(spinner)
+            spinnerContainers.add(container)
+        }
 
-        val gamesCheckbox =
-            CheckBox(context).apply {
-                text = "Check Games"
-                textSize = 16f
+        // Create RUN button with better styling
+        val runButton = Button(context).apply {
+            text = "GET SENTENCE"
+            textSize = 16f
+            setPadding(24, 16, 24, 16)
+            setBackgroundColor("#2196F3".toColorInt()) // Blue background
+            setTextColor(Color.WHITE)
+            layoutParams = LayoutParams(
+                LayoutParams.MATCH_PARENT,
+                LayoutParams.WRAP_CONTENT
+            ).apply {
+                setMargins(0, 16, 0, 0)
             }
-
-        // Create RUN button
-        val runButton =
-            Button(context).apply {
-                text = "GET SENTENCE"
-                textSize = 16f
+        }
+        // Add toggle functionality
+        var fieldsVisible = false
+        toggleFieldsButton.setOnClickListener {
+            fieldsVisible = !fieldsVisible
+            val visibility = if (fieldsVisible) VISIBLE else GONE
+            spinnerContainers.forEach { container ->
+                container.visibility = visibility
             }
+            toggleFieldsButton.text = if (fieldsVisible) "Hide Field Mappings" else "Show Field Mappings"
+        }
 
-        // Add views to layout
+        // Add all views to layout
         dialogLayout.addView(exactSearchCheckbox)
         dialogLayout.addView(highlightingCheckbox)
-        dialogLayout.addView(animeCheckbox)
         dialogLayout.addView(dramaCheckbox)
+        dialogLayout.addView(animeCheckbox)
         dialogLayout.addView(gamesCheckbox)
+
+        // Add separator
+        dialogLayout.addView(separator)
+        dialogLayout.addView(toggleFieldsButton)
+        // Add all spinner containers
+        spinnerContainers.forEach { container ->
+            dialogLayout.addView(container)
+        }
+
         dialogLayout.addView(runButton)
 
+        // Add the layout to ScrollView
+        scrollView.addView(dialogLayout)
+
         // Create and show dialog
-        val dialog =
-            AlertDialog
-                .Builder(context)
-                .setTitle("Immersion Kit Settings")
-                .setView(dialogLayout)
-                .setNegativeButton("Cancel") { dialog, _ ->
-                    dialog.dismiss()
-                }.create()
+        val dialog = AlertDialog.Builder(context)
+            .setTitle("Immersion Kit Settings")
+            .setView(scrollView)
+            .setNegativeButton("Cancel") { dialog, _ ->
+                dialog.dismiss()
+            }
+            .create()
 
         // Set RUN button click listener
         runButton.setOnClickListener {
             val exactSearch = exactSearchCheckbox.isChecked
             val highlighting = highlightingCheckbox.isChecked
-
             val anime = animeCheckbox.isChecked
             val drama = dramaCheckbox.isChecked
             val games = gamesCheckbox.isChecked
 
-            Timber.i("ImmersionKit:: Running with settings - Exact: $exactSearch, Highlighting: $highlighting")
+            // Save all selections to SharedPreferences
+            prefs.edit().apply {
+                putBoolean("exact_search", exactSearch)
+                putBoolean("highlighting", highlighting)
+                putBoolean("anime", anime)
+                putBoolean("drama", drama)
+                putBoolean("games", games)
+
+                // Save spinner selections
+                spinners.forEachIndexed { index, spinner ->
+                    val prefKey = "spinner_${spinnerLabels[index].replace(" ", "_").lowercase()}"
+                    putInt(prefKey, spinner.selectedItemPosition)
+                }
+
+                apply() // Save asynchronously
+            }
+
+            // Get all spinner selections
+            val spinnerSelections = spinners.mapIndexed { index, spinner -> spinner.selectedItem.toString()}
+
+            Timber.i("ImmersiveKit:: Running with settings - Exact: $exactSearch, Highlighting: $highlighting")
+            Timber.i("ImmersiveKit:: Spinner selections: ${spinnerSelections.joinToString(", ")}")
 
             // Make API call with these settings
-            makeApiCall(context, exactSearch, highlighting, anime, drama, games)
+            val settings = ImmersiveKitSettings(
+                exactSearch,
+                highlighting,
+                drama,
+                anime,
+                games,
+                spinnerSelections[0],
+                spinnerSelections[1],
+                spinnerSelections[2],
+                spinnerSelections[3],
+                spinnerSelections[4],
+                spinnerSelections[5],
+                spinnerSelections[6],
+                spinnerSelections[7],
+            )
 
-            dialog.dismiss()
+            // Check if card is locked by tag
+            if (context.currentCard?.note?.tags?.contains("Locked") == true) {
+                showThemedToast(context, "Card is locked by tag - cannot update fields", true)
+                dialog.dismiss()
+            } else {
+                makeApiCall(context, settings)
+                dialog.dismiss()
+            }
         }
 
         dialog.show()
@@ -146,7 +337,7 @@ object ImmersiveKit {
 
                 // Create unique file name
                 val randomString = UUID.randomUUID().toString().take(8)
-                val fileName = "$name" + "_" + "$randomString.$fileExtension"
+                val fileName = name + "_" + "$randomString.$fileExtension"
 
                 val file = File(folder, fileName)
 
@@ -160,7 +351,7 @@ object ImmersiveKit {
                 null
             }
         } catch (e: Exception) {
-            Timber.i("Error downloading file: $urlString")
+            Timber.i("Error downloading file: $urlString - ${e.message}")
             null
         }
 
@@ -184,11 +375,7 @@ object ImmersiveKit {
 
     private fun makeApiCall(
         context: Context,
-        exactSearch: Boolean,
-        highlighting: Boolean,
-        anime: Boolean,
-        drama: Boolean,
-        games: Boolean,
+        settings : ImmersiveKitSettings
     ) {
         // Show loading message
         showThemedToast(context, "Fetching sentence...", true)
@@ -206,12 +393,12 @@ object ImmersiveKit {
                     val fieldValues = note?.fields?.toMutableList()
 
                     val keyword =
-                        fieldNames?.indexOf("Entry")?.takeIf { it >= 0 }?.let { index ->
+                        fieldNames?.indexOf(settings.keywordField)?.takeIf { it >= 0 }?.let { index ->
                             fieldValues?.get(index)?.split(",")[0]
                         }
                     // Build API URL
                     val apiUrl =
-                        if (exactSearch) {
+                        if (settings.exactSearch) {
                             "https://api.immersionkit.com/look_up_dictionary?keyword=「$keyword」&sort=shortness"
                         } else {
                             "https://api.immersionkit.com/look_up_dictionary?keyword=$keyword &sort="
@@ -230,13 +417,13 @@ object ImmersiveKit {
 
                             if (examples != null && examples.length() > 0) {
                                 val allowedSources = mutableSetOf<String>()
-                                if (anime) allowedSources.add("anime")
-                                if (drama) allowedSources.add("drama")
-                                if (games) allowedSources.add("games")
+                                if (settings.anime) allowedSources.add("anime")
+                                if (settings.drama) allowedSources.add("drama")
+                                if (settings.games) allowedSources.add("games")
                                 val filteredExamples = mutableListOf<JSONObject>()
                                 for (i in 0 until examples.length()) {
                                     val item = examples.optJSONObject(i)
-                                    val sourceType = item?.optString("source_type")
+                                    val sourceType = item?.optString("category")
                                     if (sourceType in allowedSources) {
                                         filteredExamples.add(item)
                                     }
@@ -252,7 +439,8 @@ object ImmersiveKit {
 
                                 // Extract data
                                 val sentenceWithFurigana =
-                                    boldKeywords(example.optString("sentence_with_furigana", ""), listOf(keyword!!), highlighting)
+                                    boldKeywords(example.optString("sentence_with_furigana", ""),
+                                        listOf(keyword!!), settings.highlighting)
                                 val translation = example.optString("translation", "")
                                 val prevSentence = example.optString("prev_sentence", "")
                                 val nextSentence = example.optString("next_sentence", "")
@@ -277,6 +465,7 @@ object ImmersiveKit {
                                         source,
                                         prevSentence,
                                         nextSentence,
+                                        settings
                                     )
                                 }
                             } else {
@@ -322,6 +511,7 @@ object ImmersiveKit {
             null
         }
 
+    @SuppressLint("CheckResult")
     private fun updateNoteFields(
         context: Context,
         sentenceWithFurigana: String,
@@ -331,11 +521,12 @@ object ImmersiveKit {
         source: String,
         prevSentence: String,
         nextSentence: String,
+        settings: ImmersiveKitSettings,
     ) {
         if (context is AbstractFlashcardViewer) {
             val card = context.currentCard ?: return
-            val col = context.getColUnsafe ?: return // Get collection from viewer
-            val note = card.note(col) ?: return // Pass collection to note()
+            val col = context.getColUnsafe // Get collection from viewer
+            val note = card.note(col) // Pass collection to note()
 
             val fieldNames = note.keys()
             val fieldValues = note.fields.toMutableList()
@@ -344,34 +535,38 @@ object ImmersiveKit {
                 fieldNames
                     .indexOf("Entry")
                     .takeIf { it >= 0 }
-                    ?.let { index -> fieldValues.get(index).split(",")[0] }
+                    ?.let { index -> fieldValues[index].split(",")[0] }
 
-            fieldNames.indexOf("KitSentence").takeIf { it >= 0 }?.let { fieldValues[it] = sentenceWithFurigana }
-            fieldNames.indexOf("KitTrans").takeIf { it >= 0 }?.let { fieldValues[it] = translation }
-            fieldNames.indexOf("KitSource").takeIf { it >= 0 }?.let { fieldValues[it] = source }
-            fieldNames.indexOf("KitPrev").takeIf { it >= 0 }?.let { fieldValues[it] = prevSentence }
-            fieldNames.indexOf("KitNext").takeIf { it >= 0 }?.let { fieldValues[it] = nextSentence }
+            fieldNames.indexOf(settings.sentenceField).takeIf { it >= 0 }?.let { fieldValues[it] = sentenceWithFurigana }
+            fieldNames.indexOf(settings.translationField).takeIf { it >= 0 }?.let { fieldValues[it] = translation }
+            fieldNames.indexOf(settings.sourceField).takeIf { it >= 0 }?.let { fieldValues[it] = source }
+            fieldNames.indexOf(settings.prevSentenceField).takeIf { it >= 0 }?.let { fieldValues[it] = prevSentence }
+            fieldNames.indexOf(settings.nextSentenceField).takeIf { it >= 0 }?.let { fieldValues[it] = nextSentence }
 
             val folderPath = col.media.dir
-            fieldNames.indexOf("KitPic").takeIf { it >= 0 }?.let { index ->
+            fieldNames.indexOf(settings.pictureField).takeIf { it >= 0 }?.let { index ->
                 CoroutineScope(Dispatchers.IO).launch {
                     val result = downloadFile(keyword!!, pictureUrl, folderPath, "jpg")
                     withContext(Dispatchers.Main) {
+                        val fileName : String
                         if (result != null) {
-                            val fileName = File(result).name
-                            fieldValues[index] = """<img src="$fileName">"""
-                            note.fields = fieldValues.toMutableList()
-                            val no = col.updateNote(note)
-                            note.setField(index, """<img src="$fileName">""")
-
+                            fileName = """<img src="${File(result).name}">"""
+                            note.setField(index, fileName)
                             Timber.i("Image added successfully: $fileName")
+                        } else {
+                            note.setField(index, "")
+                            fileName = ""
+                            Timber.i("Failed to find image")
                         }
+                        fieldValues[index] = fileName
+                        note.fields = fieldValues
+                        col.updateNote(note)
                     }
                 }
             }
-            fieldNames.indexOf("KitSound").takeIf { it >= 0 }?.let { index ->
+            fieldNames.indexOf(settings.audioField).takeIf { it >= 0 }?.let { index ->
                 CoroutineScope(Dispatchers.IO).launch {
-                    val result = downloadFile(keyword!!, audioUrl, folderPath, "mp3") // <-- use audioUrl here!
+                    val result = downloadFile(keyword!!, audioUrl, folderPath, "mp3")
                     withContext(Dispatchers.Main) {
                         if (result != null) {
                             val fileName = File(result).name
@@ -379,7 +574,7 @@ object ImmersiveKit {
                             fieldValues[index] = audioTag
 
                             note.fields = fieldValues.toMutableList()
-                            val no = col.updateNote(note)
+                            col.updateNote(note)
                             note.setField(index, audioTag)
 
                             context.updateCardAndRedraw()

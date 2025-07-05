@@ -37,7 +37,6 @@ import com.google.android.material.slider.Slider
 import com.google.android.material.textview.MaterialTextView
 import com.ichi2.anki.DispatchKeyEventListener
 import com.ichi2.anki.Flag
-import com.ichi2.anki.ImmersiveKit
 import com.ichi2.anki.R
 import com.ichi2.anki.browser.IdsFile
 import com.ichi2.anki.common.annotations.NeedsTest
@@ -49,6 +48,7 @@ import com.ichi2.anki.snackbar.BaseSnackbarBuilderProvider
 import com.ichi2.anki.snackbar.SnackbarBuilder
 import com.ichi2.anki.utils.ext.collectIn
 import com.ichi2.anki.utils.ext.sharedPrefs
+import com.ichi2.immersivePlugin.ImmersiveKit
 import com.ichi2.utils.performClickIfEnabled
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch

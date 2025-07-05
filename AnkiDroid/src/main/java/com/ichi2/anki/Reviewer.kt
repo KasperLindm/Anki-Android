@@ -55,7 +55,6 @@ import androidx.appcompat.widget.Toolbar
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.core.view.isGone
-import androidx.core.view.isVisible
 import androidx.lifecycle.lifecycleScope
 import anki.frontend.SetSchedulingStatesRequest
 import com.google.android.material.color.MaterialColors
@@ -63,7 +62,6 @@ import com.google.android.material.snackbar.Snackbar
 import com.ichi2.anim.ActivityTransitionAnimation.getInverseTransition
 import com.ichi2.anki.CollectionManager.TR
 import com.ichi2.anki.CollectionManager.withCol
-import com.ichi2.anki.ImmersiveKit
 import com.ichi2.anki.Whiteboard.Companion.createInstance
 import com.ichi2.anki.Whiteboard.OnPaintColorChangeListener
 import com.ichi2.anki.cardviewer.Gesture
@@ -112,6 +110,7 @@ import com.ichi2.anki.utils.ext.setUserFlagForCards
 import com.ichi2.anki.utils.ext.showDialogFragment
 import com.ichi2.anki.utils.navBarNeedsScrim
 import com.ichi2.anki.utils.remainingTime
+import com.ichi2.immersivePlugin.ImmersiveKit
 import com.ichi2.libanki.Card
 import com.ichi2.libanki.CardId
 import com.ichi2.libanki.Collection
