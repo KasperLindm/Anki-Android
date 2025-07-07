@@ -70,7 +70,6 @@ import timber.log.Timber
 class ReviewerViewModel(
     cardMediaPlayer: CardMediaPlayer,
     serverPort: Int = 0,
-    studyScreenRepository: StudyScreenRepository,
 ) : CardViewerViewModel(cardMediaPlayer),
     ChangeManager.Subscriber,
     BindingProcessor<ReviewerBinding, ViewerAction> {
@@ -98,6 +97,7 @@ class ReviewerViewModel(
     val editNoteTagsFlow = MutableSharedFlow<NoteId>()
     val setDueDateFlow = MutableSharedFlow<CardId>()
     val answerTimerStatusFlow = MutableStateFlow<AnswerTimerStatus?>(null)
+    val answerFeedbackFlow = MutableSharedFlow<Ease>()
 
     override val server: AnkiServer = AnkiServer(this, serverPort).also { it.start() }
     private val stateMutationKey = TimeManager.time.intTimeMS().toString()
@@ -105,8 +105,6 @@ class ReviewerViewModel(
     var typedAnswer = ""
 
     private val autoAdvance = AutoAdvance(this)
-    private val shouldSendMarkEval = !studyScreenRepository.isMarkShownInToolbar
-    private val shouldSendFlagEval = !studyScreenRepository.isFlagShownInToolbar
 
     /**
      * A flag that determines if the SchedulingStates in CurrentQueueState are
@@ -435,11 +433,39 @@ class ReviewerViewModel(
     fun answerCard(ease: Ease) {
         Timber.v("ReviewerViewModel::answerCard")
         launchCatchingIO {
-            queueState.await()?.let {
-                undoableOp(this) { sched.answerCard(it, ease) }
-                updateCurrentCard()
+            val state = queueState.await() ?: return@launchCatchingIO
+            val card = currentCard.await()
+            val answer =
+                withCol {
+                    sched.buildAnswer(
+                        card = card,
+                        states = state.states,
+                        ease,
+                    )
+                }
+
+            undoableOp { sched.answerCard(answer) }
+            answerFeedbackFlow.emit(ease)
+
+            val wasLeech = withCol { sched.stateIsLeech(answer.newState) }
+            if (wasLeech) {
+                withCol { card.load(this) }
+                val isSuspended = card.queue.code < 0
+                onLeech(isSuspended)
             }
+            updateCurrentCard()
         }
+    }
+
+    // https://github.com/ankitects/anki/blob/da907053460e2b78c31199f97bbea3cf3600f0c2/qt/aqt/reviewer.py#L954
+    private suspend fun onLeech(isSuspended: Boolean) {
+        Timber.i("ReviewerViewModel::onLeech (isSuspended = %b)", isSuspended)
+        val message = StringBuilder(CollectionManager.TR.studyingCardWasALeech())
+        if (isSuspended) {
+            message.append(" ")
+            message.append(CollectionManager.TR.studyingItHasBeenSuspended())
+        }
+        actionFeedbackFlow.emit(message.toString())
     }
 
     private suspend fun loadAndPlayMedia(side: CardSide) {
@@ -452,14 +478,12 @@ class ReviewerViewModel(
         Timber.v("ReviewerViewModel::updateMarkIcon")
         val card = currentCard.await()
         val isMarkedValue = withCol { card.note(this@withCol).hasTag(this@withCol, MARKED_TAG) }
-        if (shouldSendMarkEval) eval.emit("_drawMark($isMarkedValue);")
         isMarkedFlow.emit(isMarkedValue)
     }
 
     private suspend fun updateFlagIcon() {
         Timber.v("ReviewerViewModel::updateFlagIcon")
         val card = currentCard.await()
-        if (shouldSendFlagEval) eval.emit("_drawFlag(${card.userFlag()});")
         flagFlow.emit(card.flag)
     }
 
@@ -666,11 +690,10 @@ class ReviewerViewModel(
         fun factory(
             soundPlayer: CardMediaPlayer,
             serverPort: Int,
-            studyScreenRepository: StudyScreenRepository,
         ): ViewModelProvider.Factory =
             viewModelFactory {
                 initializer {
-                    ReviewerViewModel(soundPlayer, serverPort, studyScreenRepository)
+                    ReviewerViewModel(soundPlayer, serverPort)
                 }
             }
     }

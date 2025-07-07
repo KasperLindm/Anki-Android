@@ -170,10 +170,20 @@ object Prefs {
     var username by stringPref(R.string.username_key)
     var hkey by stringPref(R.string.hkey_key)
 
+    // ************************************** Review Reminders ********************************** //
+
+    /**
+     * Review reminder IDs are unique, starting at 0 and climbing upwards by one each time a new one is created.
+     */
+    var reviewReminderNextFreeId by intPref(R.string.review_reminders_next_free_id, defaultValue = 0)
+
     // **************************************** Reviewer **************************************** //
 
     val ignoreDisplayCutout by booleanPref(R.string.ignore_display_cutout_key, false)
     val autoFocusTypeAnswer by booleanPref(R.string.type_in_answer_focus_key, true)
+    val showAnswerFeedback by booleanPref(R.string.show_answer_feedback_key, defaultValue = true)
+
+    val newStudyScreenAnswerButtonSize by intPref(R.string.answer_button_size_pref_key, defaultValue = 100)
 
     val frameStyle: FrameStyle
         get() = getEnum(R.string.reviewer_frame_style_key, FrameStyle.CARD)
