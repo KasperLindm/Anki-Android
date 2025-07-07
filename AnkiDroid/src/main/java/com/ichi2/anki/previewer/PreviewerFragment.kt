@@ -30,6 +30,7 @@ import androidx.core.view.isVisible
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.flowWithLifecycle
 import androidx.lifecycle.lifecycleScope
+import anki.cards.card
 import com.google.android.material.appbar.MaterialToolbar
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.card.MaterialCardView
@@ -220,8 +221,12 @@ class PreviewerFragment :
             R.id.flag_turquoise -> viewModel.setFlag(Flag.TURQUOISE)
             R.id.flag_purple -> viewModel.setFlag(Flag.PURPLE)
             R.id.action_immersion_kit -> {
-                ImmersiveKit.showImmersiveKit(requireActivity())
-                return true
+                context?.let { context ->
+                    lifecycleScope.launch {
+                        val card = viewModel.currentCard.await() // ✅ Await to get the actual Card
+                        ImmersiveKit.showImmersiveKit(context, card)
+                    }
+                }
             }
         }
         return true

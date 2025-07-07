@@ -516,8 +516,8 @@ open class Reviewer :
                 deckOptionsLauncher.launch(i)
             }
             R.id.action_immersion_kit -> {
-                Timber.i("NoteEditor:: Immersive Kit button pressed")
-                ImmersiveKit.showImmersiveKit(this)
+                Timber.i("Reviewer:: Immersive Kit button pressed")
+                ImmersiveKit.showImmersiveKit(this, currentCard)
                 return true
             }
             R.id.action_select_tts -> {
