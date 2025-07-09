@@ -15,6 +15,7 @@ import androidx.core.view.children
 import androidx.fragment.app.FragmentManager
 import androidx.test.core.app.ActivityScenario
 import app.cash.turbine.test
+import com.ichi2.anki.common.annotations.NeedsTest
 import com.ichi2.anki.common.time.TimeManager
 import com.ichi2.anki.common.utils.annotation.KotlinCleanup
 import com.ichi2.anki.dialogs.DatabaseErrorDialog
@@ -23,12 +24,12 @@ import com.ichi2.anki.dialogs.DeckPickerContextMenu
 import com.ichi2.anki.dialogs.DeckPickerContextMenu.DeckPickerContextMenuOption
 import com.ichi2.anki.dialogs.utils.title
 import com.ichi2.anki.exception.UnknownDatabaseVersionException
+import com.ichi2.anki.libanki.DeckId
+import com.ichi2.anki.libanki.Storage
+import com.ichi2.anki.libanki.sched.Ease
 import com.ichi2.anki.preferences.sharedPrefs
 import com.ichi2.anki.utils.Destination
 import com.ichi2.anki.utils.ext.dismissAllDialogFragments
-import com.ichi2.libanki.DeckId
-import com.ichi2.libanki.Storage
-import com.ichi2.libanki.sched.Ease
 import com.ichi2.testutils.BackendEmulatingOpenConflict
 import com.ichi2.testutils.BackupManagerTestUtilities
 import com.ichi2.testutils.DbUtils
@@ -39,6 +40,7 @@ import com.ichi2.testutils.revokeWritePermissions
 import com.ichi2.utils.ResourceLoader
 import org.hamcrest.MatcherAssert.assertThat
 import org.hamcrest.Matchers.containsInAnyOrder
+import org.hamcrest.Matchers.containsString
 import org.hamcrest.Matchers.equalTo
 import org.hamcrest.Matchers.not
 import org.hamcrest.Matchers.notNullValue
@@ -57,6 +59,7 @@ import org.robolectric.ParameterizedRobolectricTestRunner
 import org.robolectric.Robolectric
 import org.robolectric.RuntimeEnvironment
 import org.robolectric.shadows.ShadowDialog
+import org.robolectric.shadows.ShadowLooper
 import timber.log.Timber
 import java.io.File
 import kotlin.test.assertFailsWith
@@ -752,6 +755,31 @@ class DeckPickerTest : RobolectricTest() {
         }
     }
 
+    @Test
+    @NeedsTest("possible bug: Moving the ops outside the deckPicker { } failed in tablet mode")
+    fun `undo menu item changes`() =
+        runTest {
+            fun DeckPicker.getUndoTitle() = menu().findItem(R.id.action_undo).title.toString()
+
+            fun waitForMenu() = ShadowLooper.runUiThreadTasksIncludingDelayedTasks()
+
+            suspend fun DeckPicker.undo() {
+                undoAndShowSnackbar()
+                waitForMenu()
+            }
+
+            deckPicker {
+                // enqueue two actions, neither of which affect the study queues
+                val note = addBasicNoteWithOp()
+                note.updateOp { this.fields[0] = "baz" }
+
+                waitForMenu()
+                assertThat(getUndoTitle(), containsString("Update Note"))
+                undo()
+                assertThat(getUndoTitle(), containsString("Add Note"))
+            }
+        }
+
     private fun deckPicker(function: suspend DeckPicker.() -> Unit) =
         runTest {
             val deckPicker =
@@ -803,7 +831,7 @@ class DeckPickerTest : RobolectricTest() {
         ),
         ;
 
-        fun isCollection(col: com.ichi2.libanki.Collection): Boolean = col.decks.byName(deckName) != null
+        fun isCollection(col: com.ichi2.anki.libanki.Collection): Boolean = col.decks.byName(deckName) != null
     }
 
     private class DeckPickerEx : DeckPicker() {

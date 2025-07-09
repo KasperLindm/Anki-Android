@@ -91,12 +91,17 @@ import com.ichi2.anki.dialogs.tags.TagsDialog
 import com.ichi2.anki.dialogs.tags.TagsDialogFactory
 import com.ichi2.anki.dialogs.tags.TagsDialogListener
 import com.ichi2.anki.export.ExportDialogFragment
+import com.ichi2.anki.libanki.CardId
+import com.ichi2.anki.libanki.Collection
+import com.ichi2.anki.libanki.DeckId
+import com.ichi2.anki.libanki.SortOrder
 import com.ichi2.anki.model.CardStateFilter
 import com.ichi2.anki.model.CardsOrNotes
 import com.ichi2.anki.model.CardsOrNotes.CARDS
 import com.ichi2.anki.model.CardsOrNotes.NOTES
 import com.ichi2.anki.model.SortType
 import com.ichi2.anki.noteeditor.NoteEditorLauncher
+import com.ichi2.anki.observability.ChangeManager
 import com.ichi2.anki.observability.undoableOp
 import com.ichi2.anki.preferences.sharedPrefs
 import com.ichi2.anki.previewer.PreviewerFragment
@@ -112,11 +117,6 @@ import com.ichi2.anki.utils.ext.ifNotZero
 import com.ichi2.anki.utils.ext.setFragmentResultListener
 import com.ichi2.anki.utils.ext.showDialogFragment
 import com.ichi2.anki.widgets.DeckDropDownAdapter.SubtitleListener
-import com.ichi2.libanki.CardId
-import com.ichi2.libanki.ChangeManager
-import com.ichi2.libanki.Collection
-import com.ichi2.libanki.DeckId
-import com.ichi2.libanki.SortOrder
 import com.ichi2.ui.CardBrowserSearchView
 import com.ichi2.utils.LanguageUtil
 import com.ichi2.utils.TagsUtil.getUpdatedTags
@@ -211,8 +211,8 @@ open class CardBrowser :
             // in use by reviewer?
             result.data?.let {
                 if (
-                    it.getBooleanExtra(NoteEditor.RELOAD_REQUIRED_EXTRA_KEY, false) ||
-                    it.getBooleanExtra(NoteEditor.NOTE_CHANGED_EXTRA_KEY, false)
+                    it.getBooleanExtra(NoteEditorFragment.RELOAD_REQUIRED_EXTRA_KEY, false) ||
+                    it.getBooleanExtra(NoteEditorFragment.NOTE_CHANGED_EXTRA_KEY, false)
                 ) {
                     if (reviewerCardId == currentCardId) {
                         reloadRequired = true
@@ -248,8 +248,8 @@ open class CardBrowser :
             val data = result.data
             if (data != null &&
                 (
-                    data.getBooleanExtra(NoteEditor.RELOAD_REQUIRED_EXTRA_KEY, false) ||
-                        data.getBooleanExtra(NoteEditor.NOTE_CHANGED_EXTRA_KEY, false)
+                    data.getBooleanExtra(NoteEditorFragment.RELOAD_REQUIRED_EXTRA_KEY, false) ||
+                        data.getBooleanExtra(NoteEditorFragment.NOTE_CHANGED_EXTRA_KEY, false)
                 )
             ) {
                 forceRefreshSearch()
@@ -370,7 +370,7 @@ open class CardBrowser :
             RESULT_OK,
             Intent().apply {
                 // Add reload flag to result intent so that schedule reset when returning to note editor
-                putExtra(NoteEditor.RELOAD_REQUIRED_EXTRA_KEY, reloadRequired)
+                putExtra(NoteEditorFragment.RELOAD_REQUIRED_EXTRA_KEY, reloadRequired)
             },
         )
 
@@ -493,9 +493,9 @@ open class CardBrowser :
     }
 
     private fun loadNoteEditorFragment(launcher: NoteEditorLauncher) {
-        val noteEditor = NoteEditor.newInstance(launcher)
+        val noteEditorFragment = NoteEditorFragment.newInstance(launcher)
         supportFragmentManager.commit {
-            replace(R.id.note_editor_frame, noteEditor)
+            replace(R.id.note_editor_frame, noteEditorFragment)
         }
         // Invalidate options menu so that note editor menu will show
         invalidateOptionsMenu()
@@ -504,8 +504,8 @@ open class CardBrowser :
     /**
      * Retrieves the `NoteEditor` fragment if it is present in the fragment container
      */
-    val fragment: NoteEditor?
-        get() = supportFragmentManager.findFragmentById(R.id.note_editor_frame) as? NoteEditor
+    val fragment: NoteEditorFragment?
+        get() = supportFragmentManager.findFragmentById(R.id.note_editor_frame) as? NoteEditorFragment
 
     /**
      * Loads the NoteEditor fragment in container if the view is x-large.

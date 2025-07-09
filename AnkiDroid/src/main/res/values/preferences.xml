@@ -13,7 +13,7 @@
     <string name="learn_cutoff_preference">learnCutoff</string>
     <string name="time_limit_preference">timeLimit</string>
     <string name="keep_screen_on_preference">keepScreenOn</string>
-    <string name="double_tap_time_interval_preference">doubleTapTimeInterval</string>
+    <string name="double_tap_timeout_pref_key">doubleTapTimeout</string>
     <!-- Sync -->
     <string name="pref_sync_screen_key">syncScreen</string>
     <string name="sync_account_key">syncAccount</string>
@@ -92,7 +92,6 @@
     <string name="pref_keyboard_shortcuts_key">showKeyboardShortcuts</string>
     <string name="pref_swipe_sensitivity_key">swipeSensitivity</string>
     <string name="pref_controls_tab_layout_key">controlsTabLayout</string>
-    <string name="pref_cat_controls_general_key">controlsGeneral</string>
     <string name="show_answer_command_key">binding_SHOW_ANSWER</string>
     <string name="answer_again_command_key">binding_FLIP_OR_ANSWER_EASE1</string>
     <string name="answer_hard_command_key">binding_FLIP_OR_ANSWER_EASE2</string>
@@ -243,5 +242,6 @@
     <string name="reviewer_menu_settings_key">reviewerMenuSettings</string>
     <string name="reviewer_frame_style_key">reviewerFrameStyle</string>
     <string name="reviewer_toolbar_position_key">reviewerToolbarPosition</string>
+    <string name="addons_category_key">addonsCat</string>
 
 </resources>

@@ -85,8 +85,8 @@ android {
         //
         // This ensures the correct ordering between the various types of releases (dev < alpha < beta < release) which is
         // needed for upgrades to be offered correctly.
-        versionCode=22200101
-        versionName="2.22alpha1"
+        versionCode=22200103
+        versionName="2.22alpha3"
         minSdk = libs.versions.minSdk.get().toInteger()
 
         // After #13695: change .tests_emulator.yml
@@ -364,6 +364,7 @@ dependencies {
 
     // modules
     implementation project(":common")
+    implementation project(":libanki")
 
     implementation libs.androidx.activity
     implementation libs.androidx.annotation

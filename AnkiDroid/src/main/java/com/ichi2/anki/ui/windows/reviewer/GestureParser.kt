@@ -16,10 +16,14 @@
 package com.ichi2.anki.ui.windows.reviewer
 
 import android.net.Uri
+import android.os.Build
+import android.view.ViewConfiguration
 import android.webkit.WebView
+import androidx.annotation.VisibleForTesting
 import com.ichi2.anki.cardviewer.Gesture
 import com.ichi2.anki.cardviewer.TapGestureMode
 import com.ichi2.anki.utils.ext.clamp
+import timber.log.Timber
 import kotlin.math.abs
 
 /**
@@ -28,7 +32,14 @@ import kotlin.math.abs
  * @see parse
  */
 object GestureParser {
-    private const val SWIPE_THRESHOLD_BASE = 18
+    private const val SWIPE_THRESHOLD_BASE = 100
+    private val multiPressTimeout =
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            ViewConfiguration.getMultiPressTimeout()
+        } else {
+            // https://cs.android.com/android/platform/superproject/+/android-latest-release:frameworks/base/core/java/android/view/ViewConfiguration.java;l=89;drc=36c4f0306d7e9b9eff645a667148a5f2c5e9d17d
+            300
+        }
     private val gestureGrid =
         listOf(
             listOf(Gesture.TAP_TOP_LEFT, Gesture.TAP_TOP, Gesture.TAP_TOP_RIGHT),
@@ -56,19 +67,36 @@ object GestureParser {
         scrollY: Int,
         measuredWidth: Int,
         measuredHeight: Int,
+        swipeSensitivity: Float,
         gestureMode: TapGestureMode,
     ): Gesture? {
         if (isScrolling) return null
-        if (uri.host == "doubleTap") return Gesture.DOUBLE_TAP
+        when (uri.host) {
+            DOUBLE_TAP_HOST -> return Gesture.DOUBLE_TAP
+            MULTI_FINGER_HOST -> {
+                val deltaTime = uri.getIntQuery(PARAM_DELTA_TIME) ?: return null
+                if (deltaTime > multiPressTimeout) return null
+                val touchCount = uri.getIntQuery(PARAM_TOUCH_COUNT) ?: return null
+                return when (touchCount) {
+                    2 -> Gesture.TWO_FINGER_TAP
+                    3 -> Gesture.THREE_FINGER_TAP
+                    4 -> Gesture.FOUR_FINGER_TAP
+                    else -> {
+                        Timber.w("Invalid multi-finger tap count %d", touchCount)
+                        null
+                    }
+                }
+            }
+        }
 
-        val pageX = uri.getIntQuery("x") ?: return null
-        val pageY = uri.getIntQuery("y") ?: return null
-        val deltaX = uri.getIntQuery("deltaX") ?: return null
-        val deltaY = uri.getIntQuery("deltaY") ?: return null
+        val pageX = uri.getIntQuery(PARAM_X) ?: return null
+        val pageY = uri.getIntQuery(PARAM_Y) ?: return null
+        val deltaX = uri.getIntQuery(PARAM_DELTA_X) ?: return null
+        val deltaY = uri.getIntQuery(PARAM_DELTA_Y) ?: return null
         val absDeltaX = abs(deltaX)
         val absDeltaY = abs(deltaY)
 
-        val swipeThreshold = SWIPE_THRESHOLD_BASE / scale
+        val swipeThreshold = (SWIPE_THRESHOLD_BASE / swipeSensitivity) / scale
         if (absDeltaX > swipeThreshold || absDeltaY > swipeThreshold) {
             val scrollDirection = uri.getQueryParameter("scrollDirection")
             return determineSwipeGesture(deltaX, deltaY, absDeltaX, absDeltaY, scrollDirection)
@@ -95,6 +123,7 @@ object GestureParser {
         isScrolling: Boolean,
         scale: Float,
         webView: WebView,
+        swipeSensitivity: Float,
         gestureMode: TapGestureMode,
     ): Gesture? =
         parse(
@@ -105,6 +134,7 @@ object GestureParser {
             scrollY = webView.scrollY,
             measuredWidth = webView.measuredWidth,
             measuredHeight = webView.measuredHeight,
+            swipeSensitivity = swipeSensitivity,
             gestureMode = gestureMode,
         )
 
@@ -247,4 +277,31 @@ object GestureParser {
     }
 
     private fun Uri.getIntQuery(key: String) = getQueryParameter(key)?.toIntOrNull()
+
+    @VisibleForTesting
+    const val PARAM_X = "x"
+
+    @VisibleForTesting
+    const val PARAM_Y = "y"
+
+    @VisibleForTesting
+    const val PARAM_DELTA_X = "deltaX"
+
+    @VisibleForTesting
+    const val PARAM_DELTA_Y = "deltaY"
+
+    @VisibleForTesting
+    const val PARAM_DELTA_TIME = "deltaTime"
+
+    @VisibleForTesting
+    const val PARAM_SCROLL_DIRECTION = "scrollDirection"
+
+    @VisibleForTesting
+    const val PARAM_TOUCH_COUNT = "touchCount"
+
+    @VisibleForTesting
+    const val DOUBLE_TAP_HOST = "doubleTap"
+
+    @VisibleForTesting
+    const val MULTI_FINGER_HOST = "multiFingerTap"
 }

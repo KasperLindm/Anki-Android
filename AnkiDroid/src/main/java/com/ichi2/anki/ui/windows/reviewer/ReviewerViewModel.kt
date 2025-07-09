@@ -31,7 +31,16 @@ import com.ichi2.anki.asyncIO
 import com.ichi2.anki.cardviewer.CardMediaPlayer
 import com.ichi2.anki.common.time.TimeManager
 import com.ichi2.anki.launchCatchingIO
+import com.ichi2.anki.libanki.Card
+import com.ichi2.anki.libanki.CardId
+import com.ichi2.anki.libanki.NoteId
+import com.ichi2.anki.libanki.redo
+import com.ichi2.anki.libanki.sched.Counts
+import com.ichi2.anki.libanki.sched.CurrentQueueState
+import com.ichi2.anki.libanki.sched.Ease
+import com.ichi2.anki.libanki.undo
 import com.ichi2.anki.noteeditor.NoteEditorLauncher
+import com.ichi2.anki.observability.ChangeManager
 import com.ichi2.anki.observability.undoableOp
 import com.ichi2.anki.pages.AnkiServer
 import com.ichi2.anki.pages.CardInfoDestination
@@ -39,6 +48,7 @@ import com.ichi2.anki.pages.DeckOptionsDestination
 import com.ichi2.anki.preferences.reviewer.ViewerAction
 import com.ichi2.anki.previewer.CardViewerViewModel
 import com.ichi2.anki.previewer.TypeAnswer
+import com.ichi2.anki.previewer.typeAnsRe
 import com.ichi2.anki.reviewer.BindingProcessor
 import com.ichi2.anki.reviewer.CardSide
 import com.ichi2.anki.reviewer.ReviewerBinding
@@ -46,30 +56,22 @@ import com.ichi2.anki.servicelayer.MARKED_TAG
 import com.ichi2.anki.servicelayer.NoteService
 import com.ichi2.anki.servicelayer.isBuryNoteAvailable
 import com.ichi2.anki.servicelayer.isSuspendNoteAvailable
+import com.ichi2.anki.settings.Prefs
 import com.ichi2.anki.ui.windows.reviewer.autoadvance.AutoAdvance
 import com.ichi2.anki.utils.CollectionPreferences
 import com.ichi2.anki.utils.Destination
 import com.ichi2.anki.utils.ext.flag
 import com.ichi2.anki.utils.ext.setUserFlagForCards
-import com.ichi2.libanki.Card
-import com.ichi2.libanki.CardId
-import com.ichi2.libanki.ChangeManager
-import com.ichi2.libanki.NoteId
-import com.ichi2.libanki.redo
-import com.ichi2.libanki.sched.Counts
-import com.ichi2.libanki.sched.CurrentQueueState
-import com.ichi2.libanki.sched.Ease
-import com.ichi2.libanki.undo
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import org.intellij.lang.annotations.Language
 import timber.log.Timber
 
 class ReviewerViewModel(
     cardMediaPlayer: CardMediaPlayer,
-    serverPort: Int = 0,
 ) : CardViewerViewModel(cardMediaPlayer),
     ChangeManager.Subscriber,
     BindingProcessor<ReviewerBinding, ViewerAction> {
@@ -99,12 +101,13 @@ class ReviewerViewModel(
     val answerTimerStatusFlow = MutableStateFlow<AnswerTimerStatus?>(null)
     val answerFeedbackFlow = MutableSharedFlow<Ease>()
 
-    override val server: AnkiServer = AnkiServer(this, serverPort).also { it.start() }
+    override val server: AnkiServer = AnkiServer(this, StudyScreenRepository.getServerPort()).also { it.start() }
     private val stateMutationKey = TimeManager.time.intTimeMS().toString()
     val statesMutationEval = MutableSharedFlow<String>()
     var typedAnswer = ""
 
     private val autoAdvance = AutoAdvance(this)
+    private val isHtmlTypeAnswerEnabled = Prefs.isHtmlTypeAnswerEnabled
 
     /**
      * A flag that determines if the SchedulingStates in CurrentQueueState are
@@ -521,8 +524,28 @@ class ReviewerViewModel(
             typeAnswer?.answerFilter(typedAnswer) ?: text
         } else {
             typeAnswerFlow.emit(typeAnswer)
-            TypeAnswer.removeTags(text)
+            if (isHtmlTypeAnswerEnabled) {
+                typeAnswer?.let { typeAnsQuestionFilter(text, it) } ?: text
+            } else {
+                TypeAnswer.removeTags(text)
+            }
         }
+    }
+
+    // https://github.com/ankitects/anki/blob/da907053460e2b78c31199f97bbea3cf3600f0c2/qt/aqt/reviewer.py#L704
+    private fun typeAnsQuestionFilter(
+        text: String,
+        typeAnswer: TypeAnswer,
+    ): String {
+        @Language("HTML")
+        val repl =
+            """
+            <center>
+            <input type="text" id="typeans" oninput="ankidroid.onTypeAnswerInput(event);" 
+               style="font-family: '${typeAnswer.font}'; font-size: ${typeAnswer.fontSize}px;">
+            </center>
+            """.trimIndent()
+        return typeAnsRe.replace(text, repl)
     }
 
     private suspend fun updateUndoAndRedoLabels() {
@@ -687,13 +710,10 @@ class ReviewerViewModel(
     }
 
     companion object {
-        fun factory(
-            soundPlayer: CardMediaPlayer,
-            serverPort: Int,
-        ): ViewModelProvider.Factory =
+        fun factory(soundPlayer: CardMediaPlayer): ViewModelProvider.Factory =
             viewModelFactory {
                 initializer {
-                    ReviewerViewModel(soundPlayer, serverPort)
+                    ReviewerViewModel(soundPlayer)
                 }
             }
     }
