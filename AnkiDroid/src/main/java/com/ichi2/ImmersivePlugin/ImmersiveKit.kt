@@ -70,6 +70,7 @@ object ImmersiveKit {
 
         // Spinner selections (field names)
         val keywordField: String = "",
+        val keywordFuriganaField: String = "",
         val sentenceField: String = "",
         val translationField: String = "",
         val pictureField: String = "",
@@ -179,9 +180,11 @@ object ImmersiveKit {
         }
 
         // Create dropdown options from card field names
-        val dropdownItems = selectedCard?.note?.keys() ?: arrayOf("No fields available");        val spinnerLabels = listOf(
+        val dropdownItems = selectedCard?.note?.keys() ?: arrayOf("No fields available")
+        val spinnerLabels = listOf(
             "Keyword",
-            "Sentence Furigana",
+            "Keyword with Furigana",
+            "Sentence",
             "Translation",
             "Picture",
             "Audio",
@@ -193,7 +196,7 @@ object ImmersiveKit {
         val spinners = mutableListOf<Spinner>()
         val spinnerContainers = mutableListOf<LinearLayout>()
 
-        spinnerLabels.forEach { label ->
+        spinnerLabels.forEachIndexed { index, label ->
             val (container, spinner) = createLabeledSpinner(label)
             val adapter = ArrayAdapter(context, layout.simple_spinner_item, dropdownItems)
             adapter.setDropDownViewResource(layout.simple_spinner_dropdown_item)
@@ -246,8 +249,37 @@ object ImmersiveKit {
         // Add separator
         dialogLayout.addView(separator)
         dialogLayout.addView(toggleFieldsButton)
-        // Add all spinner containers
-        spinnerContainers.forEach { container ->
+
+        spinnerContainers.forEachIndexed { index, container ->
+            if (index == 0) {
+                val title = TextView(context).apply {
+                    text = "Keywords to Search"
+                    textSize = 14f
+                    setTextColor("#E0E0E0".toColorInt())
+                    setPadding(0, 0, 0, 0)
+                }
+                container.addView(title, 0)
+            }
+
+            if (index == 1) {
+                val separator = View(context).apply {
+                    setBackgroundColor("#E0E0E0".toColorInt())
+                    layoutParams = LayoutParams(
+                        LayoutParams.MATCH_PARENT,
+                        2
+                    ).apply {
+                        setMargins(0, 16, 0, 16)
+                    }
+                }
+                val label = TextView(context).apply {
+                    text = "Fields to Map Gathered Data to"
+                    textSize = 14f
+                    setTextColor("#E0E0E0".toColorInt())
+                    setPadding(0, 0, 0, 0)
+                }
+                container.addView(separator)
+                container.addView(label)
+            }
             dialogLayout.addView(container)
         }
 
@@ -378,21 +410,26 @@ object ImmersiveKit {
         return newArray
     }
 
-    fun boldKeywords(
+    fun keywordStyling(
         sentence: String,
         keywords: List<String>,
         highlight: Boolean,
     ): String {
-        if (!highlight) {
+        if (!highlight or keywords.isEmpty()) {
             return sentence
         }
-
         var result = sentence
-        for (keyword in keywords) {
-            // Use Regex to match the keyword as a whole word and ignore case if needed
-            val regex = Regex("$keyword\\[(.*?)]")
-            result = result.replace(regex, "<b>$keyword</b>")
-        }
+        val key = keywords[0]
+        val furiganaKey = keywords[1]
+        val actualKey = furiganaKey.ifBlank { key }
+
+        // Escape regex for safety
+        val safeKey = Regex.escape(key)
+
+        // Highlight the first keyword with actualKey
+        val firstRegex = Regex("$safeKey\\[(.*?)]")
+        result = result.replace(firstRegex, "<b>$actualKey</b>")
+
         return result
     }
 
@@ -416,6 +453,10 @@ object ImmersiveKit {
 
                 val keyword =
                     fieldNames?.indexOf(settings.keywordField)?.takeIf { it >= 0 }?.let { index ->
+                        fieldValues?.get(index)?.split(",")[0]
+                    }
+                val keywordFurigana =
+                    fieldNames?.indexOf(settings.keywordFuriganaField)?.takeIf { it >= 0 }?.let { index ->
                         fieldValues?.get(index)?.split(",")[0]
                     }
                 // Build API URL
@@ -465,9 +506,9 @@ object ImmersiveKit {
 
                             // Extract data
                             val sentenceWithFurigana =
-                                boldKeywords(
+                                keywordStyling(
                                     example.optString("sentence_with_furigana", ""),
-                                    listOf(keyword!!), settings.highlighting
+                                    listOf(keyword!!, keywordFurigana?: ""), settings.highlighting
                                 )
                             val translation = example.optString("translation", "")
                             val prevSentence = example.optString("prev_sentence", "")
@@ -620,7 +661,7 @@ object ImmersiveKit {
                     when (context) {
                         is CardViewerActivity -> {
                             val viewModel = (context.fragment?.let {
-                                ViewModelProvider(it).get(PreviewerViewModel::class.java)
+                                ViewModelProvider(it)[PreviewerViewModel::class.java]
                             })
                             viewModel?.onPageFinished(true)
                         }
