@@ -28,6 +28,7 @@ import com.ichi2.anki.BuildConfig
 import com.ichi2.anki.CollectionManager.TR
 import com.ichi2.anki.R
 import com.ichi2.anki.preferences.reviewer.ReviewerMenuSettingsFragment
+import com.ichi2.anki.reviewreminders.ReviewReminderScope
 import com.ichi2.anki.reviewreminders.ScheduleReminders
 import com.ichi2.anki.settings.Prefs
 import com.ichi2.anki.ui.internationalization.toSentenceCase
@@ -64,16 +65,13 @@ class HeaderFragment : SettingsFragment() {
         requirePreference<HeaderPreference>(R.string.pref_review_reminders_screen_key)
             .setOnPreferenceClickListener {
                 Timber.i("HeaderFragment:: edit review reminders button pressed")
-                val intent = ScheduleReminders.getIntent(requireContext(), true)
+                val intent = ScheduleReminders.getIntent(requireContext(), ReviewReminderScope.Global)
                 startActivity(intent)
                 true
             }
 
-        val reviewRemindersEnabled = requireContext().sharedPrefs().getBoolean(getString(R.string.pref_new_notifications), false)
-        requirePreference<HeaderPreference>(R.string.pref_review_reminders_screen_key)
-            .isVisible = reviewRemindersEnabled
-        requirePreference<HeaderPreference>(R.string.pref_notifications_screen_key)
-            .isVisible = !reviewRemindersEnabled
+        requirePreference<HeaderPreference>(R.string.pref_review_reminders_screen_key).isVisible = Prefs.newReviewRemindersEnabled
+        requirePreference<HeaderPreference>(R.string.pref_notifications_screen_key).isVisible = !Prefs.newReviewRemindersEnabled
 
         configureSearchBar(
             requireActivity() as AppCompatActivity,
@@ -119,7 +117,7 @@ class HeaderFragment : SettingsFragment() {
                 index(R.xml.preferences_custom_sync_server)
                     .addBreadcrumb(R.string.pref_cat_sync)
 
-                if (activity.sharedPrefs().getBoolean(activity.getString(R.string.pref_new_notifications), false)) {
+                if (Prefs.newReviewRemindersEnabled) {
                     searchConfiguration
                         .indexItem()
                         .withKey(activity.getString(R.string.pref_review_reminders_screen_key))
