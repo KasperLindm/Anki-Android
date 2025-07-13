@@ -436,23 +436,92 @@ object ImmersiveKit {
         keywords: List<String>,
         highlight: Boolean,
     ): String {
-        if (!highlight or keywords.isEmpty()) {
-            return sentence
+        if (!highlight || keywords.size < 2) return sentence
+
+        val plainKeyword = keywords[0]      // e.g., "流れる"
+        val furiganaKeyword = keywords[1]   // e.g., "流[なが]れる"
+
+        // Extract kanji and reading from furigana keyword
+        val furiganaRegex = Regex("([一-龯々ヶ]+)\\[([^\\]]+)]")
+        val match = furiganaRegex.find(furiganaKeyword)
+
+        if (match != null) {
+            val kanji = match.groupValues[1]        // e.g., "流"
+            val reading = match.groupValues[2]      // e.g., "なが"
+
+            // Get the remaining part after the kanji (e.g., "れる" from "流れる")
+            val remainingPart = plainKeyword.removePrefix(kanji)  // e.g., "れる"
+
+            // Strategy 1: Look for kanji[reading] + remaining part + any conjugation
+            val kanjiWithFuriganaPattern = Regex("${Regex.escape(kanji)}\\[${Regex.escape(reading)}]${Regex.escape(remainingPart)}[ぁ-んゃ-ょゅ-ょっー]*")
+            kanjiWithFuriganaPattern.find(sentence)?.let {
+                return kanjiWithFuriganaPattern.replace(sentence) { "<b>${it.value}</b>" }
+            }
+
+            // Strategy 2: Look for kanji[any_reading] + remaining part + conjugation
+            val kanjiWithAnyFuriganaPattern = Regex("${Regex.escape(kanji)}\\[[^\\]]+]${Regex.escape(remainingPart)}[ぁ-んゃ-ょゅ-ょっー]*")
+            kanjiWithAnyFuriganaPattern.find(sentence)?.let {
+                return kanjiWithAnyFuriganaPattern.replace(sentence) { "<b>${it.value}</b>" }
+            }
+
+            // Strategy 3: Look for just kanji + remaining part + conjugation (no furigana)
+            val kanjiWithoutFuriganaPattern = Regex("${Regex.escape(kanji)}${Regex.escape(remainingPart)}[ぁ-んゃ-ょゅ-ょっー]*")
+            kanjiWithoutFuriganaPattern.find(sentence)?.let {
+                return kanjiWithoutFuriganaPattern.replace(sentence) { "<b>${it.value}</b>" }
+            }
+
+            // Strategy 4: Look for reading + remaining part + conjugation (all hiragana)
+            val readingWithRemainingPattern = Regex("${Regex.escape(reading)}${Regex.escape(remainingPart)}[ぁ-んゃ-ょゅ-ょっー]*")
+            readingWithRemainingPattern.find(sentence)?.let {
+                return readingWithRemainingPattern.replace(sentence) { "<b>${it.value}</b>" }
+            }
+
+            // Strategy 5: Exact match with furigana keyword (including exact conjugation)
+            val exactFuriganaPattern = Regex(Regex.escape(furiganaKeyword))
+            exactFuriganaPattern.find(sentence)?.let {
+                return exactFuriganaPattern.replace(sentence) { "<b>${it.value}</b>" }
+            }
         }
-        var result = sentence
-        val key = keywords[0]
-        val furiganaKey = keywords[1]
-        val actualKey = furiganaKey.ifBlank { key }
 
-        // Escape regex for safety
-        val safeKey = Regex.escape(key)
+        // Strategy 6: Try to match plain keyword with conjugations
+        val plainWithConjugationPattern = Regex("${Regex.escape(plainKeyword)}[ぁ-んゃ-ょゅ-ょっー]*")
+        plainWithConjugationPattern.find(sentence)?.let {
+            return plainWithConjugationPattern.replace(sentence) { "<b>${it.value}</b>" }
+        }
 
-        // Highlight the first keyword with actualKey
-        val firstRegex = Regex("$safeKey\\[(.*?)]")
-        result = result.replace(firstRegex, "<b>$actualKey</b>")
+        // Strategy 7: Exact match with plain keyword (final fallback)
+        val exactPlainPattern = Regex(Regex.escape(plainKeyword))
+        exactPlainPattern.find(sentence)?.let {
+            return exactPlainPattern.replace(sentence) { "<b>${it.value}</b>" }
+        }
 
-        return result
+        // Only use these fallback strategies if nothing else matches
+        if (match != null) {
+            val kanji = match.groupValues[1]
+            val reading = match.groupValues[2]
+
+            // Fallback 1: highlight just the kanji with furigana (no conjugation)
+            val kanjiWithFuriganaOnly = Regex("${Regex.escape(kanji)}\\[${Regex.escape(reading)}]")
+            kanjiWithFuriganaOnly.find(sentence)?.let {
+                return kanjiWithFuriganaOnly.replace(sentence) { "<b>${it.value}</b>" }
+            }
+
+            // Fallback 2: highlight just the kanji with any furigana
+            val kanjiWithAnyFuriganaOnly = Regex("${Regex.escape(kanji)}\\[[^\\]]+]")
+            kanjiWithAnyFuriganaOnly.find(sentence)?.let {
+                return kanjiWithAnyFuriganaOnly.replace(sentence) { "<b>${it.value}</b>" }
+            }
+
+            // Fallback 3: highlight just the kanji (no furigana)
+            val kanjiOnly = Regex("${Regex.escape(kanji)}")
+            kanjiOnly.find(sentence)?.let {
+                return kanjiOnly.replace(sentence) { "<b>${it.value}</b>" }
+            }
+        }
+
+        return sentence
     }
+
     fun getContext(id: String): Pair<String, String>? {
         val urlString = "https://api.immersionkit.com/sentence_with_context?id=$id"
         val url = URL(urlString)
@@ -612,7 +681,7 @@ object ImmersiveKit {
             } catch (e: Exception) {
                 Timber.e(e, "ImmersiveKit:: Error making API call")
                 withContext(Dispatchers.Main) {
-                    showThemedToast(context, "Error: ${e.message}", true)
+                    showThemedToast(context, "API Error: ${e.message}", true)
                 }
             }
         }
