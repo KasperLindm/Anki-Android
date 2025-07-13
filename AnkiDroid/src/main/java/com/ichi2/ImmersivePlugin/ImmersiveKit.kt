@@ -24,6 +24,7 @@ import android.R.layout
 import android.annotation.SuppressLint
 import android.content.Context
 import android.graphics.Color
+import android.view.Gravity
 import android.view.View
 import android.widget.ArrayAdapter
 import android.widget.Button
@@ -87,6 +88,9 @@ object ImmersiveKit {
 
         // Create a ScrollView to handle potential overflow
         val scrollView = ScrollView(context)
+        scrollView.apply {
+            setPadding(0, 0, 0, 0)
+        }
         Timber.i("scrollView added successfully")
         val dialogLayout = LinearLayout(context).apply {
             orientation = VERTICAL
@@ -175,7 +179,7 @@ object ImmersiveKit {
                 LayoutParams.MATCH_PARENT,
                 LayoutParams.WRAP_CONTENT
             ).apply {
-                setMargins(0, 8, 0, 8)
+                setMargins(0, 8, 0, 0)
             }
         }
 
@@ -285,17 +289,33 @@ object ImmersiveKit {
 
         dialogLayout.addView(runButton)
 
-        // Add the layout to ScrollView
-        scrollView.addView(dialogLayout)
-
         // Create and show dialog
         val dialog = AlertDialog.Builder(context)
             .setTitle("Immersion Kit Settings")
             .setView(scrollView)
-            .setNegativeButton("Cancel") { dialog, _ ->
+            .create()
+
+        // Custom cancel button
+        val cancelTextButton = TextView(context).apply {
+            text = "Cancel"
+            textSize = 16f
+            setTextColor("#2196F3".toColorInt()) // Match default Material color
+            gravity = Gravity.END
+            layoutParams = LayoutParams(
+                LayoutParams.MATCH_PARENT,
+                LayoutParams.WRAP_CONTENT
+            ).apply {
+                setMargins(0, 8, 4, 16)
+            }
+            setPadding(16, 32, 28, 14)
+            setOnClickListener {
                 dialog.dismiss()
             }
-            .create()
+        }
+        dialogLayout.addView(cancelTextButton)
+
+        // Add the layout to ScrollView
+        scrollView.addView(dialogLayout)
 
         // Set RUN button click listener
         runButton.setOnClickListener {
@@ -396,6 +416,7 @@ object ImmersiveKit {
             null
         }
 
+    // remove the current sentence to not get a duplicate
     fun removeExampleBySentence(examples: JSONArray, stringToRemove: String): JSONArray {
         val newArray = JSONArray()
         for (i in 0 until examples.length()) {
@@ -432,7 +453,36 @@ object ImmersiveKit {
 
         return result
     }
+    fun getContext(id: String): Pair<String, String>? {
+        val urlString = "https://api.immersionkit.com/sentence_with_context?id=$id"
+        val url = URL(urlString)
 
+        with(url.openConnection() as HttpURLConnection) {
+            requestMethod = "GET"
+            setRequestProperty("User-Agent", "Mozilla/5.0")
+
+            if (responseCode == HttpURLConnection.HTTP_OK) {
+                val response = inputStream.bufferedReader().use { it.readText() }
+                val json = JSONObject(response)
+
+                val pretext = json.optJSONArray("pretext_sentences")
+                val posttext = json.optJSONArray("posttext_sentences")
+
+                val prev = if (pretext != null && pretext.length() > 0) {
+                    pretext.getJSONObject(pretext.length() - 1).optString("sentence_with_furigana", "")
+                } else null
+
+                val next = if (posttext != null && posttext.length() > 0) {
+                    posttext.getJSONObject(0).optString("sentence_with_furigana", "")
+                } else null
+
+                return Pair(prev!!, next!!)
+            } else {
+                println("HTTP error: $responseCode")
+                return null
+            }
+        }
+    }
     @SuppressLint("DirectToastMakeTextUsage")
     private fun makeApiCall(
         context: Context,
@@ -462,9 +512,9 @@ object ImmersiveKit {
                 // Build API URL
                 val apiUrl =
                     if (settings.exactSearch) {
-                        "https://api.immersionkit.com/look_up_dictionary?keyword=「$keyword」&sort=shortness"
+                        "https://api.immersionkit.com/look_up_dictionary?keyword=「$keyword」"
                     } else {
-                        "https://api.immersionkit.com/look_up_dictionary?keyword=$keyword&sort="
+                        "https://api.immersionkit.com/look_up_dictionary?keyword=$keyword"
                     }
 
                 // Make API call
@@ -504,6 +554,7 @@ object ImmersiveKit {
                                     examples.getJSONObject((0 until examples.length()).random())
                                 }
 
+                            val prevAndNext = getContext(example.optString("id", ""))!!
                             // Extract data
                             val sentenceWithFurigana =
                                 keywordStyling(
@@ -534,8 +585,8 @@ object ImmersiveKit {
                                         imageUrl,
                                         audioUrl,
                                         source,
-                                        prevSentence,
-                                        nextSentence,
+                                        prevAndNext.first,
+                                        prevAndNext.second,
                                         settings,
                                         toast
                                     )
