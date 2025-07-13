@@ -457,30 +457,63 @@ object ImmersiveKit {
     }
 
     fun styleKeyword(sentence: String, keywordPair: Pair<String, String>, highlighting: Boolean): String {
-        if (!highlighting || (keywordPair.first.isBlank() && keywordPair.second.isBlank())) return sentence
+        if (!highlighting) return sentence
 
-        var styled = sentence
+        val highlightingSymbol = "u"
+        val plain = keywordPair.first.split(",")[0]
+        val plainKanji = plain.replace(Regex("[^\\p{InCJKUnifiedIdeographs}]"), "")
+        val furigana = keywordPair.second.split(",")[0]
+        var stylized = sentence
 
-        val plain = keywordPair.first
-        val furigana = keywordPair.second
-        val simpleKanji = furigana.substringBeforeLast("]") + "]"
+        // 1. Try to bold kanji[furigana] pattern in sentence (e.g. 噴水[ふんすい])
+        val furiganaPattern = Regex("${Regex.escape(plainKanji)}\\[[^\\]]+\\]")
+        stylized = furiganaPattern.replace(sentence) { matchResult ->
+            "<$highlightingSymbol>${matchResult.value}</$highlightingSymbol>"
+        }
+        if (stylized != sentence)
+            return  stylized
 
-        // Only add distinct patterns
-        val patterns = mutableListOf<String>()
-        if (furigana.isNotBlank() && furigana != plain) patterns.add(Regex.escape(furigana))
-        if (simpleKanji.isNotBlank() && simpleKanji != plain) patterns.add(Regex.escape(simpleKanji))
-        if (plain.isNotBlank()) patterns.add(Regex.escape(plain))
-
-        // Combine all patterns into one regex, longest first to avoid nested matches
-        val combinedPattern = patterns.sortedByDescending { it.length }.joinToString("|")
-        if (combinedPattern.isNotBlank()) {
-            val regex = Regex(combinedPattern)
-            styled = regex.replace(styled) { matchResult ->
-                "<b>${matchResult.value}</b>"
+        // 2. Try to bold exact furigana string (from field)
+        if (furigana.isNotBlank() && furigana != plain) {
+            val furiganaPattern = Regex(Regex.escape(furigana))
+            stylized = furiganaPattern.replace(sentence) { matchResult ->
+                "<$highlightingSymbol>${matchResult.value}</$highlightingSymbol>"
             }
+            if (stylized != sentence)
+                return  stylized
         }
 
-        return styled
+        // 3. Try to bold just the plain kanji
+        if (plain.isNotBlank()) {
+            val plainPattern = Regex(Regex.escape(plain))
+            stylized = plainPattern.replace(sentence) { matchResult ->
+                    "<$highlightingSymbol>${matchResult.value}</$highlightingSymbol>"
+            }
+            if (stylized != sentence)
+                return  stylized
+        }
+
+        // 4. Try to bold just the plain kanji, but if it has furigana attached, bold that whole block
+        if (plainKanji.isNotBlank()) {
+            // Try to match kanji + [furigana] in one go
+            val kanjiWithFuriganaPattern = Regex("${Regex.escape(plainKanji)}\\[[^\\]]+\\]")
+            stylized = kanjiWithFuriganaPattern.replace(sentence) { matchResult ->
+                "<$highlightingSymbol>${matchResult.value}</$highlightingSymbol>"
+            }
+            if (stylized != sentence)
+                return stylized
+
+            // If no match, just bold the kanji
+            val plainPattern = Regex(Regex.escape(plainKanji))
+            stylized = plainPattern.replace(sentence) { matchResult ->
+                "<$highlightingSymbol>${matchResult.value}</$highlightingSymbol>"
+            }
+            if (stylized != sentence)
+                return stylized
+        }
+
+        // No match, return sentence as is
+        return stylized
     }
 
     fun getContext(id: String): Pair<String, String>? {
