@@ -58,6 +58,7 @@ import java.io.File
 import java.net.HttpURLConnection
 import java.net.URL
 import java.util.UUID
+import androidx.core.content.edit
 
 object ImmersiveKit {
 
@@ -79,6 +80,30 @@ object ImmersiveKit {
         val sourceField: String = "",
         val prevSentenceField: String = "",
         val nextSentenceField: String = "")
+
+    fun generateCacheKey(keyword: String?, settings: ImmersiveKitSettings): String {
+        return listOf(
+            keyword,
+            settings.exactSearch,
+            settings.highlighting,
+            settings.drama,
+            settings.anime,
+            settings.games,
+            settings.keywordField,
+        ).joinToString(separator = "|")
+    }
+
+    fun saveToCache(context: Context, key: String, json: String) {
+        val cachePrefs = context.getSharedPreferences("immersive_kit_api_cache", Context.MODE_PRIVATE)
+        cachePrefs.edit {
+            putString(key, json)
+        }
+    }
+
+    fun getFromCache(context: Context, key: String): String? {
+        val cachePrefs = context.getSharedPreferences("immersive_kit_api_cache", Context.MODE_PRIVATE)
+        return cachePrefs.getString(key, null)
+    }
 
     fun showImmersiveKit(context: Context, selectedCard : Card?) {
         Timber.i("ImmersiveKit:: Showing immersive kit settings")
@@ -431,95 +456,31 @@ object ImmersiveKit {
         return newArray
     }
 
-    fun keywordStyling(
-        sentence: String,
-        keywords: List<String>,
-        highlight: Boolean,
-    ): String {
-        if (!highlight || keywords.size < 2) return sentence
+    fun styleKeyword(sentence: String, keywordPair: Pair<String, String>, highlighting: Boolean): String {
+        if (!highlighting || (keywordPair.first.isBlank() && keywordPair.second.isBlank())) return sentence
 
-        val plainKeyword = keywords[0]      // e.g., "流れる"
-        val furiganaKeyword = keywords[1]   // e.g., "流[なが]れる"
+        var styled = sentence
 
-        // Extract kanji and reading from furigana keyword
-        val furiganaRegex = Regex("([一-龯々ヶ]+)\\[([^\\]]+)]")
-        val match = furiganaRegex.find(furiganaKeyword)
+        val plain = keywordPair.first
+        val furigana = keywordPair.second
+        val simpleKanji = furigana.substringBeforeLast("]") + "]"
 
-        if (match != null) {
-            val kanji = match.groupValues[1]        // e.g., "流"
-            val reading = match.groupValues[2]      // e.g., "なが"
+        // Only add distinct patterns
+        val patterns = mutableListOf<String>()
+        if (furigana.isNotBlank() && furigana != plain) patterns.add(Regex.escape(furigana))
+        if (simpleKanji.isNotBlank() && simpleKanji != plain) patterns.add(Regex.escape(simpleKanji))
+        if (plain.isNotBlank()) patterns.add(Regex.escape(plain))
 
-            // Get the remaining part after the kanji (e.g., "れる" from "流れる")
-            val remainingPart = plainKeyword.removePrefix(kanji)  // e.g., "れる"
-
-            // Strategy 1: Look for kanji[reading] + remaining part + any conjugation
-            val kanjiWithFuriganaPattern = Regex("${Regex.escape(kanji)}\\[${Regex.escape(reading)}]${Regex.escape(remainingPart)}[ぁ-んゃ-ょゅ-ょっー]*")
-            kanjiWithFuriganaPattern.find(sentence)?.let {
-                return kanjiWithFuriganaPattern.replace(sentence) { "<b>${it.value}</b>" }
-            }
-
-            // Strategy 2: Look for kanji[any_reading] + remaining part + conjugation
-            val kanjiWithAnyFuriganaPattern = Regex("${Regex.escape(kanji)}\\[[^\\]]+]${Regex.escape(remainingPart)}[ぁ-んゃ-ょゅ-ょっー]*")
-            kanjiWithAnyFuriganaPattern.find(sentence)?.let {
-                return kanjiWithAnyFuriganaPattern.replace(sentence) { "<b>${it.value}</b>" }
-            }
-
-            // Strategy 3: Look for just kanji + remaining part + conjugation (no furigana)
-            val kanjiWithoutFuriganaPattern = Regex("${Regex.escape(kanji)}${Regex.escape(remainingPart)}[ぁ-んゃ-ょゅ-ょっー]*")
-            kanjiWithoutFuriganaPattern.find(sentence)?.let {
-                return kanjiWithoutFuriganaPattern.replace(sentence) { "<b>${it.value}</b>" }
-            }
-
-            // Strategy 4: Look for reading + remaining part + conjugation (all hiragana)
-            val readingWithRemainingPattern = Regex("${Regex.escape(reading)}${Regex.escape(remainingPart)}[ぁ-んゃ-ょゅ-ょっー]*")
-            readingWithRemainingPattern.find(sentence)?.let {
-                return readingWithRemainingPattern.replace(sentence) { "<b>${it.value}</b>" }
-            }
-
-            // Strategy 5: Exact match with furigana keyword (including exact conjugation)
-            val exactFuriganaPattern = Regex(Regex.escape(furiganaKeyword))
-            exactFuriganaPattern.find(sentence)?.let {
-                return exactFuriganaPattern.replace(sentence) { "<b>${it.value}</b>" }
+        // Combine all patterns into one regex, longest first to avoid nested matches
+        val combinedPattern = patterns.sortedByDescending { it.length }.joinToString("|")
+        if (combinedPattern.isNotBlank()) {
+            val regex = Regex(combinedPattern)
+            styled = regex.replace(styled) { matchResult ->
+                "<b>${matchResult.value}</b>"
             }
         }
 
-        // Strategy 6: Try to match plain keyword with conjugations
-        val plainWithConjugationPattern = Regex("${Regex.escape(plainKeyword)}[ぁ-んゃ-ょゅ-ょっー]*")
-        plainWithConjugationPattern.find(sentence)?.let {
-            return plainWithConjugationPattern.replace(sentence) { "<b>${it.value}</b>" }
-        }
-
-        // Strategy 7: Exact match with plain keyword (final fallback)
-        val exactPlainPattern = Regex(Regex.escape(plainKeyword))
-        exactPlainPattern.find(sentence)?.let {
-            return exactPlainPattern.replace(sentence) { "<b>${it.value}</b>" }
-        }
-
-        // Only use these fallback strategies if nothing else matches
-        if (match != null) {
-            val kanji = match.groupValues[1]
-            val reading = match.groupValues[2]
-
-            // Fallback 1: highlight just the kanji with furigana (no conjugation)
-            val kanjiWithFuriganaOnly = Regex("${Regex.escape(kanji)}\\[${Regex.escape(reading)}]")
-            kanjiWithFuriganaOnly.find(sentence)?.let {
-                return kanjiWithFuriganaOnly.replace(sentence) { "<b>${it.value}</b>" }
-            }
-
-            // Fallback 2: highlight just the kanji with any furigana
-            val kanjiWithAnyFuriganaOnly = Regex("${Regex.escape(kanji)}\\[[^\\]]+]")
-            kanjiWithAnyFuriganaOnly.find(sentence)?.let {
-                return kanjiWithAnyFuriganaOnly.replace(sentence) { "<b>${it.value}</b>" }
-            }
-
-            // Fallback 3: highlight just the kanji (no furigana)
-            val kanjiOnly = Regex("${Regex.escape(kanji)}")
-            kanjiOnly.find(sentence)?.let {
-                return kanjiOnly.replace(sentence) { "<b>${it.value}</b>" }
-            }
-        }
-
-        return sentence
+        return styled
     }
 
     fun getContext(id: String): Pair<String, String>? {
@@ -539,19 +500,103 @@ object ImmersiveKit {
 
                 val prev = if (pretext != null && pretext.length() > 0) {
                     pretext.getJSONObject(pretext.length() - 1).optString("sentence_with_furigana", "")
-                } else null
+                } else ""
 
                 val next = if (posttext != null && posttext.length() > 0) {
                     posttext.getJSONObject(0).optString("sentence_with_furigana", "")
-                } else null
+                } else ""
 
-                return Pair(prev!!, next!!)
+                return Pair(prev, next)
             } else {
                 println("HTTP error: $responseCode")
                 return null
             }
         }
     }
+
+    suspend fun processAndDisplayExample(
+        context: Context,
+        selectedCard: Card,
+        exampleData: JSONArray,
+        note: Note,
+        fieldNames: Array<String>,
+        settings: ImmersiveKitSettings,
+        keyword: String?,
+        keywordFurigana: String?,
+        toast: Toast
+    ) {
+        val sentenceFieldIdx = fieldNames.indexOf(settings.sentenceField)
+        val examples = removeExampleBySentence(
+            exampleData,
+            note.fields[sentenceFieldIdx]
+        )
+
+        if (examples.length() > 0) {
+            val allowedSources = mutableSetOf<String>()
+            if (settings.anime) allowedSources.add("anime")
+            if (settings.drama) allowedSources.add("drama")
+            if (settings.games) allowedSources.add("games")
+            val filteredExamples = mutableListOf<JSONObject>()
+            for (i in 0 until examples.length()) {
+                val item = examples.optJSONObject(i)
+                val sourceType = item?.optString("category")
+                if (sourceType in allowedSources) {
+                    filteredExamples.add(item)
+                }
+            }
+
+            // Pick example: from filteredExamples if not empty, else from original examples
+            val example =
+                if (filteredExamples.isNotEmpty()) {
+                    filteredExamples.random()
+                } else {
+                    examples.getJSONObject((0 until examples.length()).random())
+                }
+
+            val prevAndNext = getContext(example.optString("id", ""))
+            val sentenceWithFurigana =
+                styleKeyword(
+                    example.optString("sentence_with_furigana", ""),
+                    Pair(keyword ?: "", keywordFurigana ?: ""),
+                    settings.highlighting
+                )
+            val translation = example.optString("translation", "")
+            val source = example.optString("deck_name", "")
+            val audioUrl = example.optString("sound_url", "")
+            val imageUrl =
+                "https://api.immersionkit.com/download_sentence_image?id=${
+                    example.optString(
+                        "id",
+                        "",
+                    )
+                }"
+
+            withContext(Dispatchers.Main) {
+                if (note.fields[sentenceFieldIdx] != sentenceWithFurigana) {
+                    updateNoteFields(
+                        context,
+                        selectedCard,
+                        sentenceWithFurigana,
+                        translation,
+                        imageUrl,
+                        audioUrl,
+                        source,
+                        prevAndNext?.first ?: "",
+                        prevAndNext?.second ?: "",
+                        settings,
+                        toast
+                    )
+                } else {
+                    showThemedToast(context, "", true)
+                }
+            }
+        } else {
+            withContext(Dispatchers.Main) {
+                showThemedToast(context, "No examples found", true)
+            }
+        }
+    }
+
     @SuppressLint("DirectToastMakeTextUsage")
     private fun makeApiCall(
         context: Context,
@@ -560,6 +605,7 @@ object ImmersiveKit {
     ) {
         val toast = Toast.makeText(context,"Fetching sentence...", Toast.LENGTH_SHORT)
         toast.show()
+
         // Use coroutines for async API call
         CoroutineScope(Dispatchers.IO).launch {
             try {
@@ -587,95 +633,41 @@ object ImmersiveKit {
                     }
 
                 // Make API call
-                val response = makeHttpRequest(apiUrl)
+                var response = makeHttpRequest(apiUrl)
+                val cacheKey = generateCacheKey(keyword, settings)
+                val cachedJson = getFromCache(context, cacheKey)
 
                 if (response != null) {
                     val jsonResponse = JSONObject(response)
                     val data = jsonResponse.optJSONArray("data")
 
                     if (data != null && data.length() > 0) {
-                        val firstResult = data.getJSONObject(0)
-                        val examples2 = firstResult.optJSONArray("examples")
-                        val examples = removeExampleBySentence(
-                            examples2!!,
-                            note!!.fields[fieldNames!!.indexOf(settings.sentenceField)]
-                        )
-
-                        if (examples.length() > 0) {
-                            val allowedSources = mutableSetOf<String>()
-                            if (settings.anime) allowedSources.add("anime")
-                            if (settings.drama) allowedSources.add("drama")
-                            if (settings.games) allowedSources.add("games")
-                            val filteredExamples = mutableListOf<JSONObject>()
-                            for (i in 0 until examples.length()) {
-                                val item = examples.optJSONObject(i)
-                                val sourceType = item?.optString("category")
-                                if (sourceType in allowedSources) {
-                                    filteredExamples.add(item)
-                                }
-                            }
-
-                            // Pick example: from filteredExamples if not empty, else from original examples
-                            val example =
-                                if (filteredExamples.isNotEmpty()) {
-                                    filteredExamples.random()
-                                } else {
-                                    examples.getJSONObject((0 until examples.length()).random())
-                                }
-
-                            val prevAndNext = getContext(example.optString("id", ""))!!
-                            // Extract data
-                            val sentenceWithFurigana =
-                                keywordStyling(
-                                    example.optString("sentence_with_furigana", ""),
-                                    listOf(keyword!!, keywordFurigana?: ""), settings.highlighting
-                                )
-                            val translation = example.optString("translation", "")
-                            val prevSentence = example.optString("prev_sentence", "")
-                            val nextSentence = example.optString("next_sentence", "")
-                            val source = example.optString("deck_name", "")
-                            val audioUrl = example.optString("sound_url", "")
-                            val imageUrl =
-                                "https://api.immersionkit.com/download_sentence_image?id=${
-                                    example.optString(
-                                        "id",
-                                        "",
-                                    )
-                                }"
-
-                            // Update UI on main thread
-                            withContext(Dispatchers.Main) {
-                                if (note.fields[fieldNames.indexOf(settings.sentenceField)] != sentenceWithFurigana) {
-                                    updateNoteFields(
-                                        context,
-                                        selectedCard,
-                                        sentenceWithFurigana,
-                                        translation,
-                                        imageUrl,
-                                        audioUrl,
-                                        source,
-                                        prevAndNext.first,
-                                        prevAndNext.second,
-                                        settings,
-                                        toast
-                                    )
-                                } else {
-                                    showThemedToast(context, "", true)
-                                }
-                            }
-                        }   else {
-                            withContext(Dispatchers.Main) {
-                                showThemedToast(context, "No examples found", true)
-                            }
-                        }
-                    } else {
-                        withContext(Dispatchers.Main) {
-                            showThemedToast(context, "No examples found", true)
+                        val examples = data.getJSONObject(0).optJSONArray("examples")
+                        if (examples != null && examples.length() > 0) {
+                            saveToCache(context, cacheKey, examples.toString())
+                            processAndDisplayExample(
+                                context,
+                                selectedCard,
+                                examples,
+                                note!!,
+                                fieldNames!!,
+                                settings,
+                                keyword,
+                                keywordFurigana,
+                                toast
+                            )
+                        } else if (cachedJson != null) {
+                            val examples = JSONArray(cachedJson)
+                            processAndDisplayExample(context, selectedCard, examples, note!!, fieldNames!!, settings, keyword, keywordFurigana, toast)
                         }
                     }
-                } else {
+                } else if (cachedJson != null) {
+                    val examples = JSONArray(cachedJson)
+                    processAndDisplayExample(context, selectedCard, examples, note!!, fieldNames!!, settings, keyword, keywordFurigana, toast)
+                }
+                else {
                     withContext(Dispatchers.Main) {
-                        showThemedToast(context, "No examples found", true)
+                        showThemedToast(context, "No examples found in api or cache", true)
                     }
                 }
             } catch (e: Exception) {
