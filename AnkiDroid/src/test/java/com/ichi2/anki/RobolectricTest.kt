@@ -17,6 +17,7 @@
 package com.ichi2.anki
 
 import android.Manifest
+import android.annotation.SuppressLint
 import android.app.Application
 import android.content.Context
 import android.content.Intent
@@ -32,18 +33,25 @@ import androidx.test.core.app.ApplicationProvider
 import androidx.work.Configuration
 import androidx.work.testing.SynchronousExecutor
 import androidx.work.testing.WorkManagerTestInitHelper
+import anki.collection.OpChanges
 import com.ichi2.anki.CollectionManager.CollectionOpenFailure
+import com.ichi2.anki.RobolectricTest.Companion.advanceRobolectricLooper
+import com.ichi2.anki.RobolectricTest.Companion.advanceRobolectricLooperWithSleep
+import com.ichi2.anki.common.annotations.UseContextParameter
 import com.ichi2.anki.common.time.MockTime
 import com.ichi2.anki.common.time.TimeManager
 import com.ichi2.anki.dialogs.DialogHandler
 import com.ichi2.anki.libanki.Card
 import com.ichi2.anki.libanki.Collection
+import com.ichi2.anki.libanki.Note
 import com.ichi2.anki.libanki.NotetypeJson
 import com.ichi2.anki.libanki.Storage
 import com.ichi2.anki.observability.ChangeManager
+import com.ichi2.anki.observability.undoableOp
 import com.ichi2.anki.preferences.sharedPrefs
 import com.ichi2.compat.customtabs.CustomTabActivityHelper
 import com.ichi2.testutils.AndroidTest
+import com.ichi2.testutils.CollectionManagerTestAdapter
 import com.ichi2.testutils.TaskSchedulerRule
 import com.ichi2.testutils.TestClass
 import com.ichi2.testutils.common.FailOnUnhandledExceptionRule
@@ -52,6 +60,9 @@ import com.ichi2.testutils.filter
 import com.ichi2.utils.InMemorySQLiteOpenHelperFactory
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.test.TestDispatcher
+import kotlinx.coroutines.test.TestScope
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import net.ankiweb.rsdroid.BackendException
 import net.ankiweb.rsdroid.testing.RustBackendLoader
@@ -105,6 +116,9 @@ open class RobolectricTest :
 
     @get:Rule
     val timeoutRule: TimeoutRule = TimeoutRule.seconds(60)
+
+    override val collectionManager: CollectionManagerTestAdapter
+        get() = CollectionManagerTestAdapter
 
     @Before
     @CallSuper
@@ -476,6 +490,15 @@ open class RobolectricTest :
         }
     }
 
+    /** Helper method to update a note */
+    @SuppressLint("CheckResult")
+    @UseContextParameter("TestClass")
+    suspend fun Note.updateOp(block: Note.() -> Unit): Note =
+        this.also { note ->
+            block(note)
+            undoableOp<OpChanges> { col.updateNote(note) }
+        }
+
     private fun maybeSetupBackend() {
         try {
             targetContext
@@ -504,6 +527,16 @@ open class RobolectricTest :
             }
             throw e
         }
+    }
+
+    override fun setupTestDispatcher(dispatcher: TestDispatcher) {
+        super.setupTestDispatcher(dispatcher)
+        ioDispatcher = dispatcher
+    }
+
+    override suspend fun TestScope.runTestInner(testBody: suspend TestScope.() -> Unit) {
+        collectionManager.setTestDispatcher(UnconfinedTestDispatcher(testScheduler))
+        testBody()
     }
 }
 

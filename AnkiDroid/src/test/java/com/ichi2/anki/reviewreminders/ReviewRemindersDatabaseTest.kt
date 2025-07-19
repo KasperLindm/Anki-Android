@@ -19,18 +19,15 @@ package com.ichi2.anki.reviewreminders
 import androidx.core.content.edit
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.ichi2.anki.RobolectricTest
-import com.ichi2.anki.preferences.sharedPrefs
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
 import org.hamcrest.MatcherAssert.assertThat
 import org.hamcrest.Matchers.anEmptyMap
-import org.hamcrest.Matchers.containsInAnyOrder
 import org.hamcrest.Matchers.equalTo
 import org.junit.After
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
-import kotlin.time.Duration.Companion.minutes
 
 @RunWith(AndroidJUnit4::class)
 class ReviewRemindersDatabaseTest : RobolectricTest() {
@@ -38,14 +35,12 @@ class ReviewRemindersDatabaseTest : RobolectricTest() {
 
     private val did1 = 12345L
     private val did2 = 67890L
-    private val did3 = 13579L
 
     private val dummyDeckSpecificRemindersForDeckOne =
         mapOf(
             ReviewReminderId(0) to
                 ReviewReminder.createReviewReminder(
                     ReviewReminderTime(9, 0),
-                    ReviewReminderSnoozeAmount.SetAmount(15.minutes, 2),
                     ReviewReminderCardTriggerThreshold(5),
                     ReviewReminderScope.DeckSpecific(did1),
                     false,
@@ -53,7 +48,6 @@ class ReviewRemindersDatabaseTest : RobolectricTest() {
             ReviewReminderId(1) to
                 ReviewReminder.createReviewReminder(
                     ReviewReminderTime(10, 30),
-                    ReviewReminderSnoozeAmount.Infinite(15.minutes),
                     ReviewReminderCardTriggerThreshold(10),
                     ReviewReminderScope.DeckSpecific(did1),
                 ),
@@ -63,7 +57,6 @@ class ReviewRemindersDatabaseTest : RobolectricTest() {
             ReviewReminderId(2) to
                 ReviewReminder.createReviewReminder(
                     ReviewReminderTime(10, 30),
-                    ReviewReminderSnoozeAmount.SetAmount(15.minutes, 2),
                     ReviewReminderCardTriggerThreshold(10),
                     ReviewReminderScope.DeckSpecific(did2),
                     true,
@@ -71,7 +64,6 @@ class ReviewRemindersDatabaseTest : RobolectricTest() {
             ReviewReminderId(3) to
                 ReviewReminder.createReviewReminder(
                     ReviewReminderTime(12, 30),
-                    ReviewReminderSnoozeAmount.Disabled,
                     ReviewReminderCardTriggerThreshold(20),
                     ReviewReminderScope.DeckSpecific(did2),
                 ),
@@ -81,13 +73,11 @@ class ReviewRemindersDatabaseTest : RobolectricTest() {
             ReviewReminderId(4) to
                 ReviewReminder.createReviewReminder(
                     ReviewReminderTime(9, 0),
-                    ReviewReminderSnoozeAmount.SetAmount(30.minutes, 1),
                     ReviewReminderCardTriggerThreshold(5),
                 ),
             ReviewReminderId(5) to
                 ReviewReminder.createReviewReminder(
                     ReviewReminderTime(10, 30),
-                    ReviewReminderSnoozeAmount.Infinite(60.minutes),
                     ReviewReminderCardTriggerThreshold(10),
                 ),
         )
@@ -95,14 +85,14 @@ class ReviewRemindersDatabaseTest : RobolectricTest() {
     @Before
     override fun setUp() {
         super.setUp()
+        ReviewRemindersDatabase.remindersSharedPrefs.edit { clear() }
         reviewRemindersDatabase = ReviewRemindersDatabase()
     }
 
     @After
     override fun tearDown() {
         super.tearDown()
-        // Reset the database after each test
-        targetContext.sharedPrefs().edit { clear() }
+        ReviewRemindersDatabase.remindersSharedPrefs.edit { clear() }
     }
 
     @Test
@@ -148,71 +138,9 @@ class ReviewRemindersDatabaseTest : RobolectricTest() {
         assertThat(storedReminders, equalTo(dummyAppWideReminders))
     }
 
-    @Test
-    fun `editAllDeckSpecificReminders should update all reminders across decks`() {
-        val reminders1Old =
-            mapOf(
-                ReviewReminderId(0) to
-                    ReviewReminder.createReviewReminder(
-                        ReviewReminderTime(9, 0),
-                        ReviewReminderSnoozeAmount.SetAmount(15.minutes, 1),
-                        ReviewReminderCardTriggerThreshold(5),
-                        ReviewReminderScope.DeckSpecific(did1),
-                    ),
-            )
-        val reminders2Old =
-            mapOf(
-                ReviewReminderId(1) to
-                    ReviewReminder.createReviewReminder(
-                        ReviewReminderTime(10, 30),
-                        ReviewReminderSnoozeAmount.SetAmount(15.minutes, 1),
-                        ReviewReminderCardTriggerThreshold(10),
-                        ReviewReminderScope.DeckSpecific(did2),
-                    ),
-            )
-        val reminders2New =
-            mapOf(
-                ReviewReminderId(2) to
-                    ReviewReminder.createReviewReminder(
-                        ReviewReminderTime(10, 45),
-                        ReviewReminderSnoozeAmount.SetAmount(15.minutes, 1),
-                        ReviewReminderCardTriggerThreshold(10),
-                        ReviewReminderScope.DeckSpecific(did2),
-                    ),
-            )
-        val reminders3New =
-            mapOf(
-                ReviewReminderId(3) to
-                    ReviewReminder.createReviewReminder(
-                        ReviewReminderTime(11, 0),
-                        ReviewReminderSnoozeAmount.SetAmount(15.minutes, 1),
-                        ReviewReminderCardTriggerThreshold(25),
-                        ReviewReminderScope.DeckSpecific(did3),
-                    ),
-            )
-
-        reviewRemindersDatabase.editRemindersForDeck(did1) { reminders1Old }
-        reviewRemindersDatabase.editRemindersForDeck(did2) { reminders2Old }
-
-        reviewRemindersDatabase.editAllDeckSpecificReminders { reminders2New + reminders3New }
-
-        val storedReminders1 = reviewRemindersDatabase.getRemindersForDeck(did1)
-        val storedReminders2 = reviewRemindersDatabase.getRemindersForDeck(did2)
-        val storedReminders3 = reviewRemindersDatabase.getRemindersForDeck(did3)
-        val allStoredReminders = reviewRemindersDatabase.getAllDeckSpecificReminders()
-
-        assertThat(storedReminders1, anEmptyMap())
-        assertThat(storedReminders2, equalTo(reminders2New))
-        assertThat(storedReminders3, equalTo(reminders3New))
-        assertThat(
-            allStoredReminders,
-            equalTo(reminders2New + reminders3New),
-        )
-    }
-
     @Test(expected = SerializationException::class)
     fun `getRemindersForDeck should throw SerializationException if JSON string is corrupted`() {
-        targetContext.sharedPrefs().edit {
+        ReviewRemindersDatabase.remindersSharedPrefs.edit {
             putString(ReviewRemindersDatabase.DECK_SPECIFIC_KEY + did1, "corrupted_and_invalid_json_string")
         }
         reviewRemindersDatabase.getRemindersForDeck(did1)
@@ -221,7 +149,7 @@ class ReviewRemindersDatabaseTest : RobolectricTest() {
     @Test(expected = IllegalArgumentException::class)
     fun `getRemindersForDeck should throw IllegalArgumentException if JSON string is not a ReviewReminder`() {
         val randomObject = Pair("not a map of", "review reminders")
-        targetContext.sharedPrefs().edit {
+        ReviewRemindersDatabase.remindersSharedPrefs.edit {
             putString(ReviewRemindersDatabase.DECK_SPECIFIC_KEY + did1, Json.encodeToString(randomObject))
         }
         reviewRemindersDatabase.getRemindersForDeck(did1)
@@ -229,7 +157,7 @@ class ReviewRemindersDatabaseTest : RobolectricTest() {
 
     @Test(expected = SerializationException::class)
     fun `getAllAppWideReminders should throw SerializationException if JSON string is corrupted`() {
-        targetContext.sharedPrefs().edit {
+        ReviewRemindersDatabase.remindersSharedPrefs.edit {
             putString(ReviewRemindersDatabase.APP_WIDE_KEY, "corrupted_and_invalid_json_string")
         }
         reviewRemindersDatabase.getAllAppWideReminders()
@@ -238,7 +166,7 @@ class ReviewRemindersDatabaseTest : RobolectricTest() {
     @Test(expected = IllegalArgumentException::class)
     fun `getAllAppWideReminders should throw IllegalArgumentException if JSON string is not a ReviewReminder`() {
         val randomObject = Pair("not a map of", "review reminders")
-        targetContext.sharedPrefs().edit {
+        ReviewRemindersDatabase.remindersSharedPrefs.edit {
             putString(ReviewRemindersDatabase.APP_WIDE_KEY, Json.encodeToString(randomObject))
         }
         reviewRemindersDatabase.getAllAppWideReminders()
@@ -246,7 +174,7 @@ class ReviewRemindersDatabaseTest : RobolectricTest() {
 
     @Test(expected = SerializationException::class)
     fun `getAllDeckSpecificReminders should throw SerializationException if JSON string is corrupted`() {
-        targetContext.sharedPrefs().edit {
+        ReviewRemindersDatabase.remindersSharedPrefs.edit {
             putString(ReviewRemindersDatabase.DECK_SPECIFIC_KEY + did1, "corrupted_and_invalid_json_string")
         }
         reviewRemindersDatabase.getAllDeckSpecificReminders()
@@ -255,60 +183,24 @@ class ReviewRemindersDatabaseTest : RobolectricTest() {
     @Test(expected = IllegalArgumentException::class)
     fun `getAllDeckSpecificReminders should throw IllegalArgumentException if JSON string is not a ReviewReminder`() {
         val randomObject = Pair("not a map of", "review reminders")
-        targetContext.sharedPrefs().edit {
+        ReviewRemindersDatabase.remindersSharedPrefs.edit {
             putString(ReviewRemindersDatabase.DECK_SPECIFIC_KEY + did1, Json.encodeToString(randomObject))
         }
         reviewRemindersDatabase.getAllDeckSpecificReminders()
     }
 
     @Test
-    fun `getAllReviewReminderSharedPrefsAsMap should return empty map if no reminders exist`() {
-        val sharedPrefs = reviewRemindersDatabase.getAllReviewReminderSharedPrefsAsMap()
-        assertThat(sharedPrefs, anEmptyMap())
-    }
-
-    @Test
-    fun `getAllReviewReminderSharedPrefsAsMap should return only review reminder shared preferences`() {
-        reviewRemindersDatabase.editRemindersForDeck(did1) { dummyDeckSpecificRemindersForDeckOne }
-        reviewRemindersDatabase.editAllAppWideReminders { dummyAppWideReminders }
-
-        targetContext.sharedPrefs().edit {
-            putString("unrelated shared preference", "that should not be returned")
+    fun `backup and restoration of review reminders should work correctly`() {
+        with(reviewRemindersDatabase) {
+            editRemindersForDeck(did1) { dummyDeckSpecificRemindersForDeckOne }
+            editAllAppWideReminders { dummyAppWideReminders }
+            val backupReminders = getAllReviewReminderSharedPrefsAsMap()
+            editRemindersForDeck(did1) { dummyDeckSpecificRemindersForDeckTwo }
+            editRemindersForDeck(did2) { dummyDeckSpecificRemindersForDeckTwo }
+            deleteAllReviewReminderSharedPrefs()
+            writeAllReviewReminderSharedPrefsFromMap(backupReminders)
+            val restoredReminders = getAllReviewReminderSharedPrefsAsMap()
+            assertThat(restoredReminders, equalTo(backupReminders))
         }
-
-        val reviewReminderSharedPrefs =
-            reviewRemindersDatabase
-                .getAllReviewReminderSharedPrefsAsMap()
-                .values
-                .toList()
-                .map { Json.decodeFromString<Map<ReviewReminderId, ReviewReminder>>(it as String) }
-
-        assertThat(reviewReminderSharedPrefs, containsInAnyOrder(dummyDeckSpecificRemindersForDeckOne, dummyAppWideReminders))
-    }
-
-    @Test
-    fun `deleteAllReviewReminderSharedPrefs should do nothing if there are no review reminder shared preferences`() {
-        targetContext.sharedPrefs().edit {
-            putString("unrelated shared preference", "that should not be deleted")
-        }
-        val sharedPrefsBefore = targetContext.sharedPrefs().all
-        reviewRemindersDatabase.deleteAllReviewReminderSharedPrefs()
-        val sharedPrefsAfter = targetContext.sharedPrefs().all
-        assertThat(sharedPrefsBefore, equalTo(sharedPrefsAfter))
-    }
-
-    @Test
-    fun `deleteAllReviewReminderSharedPrefs should delete all review reminder shared preferences`() {
-        targetContext.sharedPrefs().edit {
-            putString("unrelated shared preference", "that should not be deleted")
-        }
-        val sharedPrefsBefore = targetContext.sharedPrefs().all
-
-        reviewRemindersDatabase.editRemindersForDeck(did1) { dummyDeckSpecificRemindersForDeckOne }
-        reviewRemindersDatabase.editAllAppWideReminders { dummyAppWideReminders }
-        reviewRemindersDatabase.deleteAllReviewReminderSharedPrefs()
-
-        val sharedPrefsAfter = targetContext.sharedPrefs().all
-        assertThat(sharedPrefsBefore, equalTo(sharedPrefsAfter))
     }
 }

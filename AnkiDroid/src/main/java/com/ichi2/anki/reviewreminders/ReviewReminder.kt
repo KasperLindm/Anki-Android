@@ -28,15 +28,15 @@ import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
 import java.util.Locale
-import kotlin.time.Duration
 import kotlin.time.Duration.Companion.hours
 import kotlin.time.Duration.Companion.minutes
 
 @JvmInline
 @Serializable
+@Parcelize
 value class ReviewReminderId(
     val id: Int,
-) {
+) : Parcelable {
     companion object {
         /**
          * Get and return the next free reminder ID which can be associated with a new review reminder.
@@ -46,7 +46,7 @@ value class ReviewReminderId(
         fun getAndIncrementNextFreeReminderId(): ReviewReminderId {
             val nextFreeId = Prefs.reviewReminderNextFreeId
             Prefs.reviewReminderNextFreeId = nextFreeId + 1
-            Timber.d("Generated next free review reminder ID: $nextFreeId")
+            Timber.d("Generated next free review reminder ID: %s", nextFreeId)
             return ReviewReminderId(nextFreeId)
         }
     }
@@ -56,10 +56,11 @@ value class ReviewReminderId(
  * The time of day at which reminders will send a notification.
  */
 @Serializable
+@Parcelize
 data class ReviewReminderTime(
     val hour: Int,
     val minute: Int,
-) {
+) : Parcelable {
     init {
         require(hour in 0..23) { "Hour must be between 0 and 23" }
         require(minute in 0..59) { "Minute must be between 0 and 59" }
@@ -78,56 +79,14 @@ data class ReviewReminderTime(
 }
 
 /**
- * Types of snooze behaviour that can be present on notifications sent by review reminders.
- * If a reminder is snoozed repeatedly until it overlaps with another notification from the reminder firing the next day,
- * the snoozing instance of the reminder from the previous day will be cancelled.
- */
-@Serializable
-sealed class ReviewReminderSnoozeAmount {
-    /**
-     * The snooze button will never appear on notifications set by this review reminder.
-     */
-    @Serializable
-    data object Disabled : ReviewReminderSnoozeAmount()
-
-    /**
-     * The snooze button will always be available on notifications sent by this review reminder.
-     */
-    @Serializable
-    data class Infinite(
-        val interval: Duration,
-    ) : ReviewReminderSnoozeAmount() {
-        init {
-            require(interval >= 1.minutes) { "Snooze time interval must be >= 1 minute" }
-            require(interval < 24.hours) { "Snooze time interval must be < 24 hours" }
-        }
-    }
-
-    /**
-     * The snooze button can be pressed a maximum amount of times on notifications sent by this review reminder.
-     * After it has been pressed that many times, the button will no longer appear.
-     */
-    @Serializable
-    data class SetAmount(
-        val interval: Duration,
-        val maxSnoozes: Int,
-    ) : ReviewReminderSnoozeAmount() {
-        init {
-            require(interval >= 1.minutes) { "Snooze time interval must be >= 1 minute" }
-            require(interval < 24.hours) { "Snooze time interval must be < 24 hours" }
-            require(maxSnoozes >= 1) { "Max snoozes must be >= 1" }
-        }
-    }
-}
-
-/**
  * If, at the time of the reminder, less than this many cards are due, the notification is not triggered.
  */
 @JvmInline
 @Serializable
+@Parcelize
 value class ReviewReminderCardTriggerThreshold(
     val threshold: Int,
-) {
+) : Parcelable {
     init {
         require(threshold >= 0) { "Card trigger threshold must be >= 0" }
     }
@@ -166,7 +125,13 @@ sealed class ReviewReminderScope : Parcelable {
          * Caches the resultant deck name to minimize calls to the collection.
          * Should not be called if [did] is no longer a valid deck ID. If [did] is invalid, this method will return "[no deck]".
          */
-        suspend fun getDeckName(): String = cachedDeckName ?: withCol { decks.name(did) }.also { cachedDeckName = it }
+        suspend fun getDeckName(): String {
+            cachedDeckName?.let { return it }
+            val retrievedDeckName = withCol { decks.name(did) }
+            Timber.d("Retrieved deck name for review reminder: %s", retrievedDeckName)
+            cachedDeckName = retrievedDeckName
+            return retrievedDeckName
+        }
     }
 }
 
@@ -199,21 +164,20 @@ sealed class ReviewReminderScope : Parcelable {
  *
  * @param id Unique, auto-incremented ID of the review reminder.
  * @param time See [ReviewReminderTime].
- * @param snoozeAmount See [ReviewReminderSnoozeAmount].
  * @param cardTriggerThreshold See [ReviewReminderCardTriggerThreshold].
  * @param scope See [ReviewReminderScope].
  * @param enabled Whether the review reminder's notifications are active or disabled.
  */
 @Serializable
+@Parcelize
 @ConsistentCopyVisibility
 data class ReviewReminder private constructor(
     val id: ReviewReminderId,
     val time: ReviewReminderTime,
-    val snoozeAmount: ReviewReminderSnoozeAmount,
     val cardTriggerThreshold: ReviewReminderCardTriggerThreshold,
     val scope: ReviewReminderScope,
     var enabled: Boolean,
-) {
+) : Parcelable {
     companion object {
         /**
          * Create a new review reminder. This will allocate a new ID for the reminder.
@@ -222,14 +186,12 @@ data class ReviewReminder private constructor(
          */
         fun createReviewReminder(
             time: ReviewReminderTime,
-            snoozeAmount: ReviewReminderSnoozeAmount,
             cardTriggerThreshold: ReviewReminderCardTriggerThreshold,
             scope: ReviewReminderScope = ReviewReminderScope.Global,
             enabled: Boolean = true,
         ) = ReviewReminder(
             id = ReviewReminderId.getAndIncrementNextFreeReminderId(),
             time,
-            snoozeAmount,
             cardTriggerThreshold,
             scope,
             enabled,

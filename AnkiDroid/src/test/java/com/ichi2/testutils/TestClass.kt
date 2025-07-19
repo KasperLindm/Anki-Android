@@ -17,11 +17,6 @@
 package com.ichi2.testutils
 
 import android.annotation.SuppressLint
-import androidx.appcompat.app.AppCompatDelegate
-import anki.collection.OpChanges
-import com.ichi2.anki.CollectionManager
-import com.ichi2.anki.ioDispatcher
-import com.ichi2.anki.isCollectionEmpty
 import com.ichi2.anki.libanki.Card
 import com.ichi2.anki.libanki.CardType
 import com.ichi2.anki.libanki.Collection
@@ -33,11 +28,11 @@ import com.ichi2.anki.libanki.NotetypeJson
 import com.ichi2.anki.libanki.Notetypes
 import com.ichi2.anki.libanki.QueueType
 import com.ichi2.anki.libanki.exception.ConfirmModSchemaException
-import com.ichi2.anki.observability.undoableOp
-import com.ichi2.testutils.ext.addNote
-import com.ichi2.utils.LanguageUtil
+import com.ichi2.anki.libanki.testutils.TestCollectionManager
+import com.ichi2.anki.libanki.testutils.ext.addNote
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.TestDispatcher
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.setMain
@@ -49,10 +44,13 @@ import kotlin.time.Duration.Companion.milliseconds
 
 /**
  * marker interface for classes which contain tests and access the Anki collection
- * @see AndroidTest
+ *
+ * Android (AnkiDroid/Robolectric) is not required for these tests to run
  */
 interface TestClass {
     val col: Collection
+
+    val collectionManager: TestCollectionManager
 
     fun addBasicNote(
         front: String = "Front",
@@ -107,17 +105,6 @@ interface TestClass {
         check(col.addNote(n) != 0) { "Could not add note: {${fields.joinToString(separator = ", ")}}" }
         return n
     }
-
-    suspend fun addBasicNoteWithOp(
-        fields: List<String> = listOf("foo", "bar"),
-        noteType: NotetypeJson = col.notetypes.byName("Basic")!!,
-    ): Note =
-        col.newNote(noteType).also { note ->
-            for ((i, field) in fields.withIndex()) {
-                note.setField(i, field)
-            }
-            undoableOp<OpChanges> { col.addNote(note, Consts.DEFAULT_DECK_ID) }
-        }
 
     /**
      * Create a new note type in the collection.
@@ -192,7 +179,7 @@ interface TestClass {
         return try {
             col.decks.newFiltered(name).also { did ->
                 if (search == null) return@also
-                val deck = col.decks.get(did)!!
+                val deck = col.decks.getLegacy(did)!!
                 deck.getJSONArray("terms").getJSONArray(0).put(0, search)
                 col.decks.save(deck)
                 col.sched.rebuildDyn(did)
@@ -202,23 +189,9 @@ interface TestClass {
         }
     }
 
-    /** Ensures [isCollectionEmpty] returns `false` */
+    /** Ensures `DeckUtils.isCollectionEmpty` returns `false` */
     fun ensureNonEmptyCollection() {
         addNotes(1)
-    }
-
-    /**
-     * Closes and reopens the backend using the provided [language], typically for
-     * [CollectionManager.TR] calls
-     *
-     * This does not set the [application locales][AppCompatDelegate.setApplicationLocales]
-     *
-     * @param language tag in the form: `de` or `zh-CN`
-     */
-    suspend fun Collection.reopenWithLanguage(language: String) {
-        LanguageUtil.setDefaultBackendLanguages(language)
-        CollectionManager.discardBackend()
-        CollectionManager.getColUnsafe()
     }
 
     fun selectDefaultDeck() {
@@ -260,14 +233,6 @@ interface TestClass {
         col.updateNote(this)
         return this
     }
-
-    /** Helper method to update a note */
-    @SuppressLint("CheckResult")
-    suspend fun Note.updateOp(block: Note.() -> Unit): Note =
-        this.also { note ->
-            block(note)
-            undoableOp<OpChanges> { col.updateNote(note) }
-        }
 
     /** Helper method to all cards of a note */
     fun Note.updateCards(update: Card.() -> Unit): Note {
@@ -331,6 +296,9 @@ interface TestClass {
         col.updateNote(this)
     }
 
+    fun setupTestDispatcher(dispatcher: TestDispatcher) {
+    }
+
     /** * A wrapper around the standard [kotlinx.coroutines.test.runTest] that
      * takes care of updating the dispatcher used by CollectionManager as well.
      * * An argument could be made for using [StandardTestDispatcher] and
@@ -355,13 +323,17 @@ interface TestClass {
     ) {
         val dispatcher = UnconfinedTestDispatcher()
         Dispatchers.setMain(dispatcher)
-        ioDispatcher = dispatcher
+        setupTestDispatcher(dispatcher)
         repeat(times) {
             if (times != 1) Timber.d("------ Executing test $it/$times ------")
             kotlinx.coroutines.test.runTest(context, dispatchTimeoutMs.milliseconds) {
-                CollectionManager.setTestDispatcher(UnconfinedTestDispatcher(testScheduler))
-                testBody()
+                runTestInner(testBody)
             }
         }
+    }
+
+    /** Runs [testBody], supporting [TestScope]-specific setup & teardown */
+    suspend fun TestScope.runTestInner(testBody: suspend TestScope.() -> Unit) {
+        testBody()
     }
 }

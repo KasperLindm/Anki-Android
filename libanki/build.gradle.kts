@@ -35,6 +35,7 @@ android {
 }
 
 apply(from = "../lint.gradle")
+apply(from = "../jacocoSupport.gradle")
 
 dependencies {
     // Project dependencies
@@ -72,6 +73,8 @@ dependencies {
     testImplementation(libs.junit.vintage.engine)
     testImplementation(libs.junit.jupiter)
     testImplementation(libs.json)
+
+    testImplementation(project(":libanki:testutils"))
 
     // project lint checks
     // PERF: some rules do not need to be applied... but the full run was 3s

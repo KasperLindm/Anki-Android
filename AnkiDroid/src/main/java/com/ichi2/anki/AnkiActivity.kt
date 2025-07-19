@@ -211,6 +211,15 @@ open class AnkiActivity :
         supportActionBar?.title = title
     }
 
+    /**
+     * Sets the title of the toolbar (support action bar) for the activity.
+     *
+     * @param title The new title to be set for the toolbar.
+     */
+    open fun setToolbarTitle(
+        @StringRes titleRes: Int,
+    ) = setToolbarTitle(getString(titleRes))
+
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         if (item.itemId == android.R.id.home) {
             Timber.i("Home button pressed")
@@ -432,6 +441,7 @@ open class AnkiActivity :
 
     /** The action to take when there was an error loading the collection  */
     fun onCollectionLoadError() {
+        Timber.w("onCollectionLoadError")
         val deckPicker = Intent(this, DeckPicker::class.java)
         deckPicker.putExtra("collectionLoadError", true) // don't currently do anything with this
         deckPicker.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_NEW_TASK)
