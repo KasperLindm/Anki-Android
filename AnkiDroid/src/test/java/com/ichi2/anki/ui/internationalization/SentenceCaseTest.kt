@@ -33,6 +33,7 @@ import org.robolectric.annotation.Config
 class SentenceCaseTest : RobolectricTest() {
     @Test
     fun `English is converted to sentence case`() {
+        ensureCollectionLoadIsSynchronous()
         with(super.startRegularActivity<IntroductionActivity>()) {
             assertThat(TR.browsingToggleSuspend().toSentenceCase(this, R.string.sentence_toggle_suspend), equalTo("Toggle suspend"))
             assertThat(TR.browsingToggleBury().toSentenceCase(this, R.string.sentence_toggle_bury), equalTo("Toggle bury"))
@@ -41,6 +42,7 @@ class SentenceCaseTest : RobolectricTest() {
             assertThat(TR.emptyCardsWindowTitle().toSentenceCase(this, R.string.sentence_empty_cards), equalTo("Empty cards"))
             assertThat(TR.mediaCheckEmptyTrash().toSentenceCase(this, R.string.sentence_empty_trash), equalTo("Empty trash"))
             assertThat(TR.mediaCheckRestoreTrash().toSentenceCase(this, R.string.sentence_restore_deleted), equalTo("Restore deleted"))
+            assertThat(TR.actionsGradeNow().toSentenceCase(this, R.string.sentence_grade_now), equalTo("Grade now"))
 
             assertThat("syncMediaLogTitle", TR.syncMediaLogTitle(), equalTo("Media Sync Log"))
             assertThat(

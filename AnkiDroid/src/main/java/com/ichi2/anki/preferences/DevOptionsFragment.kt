@@ -31,7 +31,6 @@ import com.ichi2.anki.launchCatchingTask
 import com.ichi2.anki.settings.Prefs
 import com.ichi2.anki.showThemedToast
 import com.ichi2.anki.snackbar.showSnackbar
-import com.ichi2.anki.utils.ext.sharedPrefs
 import com.ichi2.anki.withProgress
 import com.ichi2.preferences.IncrementerNumberRangePreferenceCompat
 import com.ichi2.utils.show
@@ -196,7 +195,7 @@ class DevOptionsFragment : SettingsFragment() {
                     withCol {
                         val deck = decks.addNormalDeckWithName(deckName(i))
                         addNote(
-                            newNote().apply { setField(0, "$i") },
+                            newNote(notetypes.current()).apply { setField(0, "$i") },
                             deck.id,
                         )
                     }

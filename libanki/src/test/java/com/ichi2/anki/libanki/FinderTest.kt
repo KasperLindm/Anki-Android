@@ -15,14 +15,13 @@
  */
 package com.ichi2.anki.libanki
 
-import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.ichi2.anki.common.time.TimeManager
 import com.ichi2.anki.libanki.QueueType.Suspended
-import com.ichi2.anki.libanki.exception.ConfirmModSchemaException
 import com.ichi2.anki.libanki.sched.Ease
 import com.ichi2.anki.libanki.sched.Scheduler
+import com.ichi2.anki.libanki.testutils.InMemoryAnkiTest
 import com.ichi2.anki.libanki.testutils.ext.addNote
-import com.ichi2.testutils.JvmTest
+import com.ichi2.anki.libanki.testutils.ext.newNote
 import org.hamcrest.CoreMatchers.equalTo
 import org.hamcrest.MatcherAssert.assertThat
 import org.hamcrest.Matchers.contains
@@ -33,18 +32,11 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
-import org.junit.runner.RunWith
-import org.robolectric.annotation.Config
 import timber.log.Timber
 import java.util.Calendar
 
-@RunWith(AndroidJUnit4::class)
-class FinderTest : JvmTest() {
+class FinderTest : InMemoryAnkiTest() {
     @Test
-    @Config(qualifiers = "en")
-    @Throws(
-        ConfirmModSchemaException::class,
-    )
     fun searchForBuriedReturnsManuallyAndSiblingBuried() {
         val searchQuery = "is:buried"
         enableBurySiblings()
@@ -420,24 +412,24 @@ class FinderTest : JvmTest() {
         col.addNote(note2)
         val nids = listOf(note.id, note2.id)
         // should do nothing
-        assertEquals(0, col.findReplace(nids, "abc", "123").count)
+        assertEquals(0, col.findAndReplace(nids, "abc", "123").count)
         // global replace
-        assertEquals(2, col.findReplace(nids, "foo", "qux").count)
+        assertEquals(2, col.findAndReplace(nids, "foo", "qux").count)
         note.load()
         assertEquals("qux", note.getItem("Front"))
         note2.load()
         assertEquals("qux", note2.getItem("Back"))
         // single field replace
-        assertEquals(1, col.findReplace(nids, "qux", "foo", field = "Front").count)
+        assertEquals(1, col.findAndReplace(nids, "qux", "foo", field = "Front").count)
         note.load()
         assertEquals("foo", note.getItem("Front"))
         note2.load()
         assertEquals("qux", note2.getItem("Back"))
         // regex replace
-        assertEquals(0, col.findReplace(nids, "B.r", "reg").count)
+        assertEquals(0, col.findAndReplace(nids, "B.r", "reg").count)
         note.load()
         assertNotEquals("reg", note.getItem("Back"))
-        assertEquals(1, col.findReplace(nids, "B.r", "reg", true).count)
+        assertEquals(1, col.findAndReplace(nids, "B.r", "reg", true).count)
         note.load()
         assertEquals(note.getItem("Back"), "reg")
     }

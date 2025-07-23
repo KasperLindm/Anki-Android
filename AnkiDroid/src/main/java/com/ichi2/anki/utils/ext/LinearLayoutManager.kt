@@ -14,22 +14,24 @@
  *  this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.ichi2.testutils.ext
+package com.ichi2.anki.utils.ext
 
-import anki.collection.OpChanges
-import com.ichi2.anki.libanki.Consts
-import com.ichi2.anki.libanki.Note
-import com.ichi2.anki.libanki.NotetypeJson
-import com.ichi2.anki.observability.undoableOp
-import com.ichi2.testutils.TestClass
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 
-suspend fun TestClass.addBasicNoteWithOp(
-    fields: List<String> = listOf("foo", "bar"),
-    noteType: NotetypeJson = col.notetypes.byName("Basic")!!,
-): Note =
-    col.newNote(noteType).also { note ->
-        for ((i, field) in fields.withIndex()) {
-            note.setField(i, field)
+/**
+ * Returns range of adapter positions of the visible items.
+ *
+ * This position does not include adapter changes that were dispatched after the last layout pass.
+ *
+ * Returns [IntRange.EMPTY] if the [LinearLayoutManager] contains no items.
+ */
+val LinearLayoutManager.visibleItemPositions: IntRange
+    get() {
+        val first = findFirstVisibleItemPosition()
+        val last = findLastVisibleItemPosition()
+        if (first == RecyclerView.NO_POSITION || last == RecyclerView.NO_POSITION) {
+            return IntRange.EMPTY
         }
-        undoableOp<OpChanges> { col.addNote(note, Consts.DEFAULT_DECK_ID) }
+        return first..last
     }

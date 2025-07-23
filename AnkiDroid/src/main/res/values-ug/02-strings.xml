@@ -47,7 +47,7 @@
     <!-- Navigation drawer strings -->
     <string name="drawer_open">يان تارتمىنى ئاچ</string>
     <string name="drawer_close">يان تارتمىنى تاقا</string>
-    <string name="note_message">Note saved</string>
+    <string name="note_message">خاتىرە ساقلاندى</string>
     <string name="CardEditorCardDeck">كارتا دەستىسى:</string>
     <string name="CardEditorNoteDeck">دەستە:</string>
     <string name="CardEditorModel">تۈرى:</string>
@@ -109,10 +109,10 @@
     <string name="missing_note_type">ھېچقانداق خاتىرە تۈرى تېپىلمىدى</string>
     <string name="card_previewer_empty_front_indicator" comment="Extra text appended onto a tab title in the card previewer so that the user can see at a glance whether a card has no front.">%1$s (بوش)</string>
     <!-- Image cropper -->
-    <string name="image_cropper_action_rotate" maxLength="28" comment="Action in image cropper screen">Rotate</string>
-    <string name="image_cropper_action_flip" maxLength="28" comment="Action in image cropper screen">Flip</string>
-    <string name="image_cropper_action_flip_horizontally" maxLength="28" comment="Submenu action in image cropper screen">Flip horizontally</string>
-    <string name="image_cropper_action_flip_vertically" maxLength="28" comment="Submenu action in image cropper screen">Flip vertically</string>
+    <string name="image_cropper_action_rotate" maxLength="28" comment="Action in image cropper screen">ئايلاندۇر</string>
+    <string name="image_cropper_action_flip" maxLength="28" comment="Action in image cropper screen">ئۆرۈ</string>
+    <string name="image_cropper_action_flip_horizontally" maxLength="28" comment="Submenu action in image cropper screen">توغرىسىغا ئۆرۈ</string>
+    <string name="image_cropper_action_flip_vertically" maxLength="28" comment="Submenu action in image cropper screen">بويىغا ئايلاندۇر</string>
     <!-- Timebox -->
     <string name="timebox_reached_title">مۆھلەتكە يەتتى</string>
     <plurals name="timebox_reached">
@@ -328,6 +328,9 @@
     <string name="tts_voices_failed_opening_tts_system_settings" comment="error message if opening the system text to speech settings fails">تېكىستتىن ئاۋازغا تەڭشىكىنى ئاچالمىدى</string>
     <string name="shared_decks_login_required">تېخىمۇ كۆپ دەستە چۈشۈرۈش ئۈچۈن تىزىمغا كىرىڭ</string>
     <string name="deck_description_field_hint">چۈشەندۈرۈش</string>
+    <string name="deck_description_saved">Description updated</string>
+    <string name="format_deck_description_as_markdown">Format as Markdown</string>
+    <string name="help_button_content_description">Open help for ‘%s’</string>
     <string name="failed_to_copy">كۆچۈرەلمىدى</string>
     <string name="card_browser_unavailable_when_notes_mode">«خاتىرە» ھالىتىدە ئىشلەتكىلى بولمايدۇ</string>
     <plurals name="unbury_cards_feedback">

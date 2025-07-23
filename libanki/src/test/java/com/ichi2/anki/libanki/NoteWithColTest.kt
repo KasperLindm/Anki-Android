@@ -16,30 +16,16 @@
 
 package com.ichi2.anki.libanki
 
-import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.ichi2.testutils.JvmTest
-import org.hamcrest.MatcherAssert
-import org.hamcrest.Matchers
+import com.ichi2.anki.libanki.testutils.InMemoryAnkiTest
+import com.ichi2.anki.libanki.testutils.ext.newNote
+import org.hamcrest.CoreMatchers.equalTo
+import org.hamcrest.MatcherAssert.assertThat
 import org.junit.Test
-import org.junit.runner.RunWith
-import org.robolectric.annotation.Config
 
-@RunWith(AndroidJUnit4::class)
-class StorageRustTest : JvmTest() {
+class NoteWithColTest : InMemoryAnkiTest() {
     @Test
-    @Config(qualifiers = "en")
-    fun testModelCount() {
-        val noteTypeNames = col.notetypes.all().map { x -> x.name }
-        MatcherAssert.assertThat(
-            noteTypeNames,
-            Matchers.containsInAnyOrder(
-                "Basic",
-                "Basic (and reversed card)",
-                "Cloze",
-                "Basic (type in the answer)",
-                "Basic (optional reversed card)",
-                "Image Occlusion",
-            ),
-        )
+    fun newNoteTest() {
+        val note = col.newNote()
+        assertThat(note.notetype.name, equalTo("Basic"))
     }
 }

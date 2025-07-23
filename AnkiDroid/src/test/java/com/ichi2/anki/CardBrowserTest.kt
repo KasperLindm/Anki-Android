@@ -72,7 +72,9 @@ import com.ichi2.anki.browser.FindAndReplaceDialogFragment.Companion.ARG_SEARCH
 import com.ichi2.anki.browser.FindAndReplaceDialogFragment.Companion.REQUEST_FIND_AND_REPLACE
 import com.ichi2.anki.browser.FindAndReplaceDialogFragment.Companion.TAGS_AS_FIELD
 import com.ichi2.anki.browser.column1
+import com.ichi2.anki.browser.selectRowAtPosition
 import com.ichi2.anki.browser.setColumn
+import com.ichi2.anki.browser.toRowSelection
 import com.ichi2.anki.common.time.TimeManager
 import com.ichi2.anki.common.utils.isRunningAsUnitTest
 import com.ichi2.anki.dialogs.DeckSelectionDialog
@@ -82,6 +84,7 @@ import com.ichi2.anki.libanki.CardType
 import com.ichi2.anki.libanki.Note
 import com.ichi2.anki.libanki.NotetypeJson
 import com.ichi2.anki.libanki.QueueType
+import com.ichi2.anki.libanki.testutils.AnkiTest
 import com.ichi2.anki.model.CardsOrNotes.CARDS
 import com.ichi2.anki.model.CardsOrNotes.NOTES
 import com.ichi2.anki.model.SortType
@@ -93,7 +96,6 @@ import com.ichi2.anki.ui.internationalization.toSentenceCase
 import com.ichi2.anki.utils.ext.getCurrentDialogFragment
 import com.ichi2.anki.utils.ext.showDialogFragment
 import com.ichi2.testutils.IntentAssert
-import com.ichi2.testutils.TestClass
 import com.ichi2.testutils.common.Flaky
 import com.ichi2.testutils.common.OS
 import com.ichi2.testutils.getSharedPrefs
@@ -909,7 +911,7 @@ class CardBrowserTest : RobolectricTest() {
         positionToCorrupt: Int,
     ) {
         val cid = browser.viewModel.queryCardIdAtPosition(positionToCorrupt)
-        col.removeNotes(cids = listOf(cid))
+        col.removeNotes(cardIds = listOf(cid))
     }
 
     private fun selectOneOfManyCards(
@@ -1015,23 +1017,6 @@ class CardBrowserTest : RobolectricTest() {
             // check if we get one card per note
             advanceRobolectricUiLooper()
             assertThat(cardBrowser.viewModel.rowCount, equalTo(3))
-        }
-
-    @Test
-    fun checkIfScrollPositionSavedOnLongPress() =
-        runTest {
-            val cardBrowser = getBrowserWithNotes(10)
-            cardBrowser.longClickRowAtPosition(5)
-            assertThat(cardBrowser.viewModel.lastSelectedPosition, equalTo(5))
-        }
-
-    @Test
-    fun checkIfScrollPositionSavedOnTap() =
-        runTest {
-            val cardBrowser = getBrowserWithNotes(10)
-            cardBrowser.longClickRowAtPosition(1)
-            cardBrowser.clickRowAtPosition(5)
-            assertThat(cardBrowser.viewModel.lastSelectedPosition, equalTo(5))
         }
 
     @Test
@@ -1625,7 +1610,7 @@ fun CardBrowser.selectRowsWithPositions(vararg positions: Int) {
 
 fun CardBrowser.clickRowAtPosition(pos: Int) = cardBrowserFragment.onTap(viewModel.cards[pos])
 
-fun CardBrowser.longClickRowAtPosition(pos: Int) = viewModel.handleRowLongPress(viewModel.cards[pos])
+fun CardBrowser.longClickRowAtPosition(pos: Int) = viewModel.handleRowLongPress(viewModel.cards[pos].toRowSelection())
 
 val CardBrowser.lastDeckId
     get() = viewModel.lastDeckId
@@ -1648,7 +1633,7 @@ suspend fun CardBrowserViewModel.setFlagFilterSync(flag: Flag) {
     searchJob?.join()
 }
 
-fun TestClass.flagCardForNote(
+fun AnkiTest.flagCardForNote(
     n: Note,
     flag: Flag,
 ) {

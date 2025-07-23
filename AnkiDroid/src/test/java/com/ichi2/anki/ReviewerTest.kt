@@ -44,7 +44,9 @@ import com.ichi2.anki.libanki.Notetypes
 import com.ichi2.anki.libanki.QueueType
 import com.ichi2.anki.libanki.exception.ConfirmModSchemaException
 import com.ichi2.anki.libanki.sched.Ease
+import com.ichi2.anki.libanki.testutils.ext.BASIC_NOTE_TYPE_NAME
 import com.ichi2.anki.libanki.testutils.ext.addNote
+import com.ichi2.anki.libanki.testutils.ext.newNote
 import com.ichi2.anki.model.CardStateFilter
 import com.ichi2.anki.observability.undoableOp
 import com.ichi2.anki.preferences.PreferenceTestUtils
@@ -52,7 +54,6 @@ import com.ichi2.anki.preferences.sharedPrefs
 import com.ichi2.anki.reviewer.ActionButtonStatus
 import com.ichi2.testutils.common.Flaky
 import com.ichi2.testutils.common.OS
-import com.ichi2.utils.BASIC_NOTE_TYPE_NAME
 import junit.framework.TestCase.assertEquals
 import junit.framework.TestCase.assertFalse
 import junit.framework.TestCase.assertTrue
@@ -71,6 +72,8 @@ import kotlin.test.junit5.JUnit5Asserter.assertNotNull
 
 @RunWith(AndroidJUnit4::class)
 class ReviewerTest : RobolectricTest() {
+    override fun getCollectionStorageMode() = CollectionStorageMode.IN_MEMORY_WITH_MEDIA
+
     @Ignore("flaky")
     @Test
     @RunInBackground

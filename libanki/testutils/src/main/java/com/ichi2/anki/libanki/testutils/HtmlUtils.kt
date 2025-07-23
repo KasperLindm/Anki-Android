@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2021 David Allison <davidallisongithub@gmail.com>
+ *  Copyright (c) 2025 David Allison <davidallisongithub@gmail.com>
  *
  *  This program is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free Software
@@ -14,22 +14,6 @@
  *  this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.ichi2.anki.libanki
+package com.ichi2.anki.libanki.testutils
 
-import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.ichi2.testutils.JvmTest
-import org.hamcrest.CoreMatchers.equalTo
-import org.hamcrest.MatcherAssert.assertThat
-import org.junit.Test
-import org.junit.runner.RunWith
-import org.robolectric.annotation.Config
-
-@RunWith(AndroidJUnit4::class)
-class NoteWithColTest : JvmTest() {
-    @Test
-    @Config(qualifiers = "en")
-    fun newNoteTest() {
-        val note = col.newNote()
-        assertThat(note.notetype.name, equalTo("Basic"))
-    }
-}
+fun clozeClass(): String = "class=\"cloze\""

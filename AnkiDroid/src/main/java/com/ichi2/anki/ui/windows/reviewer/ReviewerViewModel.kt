@@ -255,7 +255,7 @@ class ReviewerViewModel(
         val cardId = currentCard.await().id
         val noteCount =
             undoableOp {
-                removeNotes(cids = listOf(cardId))
+                removeNotes(cardIds = listOf(cardId))
             }.count
         actionFeedbackFlow.emit(CollectionManager.TR.browsingCardsDeleted(noteCount))
         updateCurrentCard()
@@ -417,7 +417,7 @@ class ReviewerViewModel(
                     .mergeCurrent(
                         state.states.current
                             .toBuilder()
-                            .setCustomData(state.topCard.toBackendCard().customData)
+                            .setCustomData(state.topCard.customData)
                             .build(),
                     ).build(),
             ).build()

@@ -35,6 +35,8 @@ import anki.collection.OpChangesWithCount
 import anki.config.ConfigKey
 import anki.config.Preferences
 import anki.config.copy
+import anki.image_occlusion.GetImageForOcclusionResponse
+import anki.image_occlusion.GetImageOcclusionNoteResponse
 import anki.import_export.CsvMetadata
 import anki.import_export.ExportAnkiPackageOptions
 import anki.import_export.ExportLimit
@@ -42,13 +44,20 @@ import anki.import_export.ImportAnkiPackageOptions
 import anki.import_export.ImportCsvRequest
 import anki.import_export.ImportResponse
 import anki.import_export.csvMetadataRequest
+import anki.notes.AddNoteRequest
 import anki.search.BrowserColumns
 import anki.search.BrowserRow
 import anki.search.SearchNode
+import anki.search.SearchNode.Group.Joiner
+import anki.stats.CardStatsResponse
+import anki.stats.CardStatsResponse.StatsRevlogEntry
 import anki.sync.SyncAuth
 import anki.sync.SyncStatusResponse
 import com.ichi2.anki.common.time.TimeManager
 import com.ichi2.anki.common.utils.annotation.KotlinCleanup
+import com.ichi2.anki.libanki.CollectionFiles.FolderBasedCollection
+import com.ichi2.anki.libanki.CollectionFiles.InMemory
+import com.ichi2.anki.libanki.Storage.OpenDbArgs
 import com.ichi2.anki.libanki.Utils.ids2str
 import com.ichi2.anki.libanki.backend.model.toBackendNote
 import com.ichi2.anki.libanki.backend.model.toProtoBuf
@@ -61,10 +70,17 @@ import com.ichi2.anki.libanki.utils.NotInLibAnki
 import net.ankiweb.rsdroid.Backend
 import net.ankiweb.rsdroid.RustCleanup
 import net.ankiweb.rsdroid.exceptions.BackendInvalidInputException
+import org.intellij.lang.annotations.Language
 import timber.log.Timber
 import java.io.File
 
 typealias ImportLogWithChanges = anki.import_export.ImportResponse
+
+@NotInLibAnki // Literal["AND", "OR"]
+enum class SearchJoiner {
+    AND,
+    OR,
+}
 
 // Anki maintains a cache of used tags so it can quickly present a list of tags
 // for autocomplete and in the browser. For efficiency, deletions are not
@@ -73,6 +89,7 @@ typealias ImportLogWithChanges = anki.import_export.ImportResponse
 // This module manages the tag cache and tags for notes.
 @KotlinCleanup("inline function in init { } so we don't need to init `crt` etc... at the definition")
 @RustCleanup("combine with BackendImportExport")
+@RustCleanup("Config is not fully implemented")
 @WorkerThread
 class Collection(
     /**
@@ -88,7 +105,8 @@ class Collection(
     val backend: Backend,
     databaseBuilder: (Backend) -> DB,
 ) {
-    val colDb = collectionFiles.colDb
+    val colDb: File
+        get() = collectionFiles.requireDiskBasedCollection().colDb
 
     /** Access backend translations */
     val tr = backend.tr
@@ -131,9 +149,6 @@ class Collection(
     lateinit var sched: Scheduler
         protected set
 
-    private var startTime: Long
-    private var startReps: Int
-
     private val lastSync: Long
         get() = db.queryLongScalar("select ls from col")
 
@@ -144,8 +159,6 @@ class Collection(
         media = Media(this)
         tags = Tags(this)
         val created = reopen(databaseBuilder = databaseBuilder)
-        startReps = 0
-        startTime = 0
         _loadScheduler()
         if (created) {
             config.set("schedVer", 2)
@@ -154,9 +167,7 @@ class Collection(
         }
     }
 
-    fun name() = collectionFiles.collectionName
-
-    /*
+    /**
      * Scheduler
      * ***********************************************************
      */
@@ -274,11 +285,18 @@ class Collection(
         afterFullSync: Boolean = false,
         databaseBuilder: (Backend) -> DB,
     ): Boolean {
-        Timber.i("(Re)opening Database: %s", colDb)
+        val reopenArgs =
+            when (collectionFiles) {
+                is InMemory, is CollectionFiles.InMemoryWithMedia -> OpenDbArgs.InMemory
+                is FolderBasedCollection -> {
+                    OpenDbArgs.Path(collectionFiles.colDb)
+                }
+            }
+        Timber.i("(Re)opening Database: %s", reopenArgs)
         return if (dbClosed) {
             val (database, created) =
                 Storage.openDB(
-                    path = colDb,
+                    args = reopenArgs,
                     backend = backend,
                     afterFullSync = afterFullSync,
                     buildDatabase = databaseBuilder,
@@ -478,46 +496,216 @@ class Collection(
         backend.exportDataset(minEntries = minEntries, targetPath = targetPath)
     }
 
-    /**
-     * Object creation helpers **************************************************
-     * *********************************************
+    /*
+     * Image Occlusion
+     * ***********************************************************
      */
+
+    @CheckResult
+    @LibAnkiAlias("get_image_for_occlusion")
+    @RustCleanup("path should be nullable")
+    fun getImageForOcclusion(path: String): GetImageForOcclusionResponse = backend.getImageForOcclusion(path = path)
+
+    /** Add notetype if missing. */
+    @LibAnkiAlias("add_image_occlusion_notetype")
+    fun addImageOcclusionNoteType() {
+        backend.addImageOcclusionNotetype()
+    }
+
+    @CheckResult
+    @LibAnkiAlias("add_image_occlusion_note")
+    fun addImageOcclusionNote(
+        noteTypeId: NoteTypeId,
+        imagePath: String,
+        occlusions: String,
+        header: String,
+        backExtra: String,
+        tags: List<String>,
+    ): OpChanges =
+        backend.addImageOcclusionNote(
+            notetypeId = noteTypeId,
+            imagePath = imagePath,
+            occlusions = occlusions,
+            header = header,
+            backExtra = backExtra,
+            tags = tags,
+        )
+
+    @CheckResult
+    @LibAnkiAlias("get_image_occlusion_note")
+    fun getImageOcclusionNote(noteId: NoteId): GetImageOcclusionNoteResponse = backend.getImageOcclusionNote(noteId = noteId)
+
+    @CheckResult
+    @LibAnkiAlias("update_image_occlusion_note")
+    @RustCleanup("parameters should all be nullable")
+    fun updateImageOcclusionNote(
+        noteId: NoteId,
+        occlusions: String,
+        header: String,
+        backExtra: String,
+        tags: List<String>,
+    ): OpChanges =
+        backend.updateImageOcclusionNote(
+            noteId = noteId,
+            occlusions = occlusions,
+            header = header,
+            backExtra = backExtra,
+            tags = tags,
+        )
+
+    /*
+     * Object helpers
+     * ***********************************************************
+     */
+
+    @CheckResult
+    @LibAnkiAlias("get_card")
     fun getCard(id: CardId): Card = Card(this, id)
 
+    /** Save card changes to database. */
+    @LibAnkiAlias("update_cards")
     fun updateCards(
         cards: Iterable<Card>,
         skipUndoEntry: Boolean = false,
     ): OpChanges = backend.updateCards(cards.map { it.toBackendCard() }, skipUndoEntry)
 
+    /** Save card changes to database. */
+    @LibAnkiAlias("update_card")
     fun updateCard(
         card: Card,
         skipUndoEntry: Boolean = false,
     ): OpChanges = updateCards(listOf(card), skipUndoEntry)
 
+    @CheckResult
+    @LibAnkiAlias("get_note")
     fun getNote(id: NoteId): Note = Note(this, id)
 
-    /**
-     * Notes ******************************************************************** ***************************
-     */
-    fun noteCount(): Int = db.queryScalar("SELECT count() FROM notes")
+    /** Save note changes to database. */
+    @CheckResult
+    @LibAnkiAlias("update_notes")
+    fun updateNotes(
+        notes: Iterable<Note>,
+        skipUndoEntry: Boolean = false,
+    ): OpChanges =
+        backend.updateNotes(
+            notes = notes.map { it.toBackendNote() },
+            skipUndoEntry = skipUndoEntry,
+        )
 
     /**
-     * Return a new note with the model derived from the deck or the configuration
-     * @param forDeck When true it uses the model specified in the deck (mid), otherwise it uses the model specified in
-     * the configuration (curModel)
-     * @return The new note
+     * Save note changes to database.
      */
-    fun newNote(forDeck: Boolean = true): Note = newNote(notetypes.current(forDeck))
+    @CheckResult
+    @LibAnkiAlias("update_note")
+    fun updateNote(
+        note: Note,
+        skipUndoEntry: Boolean = false,
+    ): OpChanges = backend.updateNotes(notes = listOf(note.toBackendNote()), skipUndoEntry = skipUndoEntry)
+
+    /*
+     * Utils
+     * ***********************************************************
+     */
+
+    @CheckResult
+    @LibAnkiAlias("nextID")
+    @RustCleanup("Python returns 'Any' - may fail for Double?")
+    @Deprecated("not implemented", level = DeprecationLevel.HIDDEN)
+    fun nextId(
+        type: String,
+        inc: Boolean = true,
+    ): Long = TODO()
+
+    /*
+     * Notes
+     * ***********************************************************
+     */
 
     /**
      * Return a new note with a specific model
      * @param notetype The model to use for the new note
      * @return The new note
      */
+    @LibAnkiAlias("new_note")
     fun newNote(notetype: NotetypeJson): Note = Note.fromNotetypeId(this, notetype.id)
 
+    @LibAnkiAlias("add_note")
+    fun addNote(
+        note: Note,
+        deckId: DeckId,
+    ): OpChanges {
+        val out = backend.addNote(note.toBackendNote(), deckId)
+        note.id = out.noteId
+        return out.changes
+    }
+
+    @LibAnkiAlias("add_notes")
+    @RustCleanup("Implement")
+    @Deprecated("Needs implementation", level = DeprecationLevel.HIDDEN)
+    fun addNotes(requests: List<AddNoteRequest>): OpChanges? = TODO()
+//    {
+//        val out = backend.addNotes(requests = requests)
+//        for ((idx, request) in requests.withIndex()) {
+//            request.note!!.id = out.getNids(idx)
+//        }
+//        return out.changes
+//    }
+
+    @LibAnkiAlias("remove_notes")
+    @RustCleanup("remove cids and pass in []")
+    fun removeNotes(
+        noteIds: Iterable<NoteId> = listOf(),
+        cardIds: Iterable<CardId> = listOf(),
+    ): OpChangesWithCount =
+        backend.removeNotes(noteIds = noteIds, cardIds = cardIds).also {
+            Timber.d("removeNotes: %d changes", it.count)
+        }
+
+    @LibAnkiAlias("remove_notes_by_card")
+    fun removeNotesByCard(cardIds: Iterable<CardId>) {
+        backend.removeNotes(noteIds = emptyList(), cardIds = cardIds)
+    }
+
+    @CheckResult
+    @LibAnkiAlias("card_ids_of_note")
+    fun cardIdsOfNote(nid: NoteId): List<CardId> = backend.cardsOfNote(nid = nid)
+
     /**
-     * Cards ******************************************************************** ***************************
+     * Get starting deck and notetype for add screen.
+     * An option in the preferences controls whether this will be based on the current deck
+     * or current notetype.
+     */
+    @CheckResult
+    @LibAnkiAlias("defaults_for_adding")
+    fun defaultsForAdding(currentReviewCard: Card? = null): anki.notes.DeckAndNotetype {
+        val homeDeck = currentReviewCard?.currentDeckId() ?: 0L
+        return backend.defaultsForAdding(homeDeckOfCurrentReviewCard = homeDeck)
+    }
+
+    /**
+     * If 'change deck depending on notetype' is enabled in the preferences,
+     * return the last deck used with the provided notetype, if any..
+     */
+    @CheckResult
+    @LibAnkiAlias("default_deck_for_notetype")
+    @RustCleanup("check if the == 0L logic is necessary")
+    fun defaultDeckForNoteType(noteTypeId: NoteTypeId): DeckId? {
+        if (config.getBool(ConfigKey.Bool.ADDING_DEFAULTS_TO_CURRENT_DECK)) {
+            return null
+        }
+
+        val result = backend.defaultDeckForNotetype(ntid = noteTypeId)
+        if (result == 0L) return null
+        return result
+    }
+
+    @CheckResult
+    @LibAnkiAlias("note_count")
+    fun noteCount(): Int = db.queryScalar("SELECT count() FROM notes")
+
+    /*
+     * Cards
+     * ***********************************************************
      */
 
     /**
@@ -527,10 +715,133 @@ class Collection(
     val isEmpty: Boolean
         get() = db.queryScalar("SELECT 1 FROM cards LIMIT 1") == 0
 
+    @CheckResult
+    @LibAnkiAlias("card_count")
     fun cardCount(): Int = db.queryScalar("SELECT count() FROM cards")
 
+    /**
+     * You probably want [removeNotesByCard] instead.
+     *
+     * @return the number of deleted cards. **Note:** if an invalid/duplicate [CardId] is provided,
+     * the output count may be less than the input.
+     */
+    @RustCleanup("maybe deprecate this")
+    @LibAnkiAlias("remove_cards_and_orphaned_notes")
+    fun removeCardsAndOrphanedNotes(cardIds: Iterable<CardId>): OpChangesWithCount = backend.removeCards(cardIds)
+
+    @LibAnkiAlias("set_deck")
+    fun setDeck(
+        cardIds: Iterable<CardId>,
+        deckId: DeckId,
+    ): OpChangesWithCount = backend.setDeck(cardIds = cardIds, deckId = deckId)
+
+    @CheckResult
+    @LibAnkiAlias("get_empty_cards")
+    fun getEmptyCards(): EmptyCardsReport = backend.getEmptyCards()
+
     /*
-      Finding cards ************************************************************ ***********************************
+     * Card generation & field checksums/sort fields
+     * ***********************************************************
+     */
+
+    /** If notes modified directly in database, call this afterwards. */
+    @LibAnkiAlias("after_note_updates")
+    fun afterNoteUpdates(
+        noteIds: List<NoteId>,
+        markModified: Boolean,
+        generateCards: Boolean = true,
+    ) {
+        backend.afterNoteUpdates(
+            nids = noteIds,
+            generateCards = generateCards,
+            markNotesModified = markModified,
+        )
+    }
+
+    /*
+     * Finding cards
+     * ***********************************************************
+     */
+
+    /**
+     * Return a list of card ids
+     * @throws InvalidSearchException
+     */
+    @CheckResult
+    @RustCleanup("does not match libAnki; also fix docs")
+    @LibAnkiAlias("find_cards")
+    fun findCards(
+        search: String,
+        order: SortOrder = SortOrder.NoOrdering(),
+    ): List<CardId> {
+        val adjustedOrder =
+            if (order is SortOrder.UseCollectionOrdering) {
+                SortOrder.BuiltinSortKind(
+                    config.get("sortType") ?: "noteFld",
+                    config.get("sortBackwards") ?: false,
+                )
+            } else {
+                order
+            }
+        return try {
+            backend.searchCards(search, adjustedOrder.toProtoBuf())
+        } catch (e: BackendInvalidInputException) {
+            throw InvalidSearchException(e)
+        }
+    }
+
+    @CheckResult
+    @RustCleanup("does not match upstream")
+    @LibAnkiAlias("find_notes")
+    fun findNotes(
+        query: String,
+        order: SortOrder = SortOrder.NoOrdering(),
+    ): List<NoteId> {
+        val adjustedOrder =
+            if (order is SortOrder.UseCollectionOrdering) {
+                SortOrder.BuiltinSortKind(
+                    config.get("noteSortType") ?: "noteFld",
+                    config.get("browserNoteSortBackwards") ?: false,
+                )
+            } else {
+                order
+            }
+        val noteIDsList =
+            try {
+                backend.searchNotes(query, adjustedOrder.toProtoBuf())
+            } catch (e: BackendInvalidInputException) {
+                throw InvalidSearchException(e)
+            }
+        return noteIDsList
+    }
+
+    // @LibAnkiAlias("_build_sort_mode")
+    // private fun buildSortMode()
+
+    /**
+     * @return An [OpChangesWithCount] representing the number of affected notes
+     */
+    @CheckResult
+    @LibAnkiAlias("find_and_replace")
+    fun findAndReplace(
+        nids: List<NoteId>,
+        search: String,
+        replacement: String,
+        regex: Boolean = false,
+        field: String? = null,
+        matchCase: Boolean = false,
+    ): OpChangesWithCount = backend.findAndReplace(nids, search, replacement, regex, matchCase, field ?: "")
+
+    @LibAnkiAlias("field_names_for_note_ids")
+    fun fieldNamesForNoteIds(nids: List<NoteId>): List<String> = backend.fieldNamesForNotes(nids)
+
+    // returns array of ("dupestr", [nids])
+    // @LibAnkiAlias("find_dupes")
+    // fun findDupes(fieldName: String, search: String = ""): List<Pair<String, List<Any>>>
+
+    /*
+     * Search Strings
+     * ***********************************************************
      */
 
     /**
@@ -557,73 +868,70 @@ class Collection(
      *   }
      * ```
      */
-    @Suppress("unused")
-    fun buildSearchString(node: SearchNode): String = backend.buildSearchString(node)
+    @RustCleanup("support SearchJoiner argument")
+    @LibAnkiAlias("build_search_string")
+    fun buildSearchString(
+        node: SearchNode,
+        joiner: SearchJoiner = SearchJoiner.AND,
+    ): String = backend.buildSearchString(node)
 
     /**
-     * Return a list of card ids
-     * @throws InvalidSearchException
+     * Join provided search nodes and strings into a single [SearchNode].
+     * If a single [SearchNode] is provided, it is returned as-is.
+     * At least one node must be provided.
+     *
+     * @throws IllegalArgumentException if no nodes are provided
      */
-    fun findCards(
-        search: String,
-        order: SortOrder = SortOrder.NoOrdering(),
-    ): List<CardId> {
-        val adjustedOrder =
-            if (order is SortOrder.UseCollectionOrdering) {
-                SortOrder.BuiltinSortKind(
-                    config.get("sortType") ?: "noteFld",
-                    config.get("sortBackwards") ?: false,
-                )
-            } else {
-                order
-            }
-        return try {
-            backend.searchCards(search, adjustedOrder.toProtoBuf())
-        } catch (e: BackendInvalidInputException) {
-            throw InvalidSearchException(e)
+    @Deprecated("not implemented")
+    @RustCleanup("input upstream is either ")
+    @LibAnkiAlias("group_searches")
+    fun groupSearches(
+        nodes: List<SearchNode>,
+        joiner: SearchJoiner = SearchJoiner.AND,
+    ): Nothing = TODO()
+
+    /**
+     * AND or OR `additional_term` to `existing_term`, without wrapping `existing_term` in brackets.
+     * Used by the Browse screen to avoid adding extra brackets when joining.
+     * If you're building a search query yourself, you probably don't need this.
+     */
+    @LibAnkiAlias("join_searches")
+    fun joinSearches(
+        existingNode: SearchNode,
+        additionalNode: SearchNode,
+        operator: SearchJoiner,
+    ): String {
+        val searchString =
+            backend.joinSearchNodes(
+                joiner = toPbSearchSeparator(operator),
+                existingNode = existingNode,
+                additionalNode = additionalNode,
+            )
+        return searchString
+    }
+
+    /**
+     * If nodes of the same type as `replacement_node` are found in existing_node, replace them.
+     *
+     * You can use this to replace any "deck" clauses in a search with a different deck for example.
+     */
+    @LibAnkiAlias("replace_in_search_node")
+    fun replaceInSearchNode(
+        existingNode: SearchNode,
+        replacementNode: SearchNode,
+    ): String = backend.replaceSearchNode(existingNode = existingNode, replacementNode = replacementNode)
+
+    @LibAnkiAlias("_pb_search_separator")
+    fun toPbSearchSeparator(operator: SearchJoiner): SearchNode.Group.Joiner =
+        when (operator) {
+            SearchJoiner.AND -> Joiner.AND
+            SearchJoiner.OR -> Joiner.OR
         }
-    }
 
-    fun findNotes(
-        query: String,
-        order: SortOrder = SortOrder.NoOrdering(),
-    ): List<Long> {
-        val adjustedOrder =
-            if (order is SortOrder.UseCollectionOrdering) {
-                SortOrder.BuiltinSortKind(
-                    config.get("noteSortType") ?: "noteFld",
-                    config.get("browserNoteSortBackwards") ?: false,
-                )
-            } else {
-                order
-            }
-        val noteIDsList =
-            try {
-                backend.searchNotes(query, adjustedOrder.toProtoBuf())
-            } catch (e: BackendInvalidInputException) {
-                throw InvalidSearchException(e)
-            }
-        return noteIDsList
-    }
-
-    /**
-     * @return An [OpChangesWithCount] representing the number of affected notes
+    /*
+     * Browser Table
+     * ***********************************************************
      */
-    @LibAnkiAlias("find_and_replace")
-    @CheckResult
-    fun findReplace(
-        nids: List<Long>,
-        search: String,
-        replacement: String,
-        regex: Boolean = false,
-        field: String? = null,
-        matchCase: Boolean = false,
-    ): OpChangesWithCount = backend.findAndReplace(nids, search, replacement, regex, matchCase, field ?: "")
-
-    @LibAnkiAlias("field_names_for_note_ids")
-    fun fieldNamesForNoteIds(nids: List<Long>): List<String> = backend.fieldNamesForNotes(nids)
-
-    // Browser Table
 
     @LibAnkiAlias("all_browser_columns")
     fun allBrowserColumns(): List<BrowserColumns.Column> = backend.allBrowserColumns()
@@ -687,49 +995,35 @@ class Collection(
     }
 
     /*
-      Stats ******************************************************************** ***************************
+     * Stats
+     * ***********************************************************
      */
 
-    // card stats
-    // stats
+    // def stats(self) -> anki.stats.CollectionStats:
 
-    /*
-     * Timeboxing *************************************************************** ********************************
+    /**
+     * Returns the data required to show card stats.
+     *
+     * If you wish to display the stats in a HTML table like Anki does,
+     * you can use the .js file directly - see this add-on for an example:
+     * https://ankiweb.net/shared/info/2179254157
      */
+    @CheckResult
+    @LibAnkiAlias("card_stats_data")
+    fun cardStatsData(cardId: CardId): CardStatsResponse = backend.cardStats(cardId)
 
-    fun startTimebox() {
-        startTime = TimeManager.time.intTime()
-        startReps = sched.numberOfAnswersRecorded
-    }
+    @CheckResult
+    @LibAnkiAlias("get_review_logs")
+    fun getReviewLogs(cardId: CardId): List<StatsRevlogEntry> = backend.getReviewLogs(cardId)
 
-    data class TimeboxReached(
-        val secs: Int,
-        val reps: Int,
-    )
-
-    /* Return (elapsedTime, reps) if timebox reached, or null.
-     * Automatically restarts timebox if expired. */
-    fun timeboxReached(): TimeboxReached? {
-        if (sched.timeboxSecs() == 0) {
-            // timeboxing disabled
-            return null
-        }
-        val elapsed = TimeManager.time.intTime() - startTime
-        val limit = sched.timeboxSecs()
-        return if (elapsed > limit) {
-            TimeboxReached(
-                limit,
-                sched.numberOfAnswersRecorded - startReps,
-            ).also {
-                startTimebox()
-            }
-        } else {
-            null
-        }
-    }
+    @RustCleanup("check sched.studiedToday")
+    @CheckResult
+    @LibAnkiAlias("studied_today")
+    fun studiedToday(): String = backend.studiedToday()
 
     /*
-     * Undo ********************************************************************* **************************
+     * Undo
+     * ***********************************************************
      */
 
     /** eg "Undo suspend card" if undo available */
@@ -750,49 +1044,16 @@ class Collection(
 
     fun redoAvailable(): Boolean = undoStatus().redo != null
 
-    fun removeNotes(
-        nids: Iterable<NoteId> = listOf(),
-        cids: Iterable<CardId> = listOf(),
-    ): OpChangesWithCount =
-        backend.removeNotes(noteIds = nids, cardIds = cids).also {
-            Timber.d("removeNotes: %d changes", it.count)
-        }
-
-    /**
-     * @return the number of deleted cards. **Note:** if an invalid/duplicate [CardId] is provided,
-     * the output count may be less than the input.
-     */
-    fun removeCardsAndOrphanedNotes(cardIds: Iterable<CardId>) = backend.removeCards(cardIds)
-
-    fun addNote(
-        note: Note,
-        deckId: DeckId,
-    ): OpChanges {
-        val resp = backend.addNote(note.toBackendNote(), deckId)
-        note.id = resp.noteId
-        return resp.changes
-    }
-
     lateinit var notetypes: Notetypes
         protected set
 
-    //endregion
+    /*
+     * ***********************************************************
+     */
 
     @NotInLibAnki
     @CheckResult
     fun filterToValidCards(cards: LongArray?): List<Long> = db.queryLongList("select id from cards where id in " + ids2str(cards))
-
-    fun setDeck(
-        cids: Iterable<CardId>,
-        did: DeckId,
-    ): OpChangesWithCount = backend.setDeck(cardIds = cids, deckId = did)
-
-    /** Save (flush) the note to the DB. Unlike note.flush(), this is undoable. This should
-     * not be used for adding new notes. */
-    @CheckResult
-    fun updateNote(note: Note): OpChanges = backend.updateNotes(notes = listOf(note.toBackendNote()), skipUndoEntry = false)
-
-    fun updateNotes(notes: Iterable<Note>): OpChanges = backend.updateNotes(notes = notes.map { it.toBackendNote() }, skipUndoEntry = false)
 
     /** Fixes and optimizes the database. If any errors are encountered, a list of
      * problems is returned. Throws if DB is unreadable. */
@@ -805,8 +1066,6 @@ class Collection(
         flag: Int,
     ): OpChangesWithCount = backend.setFlag(cardIds = cids, flag = flag)
 
-    fun getEmptyCards(): EmptyCardsReport = backend.getEmptyCards()
-
     @Suppress("unused")
     fun syncStatus(auth: SyncAuth): SyncStatusResponse = backend.syncStatus(input = auth)
 
@@ -815,8 +1074,6 @@ class Collection(
 
     // Python code has a cardsOfNote, but not vice-versa yet
     fun notesOfCards(cids: Iterable<CardId>): List<NoteId> = db.queryLongList("select distinct nid from cards where id in ${ids2str(cids)}")
-
-    fun cardIdsOfNote(nid: NoteId): List<CardId> = backend.cardsOfNote(nid = nid)
 
     /**
      * returns the list of cloze ordinals in a note
@@ -864,6 +1121,20 @@ class Collection(
 
     fun evaluateParamsLegacyRaw(input: ByteArray): ByteArray = backend.evaluateParamsLegacyRaw(input = input)
 
+    /**
+     * Converts Markdown ([text]) to HTML
+     *
+     * @param text Markdown to format as HTML
+     * @param sanitize whether to sanitize the HTML using
+     * [ammonia](https://docs.rs/ammonia/latest/ammonia/). `img` tags are also stripped
+     */
+    @Language("HTML")
+    @LibAnkiAlias("render_markdown")
+    fun renderMarkdown(
+        text: String,
+        sanitize: Boolean,
+    ): String = backend.renderMarkdown(markdown = text, sanitize = sanitize)
+
     fun compareAnswer(
         expected: String,
         provided: String,
@@ -875,15 +1146,68 @@ class Collection(
         ordinal: Int,
     ): String = backend.extractClozeForTyping(text = text, ordinal = ordinal)
 
-    fun defaultsForAdding(currentReviewCard: Card? = null): anki.notes.DeckAndNotetype {
-        val homeDeck = currentReviewCard?.currentDeckId() ?: 0L
-        return backend.defaultsForAdding(homeDeckOfCurrentReviewCard = homeDeck)
-    }
-
     fun getPreferences(): Preferences = backend.getPreferences()
 
     fun setPreferences(preferences: Preferences): OpChanges = backend.setPreferences(preferences)
+
+    /*
+     * Timeboxing
+     * ***********************************************************
+     * Note: this will likely be removed in a future version of libAnki
+     */
+
+    private var startTime: Long = 0L
+    private var startReps: Int = 0
+
+    @LibAnkiAlias("startTimebox")
+    fun startTimebox() {
+        startTime = TimeManager.time.intTime()
+        startReps = sched.numberOfAnswersRecorded
+    }
+
+    data class TimeboxReached(
+        val secs: Int,
+        val reps: Int,
+    )
+
+    /**
+     * Return (elapsedTime, reps) if timebox reached, or null.
+     * Automatically restarts timebox if expired.
+     */
+    @LibAnkiAlias("timeboxReached")
+    fun timeboxReached(): TimeboxReached? {
+        if (sched.timeboxSecs() == 0) {
+            // timeboxing disabled
+            return null
+        }
+        val elapsed = TimeManager.time.intTime() - startTime
+        val limit = sched.timeboxSecs()
+        return if (elapsed > limit) {
+            TimeboxReached(
+                limit,
+                sched.numberOfAnswersRecorded - startReps,
+            ).also {
+                startTimebox()
+            }
+        } else {
+            null
+        }
+    }
 }
 
 @NotInLibAnki
 fun EmptyCardsReport.emptyCids(): List<CardId> = notesList.flatMap { it.cardIdsList }
+
+/**
+ * @return [File] referencing the media folder (`collection.media`)
+ *
+ * @throws UnsupportedOperationException if the collection is in-memory
+ */
+fun Collection.requireMediaFolder() = collectionFiles.requireMediaFolder()
+
+/**
+ * [File] referencing the media folder (`collection.media`)
+ *
+ * (testing) `null` if the collection is in-memory
+ */
+val Collection.mediaFolder: File? get() = collectionFiles.mediaFolder
