@@ -63,13 +63,12 @@ import androidx.core.content.edit
 
 // TODO
 /*
-IGNORE FIELDS
-TOAST MESSAGE
-SAME FIELD CRASH
+SET PREFERRED FIELDS PER CARD TYPE
 */
 
 object ImmersiveKit {
     data class ImmersiveKitSettings(
+        val noteType: String = "default",
         // Checkbox settings
         val exactSearch: Boolean = false,
         val highlighting: Boolean = true,
@@ -87,6 +86,58 @@ object ImmersiveKit {
         val sourceField: String = "",
         val prevSentenceField: String = "",
         val nextSentenceField: String = "")
+
+    // Helper functions for card type specific preferences
+    fun getnoteTypeSpecificKey(baseKey: String, noteType: String): String {
+        return "${baseKey}_${noteType}"
+    }
+
+    fun saveNotetypeSettings(context: Context, noteType: String, settings: ImmersiveKitSettings) {
+        val prefs = context.getSharedPreferences("immersive_kit_prefs", Context.MODE_PRIVATE)
+        prefs.edit().apply {
+            // Save boolean settings
+            putBoolean(getnoteTypeSpecificKey("exact_search", noteType), settings.exactSearch)
+            putBoolean(getnoteTypeSpecificKey("highlighting", noteType), settings.highlighting)
+            putBoolean(getnoteTypeSpecificKey("anime", noteType), settings.anime)
+            putBoolean(getnoteTypeSpecificKey("drama", noteType), settings.drama)
+            putBoolean(getnoteTypeSpecificKey("games", noteType), settings.games)
+
+            // Save field mappings
+            putString(getnoteTypeSpecificKey("keyword_field", noteType), settings.keywordField)
+            putString(getnoteTypeSpecificKey("keyword_furigana_field", noteType), settings.keywordFuriganaField)
+            putString(getnoteTypeSpecificKey("sentence_field", noteType), settings.sentenceField)
+            putString(getnoteTypeSpecificKey("translation_field", noteType), settings.translationField)
+            putString(getnoteTypeSpecificKey("picture_field", noteType), settings.pictureField)
+            putString(getnoteTypeSpecificKey("audio_field", noteType), settings.audioField)
+            putString(getnoteTypeSpecificKey("source_field", noteType), settings.sourceField)
+            putString(getnoteTypeSpecificKey("prev_sentence_field", noteType), settings.prevSentenceField)
+            putString(getnoteTypeSpecificKey("next_sentence_field", noteType), settings.nextSentenceField)
+
+            apply()
+        }
+    }
+
+    fun loadnoteTypeSettings(context: Context, noteType: String): ImmersiveKitSettings {
+        val prefs = context.getSharedPreferences("immersive_kit_prefs", Context.MODE_PRIVATE)
+
+        return ImmersiveKitSettings(
+            noteType = noteType,
+            exactSearch = prefs.getBoolean(getnoteTypeSpecificKey("exact_search", noteType), false),
+            highlighting = prefs.getBoolean(getnoteTypeSpecificKey("highlighting", noteType), true),
+            drama = prefs.getBoolean(getnoteTypeSpecificKey("drama", noteType), true),
+            anime = prefs.getBoolean(getnoteTypeSpecificKey("anime", noteType), false),
+            games = prefs.getBoolean(getnoteTypeSpecificKey("games", noteType), false),
+            keywordField = prefs.getString(getnoteTypeSpecificKey("keyword_field", noteType), "Ignore") ?: "Ignore",
+            keywordFuriganaField = prefs.getString(getnoteTypeSpecificKey("keyword_furigana_field", noteType), "Ignore") ?: "Ignore",
+            sentenceField = prefs.getString(getnoteTypeSpecificKey("sentence_field", noteType), "Ignore") ?: "Ignore",
+            translationField = prefs.getString(getnoteTypeSpecificKey("translation_field", noteType), "Ignore") ?: "Ignore",
+            pictureField = prefs.getString(getnoteTypeSpecificKey("picture_field", noteType), "Ignore") ?: "Ignore",
+            audioField = prefs.getString(getnoteTypeSpecificKey("audio_field", noteType), "Ignore") ?: "Ignore",
+            sourceField = prefs.getString(getnoteTypeSpecificKey("source_field", noteType), "Ignore") ?: "Ignore",
+            prevSentenceField = prefs.getString(getnoteTypeSpecificKey("prev_sentence_field", noteType), "Ignore") ?: "Ignore",
+            nextSentenceField = prefs.getString(getnoteTypeSpecificKey("next_sentence_field", noteType), "Ignore") ?: "Ignore"
+        )
+    }
 
     fun generateCacheKey(keyword: String?, settings: ImmersiveKitSettings): String {
         return listOf(
@@ -115,14 +166,20 @@ object ImmersiveKit {
     fun showImmersiveKit(context: Context, selectedCard : Card?) {
         Timber.i("ImmersiveKit:: Showing immersive kit settings")
         val note = selectedCard?.note
+        val col = CollectionManager.getColUnsafe()
+
+        // Get the actual card type (note type) name
+        val noteType = note?.notetype.toString()
+
+
         val isLocked = note?.tags?.contains("Locked") == true
         if (isLocked) {
             showThemedToast(context, "Card is locked by tag - cannot update fields", true)
             return
         }
 
-        // Get SharedPreferences for saving selections
-        val prefs = context.getSharedPreferences("immersive_kit_prefs", Context.MODE_PRIVATE)
+        // Load card type specific settings
+        val currentSettings = loadnoteTypeSettings(context, noteType)
 
         // Create a ScrollView to handle potential overflow
         val scrollView = ScrollView(context)
@@ -159,40 +216,40 @@ object ImmersiveKit {
             return Pair(container, spinner)
         }
 
-        // Create checkboxes with better styling and load saved values
+        // Create checkboxes with loaded values for this card type
         val exactSearchCheckbox = CheckBox(context).apply {
             text = "Exact Search"
             textSize = 16f
             setPadding(0, 8, 0, 8)
-            isChecked = prefs.getBoolean("exact_search", false)
+            isChecked = currentSettings.exactSearch
         }
 
         val highlightingCheckbox = CheckBox(context).apply {
             text = "Highlighting"
             textSize = 16f
             setPadding(0, 8, 0, 8)
-            isChecked = prefs.getBoolean("highlighting", true)
+            isChecked = currentSettings.highlighting
         }
 
         val dramaCheckbox = CheckBox(context).apply {
             text = "Check Drama"
             textSize = 16f
             setPadding(0, 8, 0, 8)
-            isChecked = prefs.getBoolean("drama", true)
+            isChecked = currentSettings.drama
         }
 
         val animeCheckbox = CheckBox(context).apply {
             text = "Check Anime"
             textSize = 16f
             setPadding(0, 8, 0, 8)
-            isChecked = prefs.getBoolean("anime", false)
+            isChecked = currentSettings.anime
         }
 
         val gamesCheckbox = CheckBox(context).apply {
             text = "Check Games"
             textSize = 16f
             setPadding(0, 8, 0, 8)
-            isChecked = prefs.getBoolean("games", false)
+            isChecked = currentSettings.games
         }
 
         // Add a separator line
@@ -241,6 +298,19 @@ object ImmersiveKit {
         val spinnerContainers = mutableListOf<LinearLayout>()
         val adapters = mutableListOf<ArrayAdapter<String>>()
 
+        // Create spinners with loaded settings for this card type
+        val settingsFields = listOf(
+            currentSettings.keywordField,
+            currentSettings.keywordFuriganaField,
+            currentSettings.sentenceField,
+            currentSettings.translationField,
+            currentSettings.pictureField,
+            currentSettings.audioField,
+            currentSettings.sourceField,
+            currentSettings.prevSentenceField,
+            currentSettings.nextSentenceField
+        )
+
         spinnerLabels.forEachIndexed { index, label ->
             val (container, spinner) = createLabeledSpinner(label)
             val adapter = ArrayAdapter(context, layout.simple_spinner_item, dropdownItems.toMutableList())
@@ -248,21 +318,11 @@ object ImmersiveKit {
             spinner.adapter = adapter
 
             adapters.add(adapter)
-
             container.visibility = GONE
 
-            // Load saved spinner selection
-            val prefKey = "spinner_${label.replace(" ", "_").lowercase()}"
-            val savedField = when (val raw = prefs.all[prefKey]) {
-                is String -> raw
-                is Int -> null  // Previously stored as position; now ignored
-                else -> null
-            } ?: "Ignore"
-
+            // Set spinner selection from loaded settings
+            val savedField = settingsFields[index]
             val savedIndex = dropdownItems.indexOf(savedField)
-            if (savedIndex >= 0) {
-                spinner.setSelection(savedIndex)
-            }
             if (savedIndex >= 0) {
                 spinner.setSelection(savedIndex)
             }
@@ -431,62 +491,40 @@ object ImmersiveKit {
             }
         }
 
-        // Set RUN button click listener
+        // Modified RUN button click listener
         runButton.setOnClickListener {
-            val exactSearch = exactSearchCheckbox.isChecked
-            val highlighting = highlightingCheckbox.isChecked
-            val anime = animeCheckbox.isChecked
-            val drama = dramaCheckbox.isChecked
-            val games = gamesCheckbox.isChecked
-
-            // Save all selections to SharedPreferences
-            prefs.edit().apply {
-                putBoolean("exact_search", exactSearch)
-                putBoolean("highlighting", highlighting)
-                putBoolean("anime", anime)
-                putBoolean("drama", drama)
-                putBoolean("games", games)
-
-                // Save spinner selections
-                spinners.forEachIndexed { index, spinner ->
-                    val prefKey = "spinner_${spinnerLabels[index].replace(" ", "_").lowercase()}"
-                    putString(prefKey, spinner.selectedItem.toString())
-                }
-
-                apply() // Save asynchronously
-            }
-
-            // Get all spinner selections
-            val spinnerSelections = spinners.mapIndexed { index, spinner -> spinner.selectedItem.toString()}
-
-            Timber.i("ImmersiveKit:: Running with settings - Exact: $exactSearch, Highlighting: $highlighting")
-            Timber.i("ImmersiveKit:: Spinner selections: ${spinnerSelections.joinToString(", ")}")
-
-            // Make API call with these settings
-            val settings = ImmersiveKitSettings(
-                exactSearch,
-                highlighting,
-                drama,
-                anime,
-                games,
-                spinnerSelections.getOrNull(0) ?: "Ignore",
-                spinnerSelections.getOrNull(1) ?: "Ignore",
-                spinnerSelections.getOrNull(2) ?: "Ignore",
-                spinnerSelections.getOrNull(3) ?: "Ignore",
-                spinnerSelections.getOrNull(4) ?: "Ignore",
-                spinnerSelections.getOrNull(5) ?: "Ignore",
-                spinnerSelections.getOrNull(6) ?: "Ignore",
-                spinnerSelections.getOrNull(7) ?: "Ignore",
+            val newSettings = ImmersiveKitSettings(
+                noteType = noteType,
+                exactSearch = exactSearchCheckbox.isChecked,
+                highlighting = highlightingCheckbox.isChecked,
+                drama = dramaCheckbox.isChecked,
+                anime = animeCheckbox.isChecked,
+                games = gamesCheckbox.isChecked,
+                keywordField = spinners[0].selectedItem.toString(),
+                keywordFuriganaField = spinners[1].selectedItem.toString(),
+                sentenceField = spinners[2].selectedItem.toString(),
+                translationField = spinners[3].selectedItem.toString(),
+                pictureField = spinners[4].selectedItem.toString(),
+                audioField = spinners[5].selectedItem.toString(),
+                sourceField = spinners[6].selectedItem.toString(),
+                prevSentenceField = spinners[7].selectedItem.toString(),
+                nextSentenceField = spinners[8].selectedItem.toString()
             )
 
-            if (settings.keywordField != "Ignore" && settings.sentenceField != "Ignore") {
+            // Save settings for this card type
+            saveNotetypeSettings(context, noteType, newSettings)
+
+            Timber.i("ImmersiveKit:: Running with settings for card type '$noteType' - Exact: ${newSettings.exactSearch}, Highlighting: ${newSettings.highlighting}")
+            Timber.i("ImmersiveKit:: Field mappings: Keyword=${newSettings.keywordField}, Sentence=${newSettings.sentenceField}")
+
+            if (newSettings.keywordField != "Ignore" && newSettings.sentenceField != "Ignore") {
                 if (selectedCard == null) {
                     showThemedToast(context, "No card selected", true)
                     dialog.dismiss()
                     return@setOnClickListener
                 }
                 try {
-                    makeApiCall(context, selectedCard, settings)
+                    makeApiCall(context, selectedCard, newSettings)
                 } catch (e: Exception) {
                     Timber.e(e, "Error in makeApiCall")
                     showThemedToast(context, "Failed to get sentence: ${e.localizedMessage}", true)
@@ -585,7 +623,7 @@ object ImmersiveKit {
         if (plain.isNotBlank()) {
             val plainPattern = Regex(Regex.escape(plain))
             stylized = plainPattern.replace(sentence) { matchResult ->
-                    "<$highlightingSymbol>${matchResult.value}</$highlightingSymbol>"
+                "<$highlightingSymbol>${matchResult.value}</$highlightingSymbol>"
             }
             if (stylized != sentence)
                 return  stylized
@@ -800,13 +838,24 @@ object ImmersiveKit {
                         } else if (cachedJson != null) {
                             val examples = JSONArray(cachedJson)
                             processAndDisplayExample(context, selectedCard, examples, note!!, fieldNames!!, settings, keyword, keywordFurigana, toast)
+                        } else {
+                            // Show toast here if no examples and no cached data
+                            withContext(Dispatchers.Main) {
+                                showThemedToast(context, "No examples found in api or cache", true)
+                            }
+                        }
+                    } else if (cachedJson != null) {
+                        val examples = JSONArray(cachedJson)
+                        processAndDisplayExample(context, selectedCard, examples, note!!, fieldNames!!, settings, keyword, keywordFurigana, toast)
+                    } else {
+                        withContext(Dispatchers.Main) {
+                            showThemedToast(context, "No examples found in api or cache", true)
                         }
                     }
                 } else if (cachedJson != null) {
                     val examples = JSONArray(cachedJson)
                     processAndDisplayExample(context, selectedCard, examples, note!!, fieldNames!!, settings, keyword, keywordFurigana, toast)
-                }
-                else {
+                } else {
                     withContext(Dispatchers.Main) {
                         showThemedToast(context, "No examples found in api or cache", true)
                     }
