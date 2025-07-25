@@ -26,6 +26,7 @@ import android.content.Context
 import android.graphics.Color
 import android.view.Gravity
 import android.view.View
+import android.widget.AdapterView
 import android.widget.ArrayAdapter
 import android.widget.Button
 import android.widget.CheckBox
@@ -60,8 +61,14 @@ import java.net.URL
 import java.util.UUID
 import androidx.core.content.edit
 
-object ImmersiveKit {
+// TODO
+/*
+IGNORE FIELDS
+TOAST MESSAGE
+SAME FIELD CRASH
+*/
 
+object ImmersiveKit {
     data class ImmersiveKitSettings(
         // Checkbox settings
         val exactSearch: Boolean = false,
@@ -209,11 +216,13 @@ object ImmersiveKit {
         }
 
         // Create dropdown options from card field names
-        val dropdownItems = selectedCard?.note?.keys() ?: arrayOf("No fields available")
+        val keysArray = selectedCard?.note?.keys()?.asSequence()?.toList()?.toTypedArray()
+            ?: arrayOf("No fields available")
+        val dropdownItems = arrayOf("Ignore") + keysArray
         val spinnerLabels = listOf(
-            "Keyword",
+            "Keyword (Required)",
             "Keyword with Furigana",
-            "Sentence",
+            "Sentence (Required)",
             "Translation",
             "Picture",
             "Audio",
@@ -224,19 +233,32 @@ object ImmersiveKit {
 
         val spinners = mutableListOf<Spinner>()
         val spinnerContainers = mutableListOf<LinearLayout>()
+        val adapters = mutableListOf<ArrayAdapter<String>>()
 
         spinnerLabels.forEachIndexed { index, label ->
             val (container, spinner) = createLabeledSpinner(label)
-            val adapter = ArrayAdapter(context, layout.simple_spinner_item, dropdownItems)
+            val adapter = ArrayAdapter(context, layout.simple_spinner_item, dropdownItems.toMutableList())
             adapter.setDropDownViewResource(layout.simple_spinner_dropdown_item)
             spinner.adapter = adapter
+
+            adapters.add(adapter)
 
             container.visibility = GONE
 
             // Load saved spinner selection
-            val savedSelection = prefs.getInt("spinner_${label.replace(" ", "_").lowercase()}", 0)
-            if (savedSelection < dropdownItems.size) {
-                spinner.setSelection(savedSelection)
+            val prefKey = "spinner_${label.replace(" ", "_").lowercase()}"
+            val savedField = when (val raw = prefs.all[prefKey]) {
+                is String -> raw
+                is Int -> null  // Previously stored as position; now ignored
+                else -> null
+            } ?: "Ignore"
+
+            val savedIndex = dropdownItems.indexOf(savedField)
+            if (savedIndex >= 0) {
+                spinner.setSelection(savedIndex)
+            }
+            if (savedIndex >= 0) {
+                spinner.setSelection(savedIndex)
             }
 
             spinners.add(spinner)
@@ -257,6 +279,7 @@ object ImmersiveKit {
                 setMargins(0, 16, 0, 0)
             }
         }
+
         // Add toggle functionality
         var fieldsVisible = false
         toggleFieldsButton.setOnClickListener {
@@ -342,6 +365,66 @@ object ImmersiveKit {
         // Add the layout to ScrollView
         scrollView.addView(dialogLayout)
 
+        var isUpdatingSpinners = false
+
+        fun updateSpinnerAdapters() {
+            if (isUpdatingSpinners) return
+
+            isUpdatingSpinners = true
+
+            val selectedItems = spinners.map { it.selectedItem?.toString() ?: "Ignore" }.toSet()
+
+            spinners.forEachIndexed { index, spinner ->
+                val currentSelection = spinner.selectedItem?.toString() ?: "Ignore"
+
+                // Filter dropdownItems:
+                // Keep "Ignore" always
+                // Keep the spinner's current selection (even if selected elsewhere)
+                // Remove all other selected field names
+                val filteredOptions = dropdownItems.filter { option ->
+                    option == "Ignore" || option == currentSelection || !selectedItems.contains(option)
+                }
+
+                // Only reset adapter if options have actually changed (avoid unnecessary resets)
+                val oldOptions = (spinner.adapter as? ArrayAdapter<*>)?.let { adapter ->
+                    (0 until adapter.count).map { adapter.getItem(it) }
+                }
+
+                if (oldOptions != filteredOptions) {
+                    val adapter = ArrayAdapter(spinner.context, android.R.layout.simple_spinner_item, filteredOptions)
+                    adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+                    spinner.adapter = adapter
+                }
+
+                // Set selection to currentSelection or default to "Ignore"
+                val position = filteredOptions.indexOf(currentSelection).takeIf { it >= 0 } ?: filteredOptions.indexOf("Ignore").takeIf { it >= 0 } ?: 0
+                spinner.setSelection(position)
+            }
+
+            isUpdatingSpinners = false
+        }
+
+        spinners.forEach { spinner ->
+            spinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+                override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
+                    if (!isUpdatingSpinners) {
+                        updateSpinnerAdapters()
+                    }
+                }
+                override fun onNothingSelected(parent: AdapterView<*>?) {}
+            }
+        }
+
+        updateSpinnerAdapters()
+        spinners.forEach { spinner ->
+            spinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+                override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
+                    updateSpinnerAdapters()
+                }
+                override fun onNothingSelected(parent: AdapterView<*>?) {}
+            }
+        }
+
         // Set RUN button click listener
         runButton.setOnClickListener {
             val exactSearch = exactSearchCheckbox.isChecked
@@ -361,7 +444,7 @@ object ImmersiveKit {
                 // Save spinner selections
                 spinners.forEachIndexed { index, spinner ->
                     val prefKey = "spinner_${spinnerLabels[index].replace(" ", "_").lowercase()}"
-                    putInt(prefKey, spinner.selectedItemPosition)
+                    putString(prefKey, spinner.selectedItem.toString())
                 }
 
                 apply() // Save asynchronously
@@ -395,8 +478,13 @@ object ImmersiveKit {
                 showThemedToast(context, "Card is locked by tag - cannot update fields", true)
                 dialog.dismiss()
             } else {
-                makeApiCall(context, selectedCard!!, settings)
-                dialog.dismiss()
+                if (settings.keywordField != "Ignore" && settings.sentenceField != "Ignore") {
+                    makeApiCall(context, selectedCard!!, settings)
+                    dialog.dismiss()
+                }
+                else {
+                    showThemedToast(context, "Please select a keyword and sentence field", true)
+                }
             }
         }
 
@@ -595,6 +683,7 @@ object ImmersiveKit {
                 )
             val translation = example.optString("translation", "")
             val source = example.optString("deck_name", "")
+            val ik_id = example.optString("id", "")
             val audioUrl = example.optString("sound_url", "")
             val imageUrl =
                 "https://api.immersionkit.com/download_sentence_image?id=${
@@ -605,6 +694,11 @@ object ImmersiveKit {
                 }"
 
             withContext(Dispatchers.Main) {
+                if (settings.sentenceField == "Ignore") {
+                    showThemedToast(context, "Sentence field is set to Ignore", true)
+                    return@withContext
+                }
+
                 if (note.fields[sentenceFieldIdx] != sentenceWithFurigana) {
                     updateNoteFields(
                         context,
@@ -616,11 +710,14 @@ object ImmersiveKit {
                         source,
                         prevAndNext?.first ?: "",
                         prevAndNext?.second ?: "",
+                        ik_id,
                         settings,
                         toast
                     )
+                } else if (sentenceFieldIdx >= 0) {
+                    showThemedToast(context, "Invalid sentence", true)
                 } else {
-                    showThemedToast(context, "", true)
+                    showThemedToast(context, "Sentence field is set to Ignore — skipping update", false)
                 }
             }
         } else {
@@ -657,6 +754,7 @@ object ImmersiveKit {
                     fieldNames?.indexOf(settings.keywordFuriganaField)?.takeIf { it >= 0 }?.let { index ->
                         fieldValues?.get(index)?.split(",")[0]
                     }
+
                 // Build API URL
                 val apiUrl =
                     if (settings.exactSearch) {
@@ -741,6 +839,7 @@ object ImmersiveKit {
         source: String,
         prevSentence: String,
         nextSentence: String,
+        immersionKitId: String,
         settings: ImmersiveKitSettings,
         startToast : Toast,
     ) {
@@ -750,16 +849,30 @@ object ImmersiveKit {
         val fieldNames = note.keys()
         val fieldValues = note.fields.toMutableList()
 
-        val keyword =
-            fieldNames
-            .indexOf("Entry")
-            .takeIf { it >= 0 }
-            ?.let { index -> fieldValues[index].split(",")[0] }
-        fieldNames.indexOf(settings.sentenceField).takeIf { it >= 0 }?.let { fieldValues[it] = sentenceWithFurigana }
-        fieldNames.indexOf(settings.translationField).takeIf { it >= 0 }?.let { fieldValues[it] = translation }
-        fieldNames.indexOf(settings.sourceField).takeIf { it >= 0 }?.let { fieldValues[it] = source }
-        fieldNames.indexOf(settings.prevSentenceField).takeIf { it >= 0 }?.let { fieldValues[it] = prevSentence }
-        fieldNames.indexOf(settings.nextSentenceField).takeIf { it >= 0 }?.let { fieldValues[it] = nextSentence }
+        val entryIndex = fieldNames.indexOf("Entry")
+        val keyword = if (entryIndex >= 0 && fieldValues[entryIndex] != "Ignore") {
+            fieldValues[entryIndex].split(",")[0]
+        } else {
+            null  // or return here if inside a function
+        }
+
+        fun updateField(fieldName: String, newValue: String) {
+            if (fieldName != "Ignore") {
+                fieldNames.indexOf(fieldName).takeIf {it >= 0 }?.let {
+                    fieldValues[it] = newValue
+                }
+            }
+        }
+
+        updateField(settings.sentenceField, sentenceWithFurigana)
+        updateField(settings.translationField, translation)
+        updateField(settings.sourceField, source)
+        updateField(settings.prevSentenceField, prevSentence)
+        updateField(settings.nextSentenceField, nextSentence)
+
+        if (fieldNames.contains("KitID")) {
+            fieldNames.indexOf("KitID").takeIf { it >= 0 }?.let { fieldValues[it] = immersionKitId }
+        }
 
         // set gathered data
         note.fields = fieldValues.toMutableList()
@@ -855,3 +968,4 @@ object ImmersiveKit {
         return result != null
     }
 }
+
