@@ -114,6 +114,12 @@ object ImmersiveKit {
 
     fun showImmersiveKit(context: Context, selectedCard : Card?) {
         Timber.i("ImmersiveKit:: Showing immersive kit settings")
+        val note = selectedCard?.note
+        val isLocked = note?.tags?.contains("Locked") == true
+        if (isLocked) {
+            showThemedToast(context, "Card is locked by tag - cannot update fields", true)
+            return
+        }
 
         // Get SharedPreferences for saving selections
         val prefs = context.getSharedPreferences("immersive_kit_prefs", Context.MODE_PRIVATE)
@@ -391,8 +397,8 @@ object ImmersiveKit {
                 }
 
                 if (oldOptions != filteredOptions) {
-                    val adapter = ArrayAdapter(spinner.context, android.R.layout.simple_spinner_item, filteredOptions)
-                    adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+                    val adapter = ArrayAdapter(spinner.context, layout.simple_spinner_item, filteredOptions)
+                    adapter.setDropDownViewResource(layout.simple_spinner_dropdown_item)
                     spinner.adapter = adapter
                 }
 
@@ -463,28 +469,32 @@ object ImmersiveKit {
                 drama,
                 anime,
                 games,
-                spinnerSelections[0],
-                spinnerSelections[1],
-                spinnerSelections[2],
-                spinnerSelections[3],
-                spinnerSelections[4],
-                spinnerSelections[5],
-                spinnerSelections[6],
-                spinnerSelections[7],
+                spinnerSelections.getOrNull(0) ?: "Ignore",
+                spinnerSelections.getOrNull(1) ?: "Ignore",
+                spinnerSelections.getOrNull(2) ?: "Ignore",
+                spinnerSelections.getOrNull(3) ?: "Ignore",
+                spinnerSelections.getOrNull(4) ?: "Ignore",
+                spinnerSelections.getOrNull(5) ?: "Ignore",
+                spinnerSelections.getOrNull(6) ?: "Ignore",
+                spinnerSelections.getOrNull(7) ?: "Ignore",
             )
-            val note = selectedCard?.note
-            val isLocked = note?.tags?.contains("Locked") == true
-            if (isLocked) {
-                showThemedToast(context, "Card is locked by tag - cannot update fields", true)
-                dialog.dismiss()
-            } else {
-                if (settings.keywordField != "Ignore" && settings.sentenceField != "Ignore") {
-                    makeApiCall(context, selectedCard!!, settings)
+
+            if (settings.keywordField != "Ignore" && settings.sentenceField != "Ignore") {
+                if (selectedCard == null) {
+                    showThemedToast(context, "No card selected", true)
                     dialog.dismiss()
+                    return@setOnClickListener
                 }
-                else {
-                    showThemedToast(context, "Please select a keyword and sentence field", true)
+                try {
+                    makeApiCall(context, selectedCard, settings)
+                } catch (e: Exception) {
+                    Timber.e(e, "Error in makeApiCall")
+                    showThemedToast(context, "Failed to get sentence: ${e.localizedMessage}", true)
                 }
+                dialog.dismiss()
+            }
+            else {
+                showThemedToast(context, "Please select a keyword and sentence field", true)
             }
         }
 
@@ -551,10 +561,10 @@ object ImmersiveKit {
         val plain = keywordPair.first.split(",")[0]
         val plainKanji = plain.replace(Regex("[^\\p{InCJKUnifiedIdeographs}]"), "")
         val furigana = keywordPair.second.split(",")[0]
-        var stylized = sentence
+        var stylized: String
 
         // 1. Try to bold kanji[furigana] pattern in sentence (e.g. 噴水[ふんすい])
-        val furiganaPattern = Regex("${Regex.escape(plainKanji)}\\[[^\\]]+\\]")
+        val furiganaPattern = Regex("${Regex.escape(plainKanji)}\\[[^]]+]")
         stylized = furiganaPattern.replace(sentence) { matchResult ->
             "<$highlightingSymbol>${matchResult.value}</$highlightingSymbol>"
         }
@@ -584,7 +594,7 @@ object ImmersiveKit {
         // 4. Try to bold just the plain kanji, but if it has furigana attached, bold that whole block
         if (plainKanji.isNotBlank()) {
             // Try to match kanji + [furigana] in one go
-            val kanjiWithFuriganaPattern = Regex("${Regex.escape(plainKanji)}\\[[^\\]]+\\]")
+            val kanjiWithFuriganaPattern = Regex("${Regex.escape(plainKanji)}\\[[^]]+]")
             stylized = kanjiWithFuriganaPattern.replace(sentence) { matchResult ->
                 "<$highlightingSymbol>${matchResult.value}</$highlightingSymbol>"
             }
@@ -764,7 +774,7 @@ object ImmersiveKit {
                     }
 
                 // Make API call
-                var response = makeHttpRequest(apiUrl)
+                val response = makeHttpRequest(apiUrl)
                 val cacheKey = generateCacheKey(keyword, settings)
                 val cachedJson = getFromCache(context, cacheKey)
 
@@ -876,7 +886,7 @@ object ImmersiveKit {
 
         // set gathered data
         note.fields = fieldValues.toMutableList()
-        val updatedCount = col.updateNote(note)
+        col.updateNote(note)
 
         //Download audio and pictures
         val folderPath = col.media.dir
@@ -949,7 +959,7 @@ object ImmersiveKit {
         val index = fieldNames.indexOf(fieldName).takeIf { it >= 0 } ?: return false
         val result = downloadFile(keyword, mediaUrl, folder, extension)
         withContext(Dispatchers.Main) {
-            val fieldContent = if (result != null) {
+            if (result != null) {
                 val fileName = File(result).name
                 val content = tagBuilder(fileName)
                 note.setField(index, content)
