@@ -60,6 +60,7 @@ import com.ichi2.anki.libanki.DeckNameId
 import com.ichi2.anki.libanki.QueueType
 import com.ichi2.anki.libanki.QueueType.ManuallyBuried
 import com.ichi2.anki.libanki.QueueType.SiblingBuried
+import com.ichi2.anki.libanki.notesOfCards
 import com.ichi2.anki.model.CardStateFilter
 import com.ichi2.anki.model.CardsOrNotes
 import com.ichi2.anki.model.CardsOrNotes.CARDS
@@ -256,6 +257,13 @@ class CardBrowserViewModel(
      * If cards are marked or flagged
      */
     val flowOfCardStateChanged = MutableSharedFlow<Unit>()
+
+    /**
+     * Opens a prompt for the user to input a saved search name
+     *
+     * The parameter is the 'searchTerms' to be used in the saved search
+     */
+    val flowOfSaveSearchNamePrompt = MutableSharedFlow<String>()
 
     var focusedRow: CardOrNoteId? = null
         set(value) {
@@ -499,6 +507,22 @@ class CardBrowserViewModel(
             }
             focusedRow = id
         }
+
+    /**
+     * Handles right-click on a row, by default delegating to onLongPress
+     */
+    fun handleRightClick(rowSelection: RowSelection) {
+        viewModelScope.launch {
+            val id = rowSelection.rowId
+            currentCardId = id.toCardId(cardsOrNotes)
+            if (isInMultiSelectMode && lastSelectedId != null) {
+                selectRowsBetween(lastSelectedId!!, id)
+            } else {
+                toggleRowSelection(rowSelection)
+            }
+            focusedRow = id
+        }
+    }
 
     // on a row tap
     fun openNoteEditorForCard(cardId: CardId) {
@@ -975,20 +999,22 @@ class CardBrowserViewModel(
     /**
      * Searches for all marked notes and replaces the current search results with these marked notes.
      */
-    suspend fun searchForMarkedNotes() {
-        // only intended to be used if the user has no selection
-        if (hasSelectedAnyRows()) return
-        setFilterQuery("tag:marked")
-    }
+    fun searchForMarkedNotes() =
+        viewModelScope.launch {
+            // only intended to be used if the user has no selection
+            if (hasSelectedAnyRows()) return@launch
+            setFilterQuery("tag:marked")
+        }
 
     /**
      * Searches for all suspended cards and replaces the current search results with these suspended cards.
      */
-    suspend fun searchForSuspendedCards() {
-        // only intended to be used if the user has no selection
-        if (hasSelectedAnyRows()) return
-        setFilterQuery("is:suspended")
-    }
+    fun searchForSuspendedCards() =
+        viewModelScope.launch {
+            // only intended to be used if the user has no selection
+            if (hasSelectedAnyRows()) return@launch
+            setFilterQuery("is:suspended")
+        }
 
     suspend fun setFlagFilter(flag: Flag) {
         Timber.i("filtering to flag: %s", flag)
@@ -1341,6 +1367,17 @@ class CardBrowserViewModel(
      * Returns the decks which are suitable for [moveSelectedCardsToDeck]
      */
     suspend fun getAvailableDecks(): List<DeckNameId> = withCol { decks.allNamesAndIds(includeFiltered = false) }
+
+    /** Opens the UI to save the current [tempSearchQuery] as a saved search */
+    fun saveCurrentSearch() =
+        viewModelScope.launch {
+            val query = tempSearchQuery
+            if (query.isNullOrEmpty()) {
+                Timber.d("not prompting to saving search: no query")
+                return@launch
+            }
+            flowOfSaveSearchNamePrompt.emit(query)
+        }
 }
 
 enum class SaveSearchResult {

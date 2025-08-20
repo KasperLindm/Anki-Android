@@ -130,6 +130,7 @@ object PreferenceUpgradeService {
                     yield(RemoveLastExportedAtTime())
                     yield(RemoveLongTouchGesture())
                     yield(UpgradeDoubleTapTimeout())
+                    yield(RemoveHostNum())
                 }
 
             /** Returns a list of preference upgrade classes which have not been applied */
@@ -476,13 +477,13 @@ object PreferenceUpgradeService {
                         if (localeCode.contains("_") || localeCode.contains("-")) {
                             try {
                                 val localeParts = localeCode.split("[_-]".toRegex(), 2).toTypedArray()
-                                Locale(localeParts[0], localeParts[1])
+                                Locale.forLanguageTag(localeParts[0] + '-' + localeParts[1])
                             } catch (e: ArrayIndexOutOfBoundsException) {
                                 Timber.w(e, "getLocale variant split fail, using code '%s' raw.", localeCode)
-                                Locale(localeCode)
+                                Locale.forLanguageTag(localeCode)
                             }
                         } else {
-                            Locale(localeCode) // guaranteed to be non null
+                            Locale.forLanguageTag(localeCode) // guaranteed to be non null
                         }
                     return locale
                 }
@@ -714,6 +715,14 @@ object PreferenceUpgradeService {
                 preferences.edit {
                     remove(oldPrefKey)
                     putInt("doubleTapTimeout", newValue)
+                }
+            }
+        }
+
+        internal class RemoveHostNum : PreferenceUpgrade(23) {
+            override fun upgrade(preferences: SharedPreferences) {
+                preferences.edit {
+                    remove("hostNum")
                 }
             }
         }

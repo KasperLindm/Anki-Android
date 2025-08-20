@@ -20,6 +20,7 @@ import android.graphics.Color
 import androidx.annotation.CheckResult
 import androidx.core.content.edit
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import anki.scheduler.CardAnswer.Rating
 import com.ichi2.anki.cardviewer.Gesture
 import com.ichi2.anki.cardviewer.Gesture.SWIPE_DOWN
 import com.ichi2.anki.cardviewer.Gesture.SWIPE_RIGHT
@@ -28,7 +29,6 @@ import com.ichi2.anki.cardviewer.GestureProcessor
 import com.ichi2.anki.cardviewer.ViewerCommand
 import com.ichi2.anki.libanki.Consts
 import com.ichi2.anki.libanki.DeckId
-import com.ichi2.anki.libanki.sched.Ease
 import com.ichi2.anki.model.WhiteboardPenColor
 import com.ichi2.anki.preferences.sharedPrefs
 import com.ichi2.anki.reviewer.Binding
@@ -149,12 +149,12 @@ class ReviewerNoParamTest : RobolectricTest() {
         val reviewer = startReviewerFullScreen()
 
         reviewer.displayCardAnswer()
-        advanceRobolectricLooperWithSleep()
+        advanceRobolectricLooper()
 
         val hideCount = reviewer.delayedHideCount
 
-        reviewer.answerCard(Ease.AGAIN)
-        advanceRobolectricLooperWithSleep()
+        reviewer.answerCard(Rating.AGAIN)
+        advanceRobolectricLooper()
 
         assertThat("Hide should be called after answering a card", reviewer.delayedHideCount, greaterThan(hideCount))
     }
@@ -167,22 +167,21 @@ class ReviewerNoParamTest : RobolectricTest() {
             val reviewer = startReviewerFullScreen()
 
             reviewer.displayCardAnswer()
-            advanceRobolectricLooperWithSleep()
-            reviewer.answerCard(Ease.AGAIN)
-            advanceRobolectricLooperWithSleep()
+            advanceRobolectricLooper()
+            reviewer.answerCard(Rating.AGAIN)
+            advanceRobolectricLooper()
 
             val hideCount = reviewer.delayedHideCount
 
             reviewer.undo()
 
-            advanceRobolectricLooperWithSleep()
+            advanceRobolectricLooper()
 
             assertThat("Hide should be called after answering a card", reviewer.delayedHideCount, greaterThan(hideCount))
         }
 
     @Test
     @Flaky(OS.ALL, "hasDrawerSwipeConflicts was false")
-    @RunInBackground
     fun defaultDrawerConflictIsTrueIfGesturesEnabled() {
         enableGestureSetting()
         enableGesture(SWIPE_RIGHT)
@@ -225,7 +224,6 @@ class ReviewerNoParamTest : RobolectricTest() {
     }
 
     @Test
-    @RunInBackground
     @Flaky(os = OS.ALL, "final assertion is false")
     fun drawerConflictsIfUp() {
         enableGestureSetting()
@@ -237,7 +235,6 @@ class ReviewerNoParamTest : RobolectricTest() {
     }
 
     @Test
-    @RunInBackground
     @Flaky(os = OS.ALL, "final assertion is false")
     fun drawerConflictsIfDown() {
         enableGestureSetting()
@@ -249,7 +246,6 @@ class ReviewerNoParamTest : RobolectricTest() {
     }
 
     @Test
-    @RunInBackground
     @Flaky(os = OS.ALL, "final assertion is false")
     fun drawerConflictsIfRight() {
         enableGestureSetting()

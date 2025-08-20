@@ -82,7 +82,7 @@
     <string name="button_size" maxLength="41">اندازه دکمه پاسخ</string>
     <string name="card_browser_font_size" maxLength="41">تغییر اندازه فونت مرورگر کارت</string>
     <string name="card_browser_hide_media" maxLength="41">نمایش نام فایل‌ها در مرورگر کارت</string>
-    <string name="card_browser_hide_media_summary">نمایش نام فایل‌های رسانه در فیلد سوال/پاسخ در مرورگر کارت</string>
+    <string name="card_browser_hide_media_summary">Display audio filenames in the card browser question/answer fields</string>
     <string name="col_path" maxLength="41">مسیر قرارگیری AnkiDroid</string>
     <string name="fullscreen_review" maxLength="41">حالت تمام‌صفحه</string>
     <string name="full_screen_off">خاموش</string>
@@ -189,7 +189,7 @@
     <string name="pref_keep_screen_on" maxLength="41">روشن نگه‌داشتن صفحه</string>
     <string name="pref_keep_screen_on_summ">غیرفعال کردن زمان خاموش شدن صفحه نمایش</string>
     <string name="enable_api_title" maxLength="41">فعال کردن API این برنامه</string>
-    <string name="enable_api_summary">به دیگر برنامه ها اجازه دهید تا با ankidroid ارتباط داشته و اطلاعات را بدون دخالت شما بخوانند و بنویسند</string>
+    <string name="enable_api_summary">به دیگر برنامه ها اجازه دهید تا با AnkiDroid ارتباط داشته و اطلاعات را بدون دخالت شما بخوانند و بنویسند</string>
     <string name="custom_buttons" maxLength="41">دکمه های نوار برنامه</string>
     <string name="custom_buttons_summary">اینکه چه عملى در نوار برنامه ظاهر شود را شخصی سازی کنید</string>
     <string name="custom_buttons_setting_always_show">همیشه نمایش بده</string>

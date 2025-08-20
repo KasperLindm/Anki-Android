@@ -35,6 +35,7 @@ import androidx.core.net.toUri
 import androidx.core.view.isVisible
 import com.google.android.material.textfield.TextInputEditText
 import com.google.android.material.textfield.TextInputLayout
+import com.ichi2.anki.CollectionManager.withCol
 import com.ichi2.anki.common.utils.annotation.KotlinCleanup
 import com.ichi2.anki.dialogs.help.HelpDialog
 import com.ichi2.anki.pages.RemoveAccountFragment
@@ -44,6 +45,7 @@ import com.ichi2.anki.utils.ext.showDialogFragment
 import com.ichi2.ui.TextInputEditField
 import com.ichi2.utils.AdaptionUtil.isUserATestClient
 import com.ichi2.utils.Permissions
+import net.ankiweb.rsdroid.exceptions.BackendSyncException
 import timber.log.Timber
 
 /**
@@ -150,7 +152,12 @@ open class MyAccount : AnkiActivity() {
 
     private fun logout() {
         launchCatchingTask {
-            syncLogout(baseContext)
+            Prefs.hkey = null
+            Prefs.username = null
+            Prefs.currentSyncUri = null
+            withCol {
+                media.forceResync()
+            }
             switchToState(STATE_LOG_IN)
         }
     }
@@ -321,6 +328,37 @@ open class MyAccount : AnkiActivity() {
     private fun openAnkiDroidPrivacyPolicy() {
         Timber.i("Opening 'Privacy policy'")
         showDialogFragment(HelpDialog.newPrivacyPolicyInstance())
+    }
+
+    private fun handleNewLogin(
+        username: String,
+        password: String,
+        resultLauncher: ActivityResultLauncher<String>,
+    ) {
+        val endpoint = getEndpoint()
+        launchCatchingTask {
+            val auth =
+                try {
+                    withProgress(
+                        extractProgress = {
+                            text = getString(R.string.sign_in)
+                        },
+                        onCancel = ::cancelSync,
+                    ) {
+                        withCol {
+                            syncLogin(username, password, endpoint)
+                        }
+                    }
+                } catch (exc: BackendSyncException.BackendSyncAuthFailedException) {
+                    // auth failed; clear out login details
+                    updateLogin("", "")
+                    throw exc
+                }
+            updateLogin(username, auth.hkey)
+            setResult(RESULT_OK)
+            checkNotificationPermission(this@MyAccount, resultLauncher)
+            finish()
+        }
     }
 
     companion object {

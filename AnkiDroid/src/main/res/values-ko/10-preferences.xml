@@ -81,7 +81,7 @@
     <string name="button_size" maxLength="41">정답 버튼 크기</string>
     <string name="card_browser_font_size" maxLength="41">카드 탐색기 글꼴 크기 조정</string>
     <string name="card_browser_hide_media" maxLength="41">카드 탐색기에서 파일명 보기</string>
-    <string name="card_browser_hide_media_summary">카드 탐색기의 질문/답변 필드에 미디어 파일 이름을 표시합니다.</string>
+    <string name="card_browser_hide_media_summary">Display audio filenames in the card browser question/answer fields</string>
     <string name="col_path" maxLength="41">AnkiDroid 디렉토리</string>
     <string name="fullscreen_review" maxLength="41">전체 화면 모드</string>
     <string name="full_screen_off">끔</string>
@@ -197,7 +197,7 @@
     <string name="reset_settings_to_default">기본값으로 초기화하기</string>
     <string name="reset">초기화하기</string>
     <string name="thirdparty_apps_title" maxLength="41">타사 API 앱</string>
-    <string name="thirdparty_apps_summary">Ankidroid API를 사용하는 어플 목록 보기 (사전, 편집기 등)</string>
+    <string name="thirdparty_apps_summary">AnkiDroid API를 사용하는 어플 목록 보기 (사전, 편집기 등)</string>
     <string name="pref_controls_reviews_tab" maxLength="41" comment="Name of the tab to configure controls for the reviews screen">Reviews</string>
     <string name="pref_controls_previews_tab" maxLength="41" comment="Name of the tab to configure controls for the previews screen">Previews</string>
     <string name="toggle_backside_only" maxLength="41" comment="Control setting that toggles \'Backside only\' in the previews screen">Toggle backside only</string>

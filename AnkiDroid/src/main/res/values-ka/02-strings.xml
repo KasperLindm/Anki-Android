@@ -161,7 +161,7 @@
     <string name="export_email_subject">AnkiDroid-მა წარმატებით განახორციელა ბარათების ექსპორტი: %s</string>
     <string name="export_email_text"><![CDATA[        გამარჯობა!
         <br/><br/>
-        ეს არის Ankidroid-ის მიერ გამოგზავნილი ბარათების დასტა[1].
+        ეს არის AnkiDroid-ის მიერ გამოგზავნილი ბარათების დასტა[1].
         სცადეთ მისი გახსნა Anki-ს ნებისმიერი ხელმისაწვდომი ვერსიით[2] და ისიამოვნეთ ადვილი და შედეგიანი სწავლებით!<br/><br/>
         [1] %1$s<br/>
         [2] %2$s
@@ -261,7 +261,7 @@
     <!-- %% is required to display % symbol. Reference: https://stackoverflow.com/a/16834358 -->
     <string name="percentage">%s%%</string>
     <string name="download_deck">დასტის ჩამოტვირთვა</string>
-    <string name="open_in_browser" comment="Label of a button inviting to open ankiweb\'s shared deck page if automated download failed">ბრაუზერში გახსნა</string>
+    <string name="open_in_browser" comment="Label of a button inviting to open ankiweb\'s shared deck page if automated download failed">Open in browser</string>
     <string name="try_again">ხელახლა სცადეთ</string>
     <string name="cancel_download">ჩამოტვირთვის გაუქმება</string>
     <string name="cancel_download_question_title">გაუქმდეს ჩამოტვირთვა?</string>

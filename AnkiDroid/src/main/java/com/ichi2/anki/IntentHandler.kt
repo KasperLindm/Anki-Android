@@ -26,6 +26,7 @@ import androidx.annotation.VisibleForTesting
 import androidx.core.app.TaskStackBuilder
 import androidx.core.content.FileProvider
 import androidx.core.content.IntentCompat
+import androidx.work.WorkManager
 import com.ichi2.anki.common.annotations.NeedsTest
 import com.ichi2.anki.common.utils.trimToLength
 import com.ichi2.anki.dialogs.DialogHandler.Companion.storeMessage
@@ -33,7 +34,6 @@ import com.ichi2.anki.dialogs.DialogHandlerMessage
 import com.ichi2.anki.dialogs.requireDeckPickerOrShowError
 import com.ichi2.anki.libanki.DeckId
 import com.ichi2.anki.noteeditor.NoteEditorLauncher
-import com.ichi2.anki.preferences.sharedPrefs
 import com.ichi2.anki.servicelayer.ScopedStorageService
 import com.ichi2.anki.services.ReminderService
 import com.ichi2.anki.settings.Prefs
@@ -78,7 +78,10 @@ class IntentHandler : AbstractIntentHandler() {
         val launchType = getLaunchType(intent)
         // TODO block the UI with some kind of ProgressDialog instead of cancelling the sync work
         if (requiresCollectionAccess(launchType)) {
-            SyncWorker.cancel(this)
+            // # 18899
+            if (WorkManager.isInitialized()) {
+                SyncWorker.cancel(this)
+            }
         }
         when (launchType) {
             LaunchType.FILE_IMPORT ->
@@ -428,12 +431,11 @@ class IntentHandler : AbstractIntentHandler() {
             override fun handleAsyncMessage(activity: AnkiActivity) {
                 // we may be called via any AnkiActivity but sync is a DeckPicker thing
                 val deckPicker = activity.requireDeckPickerOrShowError() ?: return
-                val preferences = deckPicker.sharedPrefs()
                 val res = deckPicker.resources
-                val hkey = preferences.getString("hkey", "")
-                val millisecondsSinceLastSync = millisecondsSinceLastSync(preferences)
+                val hkey = Prefs.hkey
+                val millisecondsSinceLastSync = millisecondsSinceLastSync()
                 val limited = millisecondsSinceLastSync < INTENT_SYNC_MIN_INTERVAL
-                if (!limited && hkey!!.isNotEmpty() && NetworkUtils.isOnline) {
+                if (!limited && !hkey.isNullOrEmpty() && NetworkUtils.isOnline) {
                     deckPicker.sync()
                 } else {
                     val err = res.getString(R.string.sync_error)
@@ -476,7 +478,7 @@ class IntentHandler : AbstractIntentHandler() {
          * legacy or the new reviewer based on the "newReviewer" preference.
          * It is expected to be used from widget, shortcut, reminders but not from ankidroid directly because of the CLEAR_TOP flag.
          */
-        fun intentToReviewDeckFromShorcuts(
+        fun intentToReviewDeckFromShortcuts(
             context: Context,
             deckId: DeckId,
         ) = Intent(context, IntentHandler::class.java).apply {

@@ -14,6 +14,7 @@ import androidx.core.content.pm.ShortcutManagerCompat
 import androidx.core.view.children
 import androidx.fragment.app.FragmentManager
 import androidx.test.core.app.ActivityScenario
+import anki.scheduler.CardAnswer.Rating
 import app.cash.turbine.test
 import com.ichi2.anki.common.annotations.NeedsTest
 import com.ichi2.anki.common.time.TimeManager
@@ -24,7 +25,6 @@ import com.ichi2.anki.dialogs.DeckPickerContextMenu
 import com.ichi2.anki.dialogs.DeckPickerContextMenu.DeckPickerContextMenuOption
 import com.ichi2.anki.dialogs.utils.title
 import com.ichi2.anki.libanki.DeckId
-import com.ichi2.anki.libanki.sched.Ease
 import com.ichi2.anki.preferences.sharedPrefs
 import com.ichi2.anki.settings.Prefs
 import com.ichi2.anki.utils.Destination
@@ -45,6 +45,7 @@ import org.hamcrest.Matchers.not
 import org.hamcrest.Matchers.notNullValue
 import org.hamcrest.Matchers.nullValue
 import org.junit.Assert.assertEquals
+import org.junit.Assume.assumeTrue
 import org.junit.Before
 import org.junit.Ignore
 import org.junit.Test
@@ -57,6 +58,7 @@ import org.mockito.kotlin.whenever
 import org.robolectric.ParameterizedRobolectricTestRunner
 import org.robolectric.Robolectric
 import org.robolectric.RuntimeEnvironment
+import org.robolectric.Shadows
 import org.robolectric.shadows.ShadowDialog
 import org.robolectric.shadows.ShadowLooper
 import timber.log.Timber
@@ -81,9 +83,7 @@ class DeckPickerTest : RobolectricTest() {
     @Before
     fun before() {
         RuntimeEnvironment.setQualifiers(mQualifiers)
-        getPreferences().edit {
-            putBoolean(IntroductionActivity.INTRODUCTION_SLIDES_SHOWN, true)
-        }
+        setIntroductionSlidesShown(true)
     }
 
     @Test
@@ -259,8 +259,7 @@ class DeckPickerTest : RobolectricTest() {
     }
 
     @Test
-    @RunInBackground
-    @Ignore("Flaky. Try to unflak when AsyncTask is entirely removed.")
+    @Ignore("Flaky. Try to unflake now we're using coroutines")
     fun databaseLockedNoPermissionIntegrationTest() {
         // no permissions -> grant permissions -> db locked
         try {
@@ -313,7 +312,6 @@ class DeckPickerTest : RobolectricTest() {
     }
 
     @Test
-    @RunInBackground
     fun doNotShowOptionsMenuWhenCollectionInaccessible() =
         runTest {
             try {
@@ -356,7 +354,6 @@ class DeckPickerTest : RobolectricTest() {
         }
 
     @Test
-    @RunInBackground
     fun onResumeLoadCollectionFailureWithInaccessibleCollection() {
         try {
             revokeWritePermissions()
@@ -632,7 +629,7 @@ class DeckPickerTest : RobolectricTest() {
         // Answer 'Easy' for one of the cards, burying the other
         col.decks.select(deckWithCards)
         col.sched.deckDueTree() // ? if not called, decks.select(toSelect) un-buries a card
-        col.sched.answerCard(col.sched.card!!, Ease.EASY)
+        col.sched.answerCard(col.sched.card!!, Rating.EASY)
         assertThat("the other card is buried", col.sched.card, nullValue())
 
         // select a deck with no cards
@@ -680,6 +677,36 @@ class DeckPickerTest : RobolectricTest() {
             }
         }
 
+    @Test
+    fun `On a new startup, the App Intro is displayed`() {
+        setIntroductionSlidesShown(false)
+
+        deckPicker {
+            val nextIntent = Shadows.shadowOf(this).nextStartedActivity
+
+            assertThat(
+                "App Intro should be started on a new startup",
+                nextIntent.component?.className,
+                equalTo(IntroductionActivity::class.java.name),
+            )
+        }
+    }
+
+    @Test
+    fun `On not a new startup, the App Intro is not displayed`() {
+        setIntroductionSlidesShown(true)
+
+        deckPicker {
+            val nextIntent = Shadows.shadowOf(this).nextStartedActivity
+
+            assertThat(
+                "No other activity should be started when not a new startup",
+                nextIntent,
+                equalTo(null),
+            )
+        }
+    }
+
     private fun deckPicker(function: suspend DeckPicker.() -> Unit) =
         runTest {
             val deckPicker =
@@ -689,6 +716,12 @@ class DeckPickerTest : RobolectricTest() {
                 )
             function(deckPicker)
         }
+
+    private fun setIntroductionSlidesShown(shown: Boolean) {
+        getPreferences().edit {
+            putBoolean(IntroductionActivity.INTRODUCTION_SLIDES_SHOWN, shown)
+        }
+    }
 
     enum class CollectionType(
         val assetFile: String,

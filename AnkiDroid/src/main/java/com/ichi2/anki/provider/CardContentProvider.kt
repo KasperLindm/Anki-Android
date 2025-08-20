@@ -30,6 +30,7 @@ import android.database.sqlite.SQLiteQueryBuilder
 import android.net.Uri
 import android.webkit.MimeTypeMap
 import androidx.core.net.toUri
+import anki.scheduler.CardAnswer
 import com.ichi2.anki.AnkiDroidApp
 import com.ichi2.anki.BuildConfig
 import com.ichi2.anki.CollectionManager
@@ -56,7 +57,6 @@ import com.ichi2.anki.libanki.Utils
 import com.ichi2.anki.libanki.exception.ConfirmModSchemaException
 import com.ichi2.anki.libanki.exception.EmptyMediaException
 import com.ichi2.anki.libanki.sched.DeckNode
-import com.ichi2.anki.libanki.sched.Ease
 import com.ichi2.utils.FileUtil
 import com.ichi2.utils.FileUtil.internalizeUri
 import com.ichi2.utils.Permissions.arePermissionsDefinedInManifest
@@ -358,7 +358,7 @@ class CardContentProvider : ContentProvider() {
                     val buttonTexts = JSONArray()
                     var i = 0
                     while (i < buttonCount) {
-                        buttonTexts.put(col.sched.nextIvlStr(currentCard, Ease.fromValue(i + 1)))
+                        buttonTexts.put(col.sched.nextIvlStr(currentCard, CardAnswer.Rating.forNumber(i)))
                         i++
                     }
                     addReviewInfoToCursor(currentCard, buttonTexts, buttonCount, rv, col, columns)
@@ -610,16 +610,21 @@ class CardContentProvider : ContentProvider() {
                 val valueSet = values!!.valueSet()
                 var cardOrd = -1
                 var noteId: NoteId = -1
-                var ease: Ease? = null
+
+                @Suppress("DEPRECATION")
+                var ease: com.ichi2.anki.libanki.sched.Ease? = null
                 var timeTaken: Long = -1
                 var bury = -1
                 var suspend = -1
+                @Suppress("DEPRECATION")
                 for ((key) in valueSet) {
                     when (key) {
                         FlashCardsContract.ReviewInfo.NOTE_ID -> noteId = values.getAsLong(key)
                         FlashCardsContract.ReviewInfo.CARD_ORD -> cardOrd = values.getAsInteger(key)
                         FlashCardsContract.ReviewInfo.EASE ->
-                            ease = Ease.fromValue(values.getAsInteger(key))
+                            ease =
+                                com.ichi2.anki.libanki.sched.Ease
+                                    .fromValue(values.getAsInteger(key))
 
                         FlashCardsContract.ReviewInfo.TIME_TAKEN ->
                             timeTaken =
@@ -1149,7 +1154,7 @@ class CardContentProvider : ContentProvider() {
     private fun answerCard(
         col: Collection,
         cardToAnswer: Card?,
-        ease: Ease,
+        @Suppress("DEPRECATION") ease: com.ichi2.anki.libanki.sched.Ease,
         timeTaken: Long,
     ) {
         try {
@@ -1157,7 +1162,7 @@ class CardContentProvider : ContentProvider() {
                 if (timeTaken != -1L) {
                     cardToAnswer.timerStarted = TimeManager.time.intTimeMS() - timeTaken
                 }
-                col.sched.answerCard(cardToAnswer, ease)
+                col.sched.answerCard(cardToAnswer, CardAnswer.Rating.forNumber(ease.value - 1))
             }
         } catch (e: RuntimeException) {
             Timber.e(e, "answerCard - RuntimeException on answering card")

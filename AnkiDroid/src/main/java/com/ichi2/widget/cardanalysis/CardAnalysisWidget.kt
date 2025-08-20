@@ -26,7 +26,7 @@ import android.view.View
 import android.widget.RemoteViews
 import com.ichi2.anki.AnkiDroidApp
 import com.ichi2.anki.CrashReportService
-import com.ichi2.anki.IntentHandler.Companion.intentToReviewDeckFromShorcuts
+import com.ichi2.anki.IntentHandler.Companion.intentToReviewDeckFromShortcuts
 import com.ichi2.anki.R
 import com.ichi2.anki.analytics.UsageAnalytics
 import com.ichi2.anki.isCollectionEmpty
@@ -187,7 +187,7 @@ class CardAnalysisWidget : AnalyticsWidgetProvider() {
 
             val intent =
                 if (!isEmptyDeck) {
-                    intentToReviewDeckFromShorcuts(context, deckData.deckId)
+                    intentToReviewDeckFromShortcuts(context, deckData.deckId)
                 } else {
                     DeckOptionsDestination.fromDeckId(deckData.deckId).toIntent(context)
                 }
@@ -257,13 +257,9 @@ class CardAnalysisWidget : AnalyticsWidgetProvider() {
     }
 
     override fun onReceive(
-        context: Context?,
-        intent: Intent?,
+        context: Context,
+        intent: Intent,
     ) {
-        if (context == null || intent == null) {
-            Timber.e("Context or intent is null in onReceive")
-            return
-        }
         super.onReceive(context, intent)
 
         val widgetPreferences = CardAnalysisWidgetPreferences(context)

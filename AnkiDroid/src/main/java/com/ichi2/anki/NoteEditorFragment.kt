@@ -116,6 +116,7 @@ import com.ichi2.anki.libanki.NotetypeJson
 import com.ichi2.anki.libanki.Notetypes
 import com.ichi2.anki.libanki.Notetypes.Companion.NOT_FOUND_NOTE_TYPE
 import com.ichi2.anki.libanki.Utils
+import com.ichi2.anki.libanki.clozeNumbersInNote
 import com.ichi2.anki.model.CardStateFilter
 import com.ichi2.anki.multimedia.AudioRecordingFragment
 import com.ichi2.anki.multimedia.AudioVideoFragment
@@ -288,8 +289,8 @@ class NoteEditorFragment :
      * Whether this is displayed in a fragment view.
      * If true, this fragment is on the trailing side of the card browser.
      */
-    private val inFragmentedActivity
-        get() = requireArguments().getBoolean(IN_FRAGMENTED_ACTIVITY)
+    private val inCardBrowserActivity
+        get() = requireArguments().getBoolean(IN_CARD_BROWSER_ACTIVITY)
 
     private val requestAddLauncher =
         registerForActivityResult(
@@ -1431,7 +1432,7 @@ class NoteEditorFragment :
         } else {
             // Hide add note item if fragment is in fragmented activity
             // because this item is already present in CardBrowser
-            menu.findItem(R.id.action_add_note_from_note_editor).isVisible = !inFragmentedActivity
+            menu.findItem(R.id.action_add_note_from_note_editor).isVisible = !inCardBrowserActivity
         }
         if (editFields != null) {
             for (i in editFields!!.indices) {
@@ -1464,6 +1465,7 @@ class NoteEditorFragment :
         }
 
     override fun onMenuItemSelected(item: MenuItem): Boolean {
+        Timber.d("NoteEditor::onMenuItemSelected")
         when (item.itemId) {
             R.id.action_preview -> {
                 Timber.i("NoteEditor:: Preview button pressed")
@@ -1663,7 +1665,7 @@ class NoteEditorFragment :
             CardTemplateNotetype.clearTempNoteTypeFiles()
 
             // Don't close this fragment if it is in fragmented activity
-            if (inFragmentedActivity) {
+            if (inCardBrowserActivity) {
                 Timber.i("not closing activity: fragmented")
                 return
             }
@@ -2971,7 +2973,7 @@ class NoteEditorFragment :
         const val NOTE_CHANGED_EXTRA_KEY = "noteChanged"
         const val RELOAD_REQUIRED_EXTRA_KEY = "reloadRequired"
         const val EXTRA_IMG_OCCLUSION = "image_uri"
-        const val IN_FRAGMENTED_ACTIVITY = "inFragmentedActivity"
+        const val IN_CARD_BROWSER_ACTIVITY = "inCardBrowserActivity"
 
         // calling activity
         enum class NoteEditorCaller(

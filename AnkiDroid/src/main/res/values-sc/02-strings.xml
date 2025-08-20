@@ -152,8 +152,7 @@
     <string name="import_error_handle_exception">Fallimentu de s\'mportatzione de s\'archìviu\n\n%s</string>
     <string name="import_error_not_apkg_extension">Su nùmene de su documentu “%s” non tenet un\'estensione .apkg o. colpkg</string>
     <string name="import_error_load_imported_database">Sas sostitutziones de sa base de datos de Anki (.anki2) non sunt galu suportadas. Pòmpia·ti su manuale pro sas istrutziones de sostitutzione.</string>
-    <string name="import_error_content_provider">Su documentu ischertadu non podet èssere importadu in manera automàtica dae AnkiDroid. Pòmpia·ti su manuale pro imparare comente importare sos documentos de Anki in automàticu: \n
-                              %s</string>
+    <string name="import_error_content_provider">Su documentu ischertadu non podet èssere importadu in manera automàtica dae AnkiDroid. Pòmpia·ti su manuale pro imparare comente importare sos documentos de Anki in automàticu: \n%s</string>
     <string name="import_error_copy_to_cache">Sarvamentu de s\'archìviu in sa memòria temporànea fallidu (probabilmente ca non b\'at logu in sa memòria)</string>
     <string name="import_interrupted">Importatzione firmada: AnkiDroid est istadu serradu</string>
     <string name="export_ready_title">Esportatzione pronta</string>
@@ -264,7 +263,7 @@
     <!-- %% is required to display % symbol. Reference: https://stackoverflow.com/a/16834358 -->
     <string name="percentage">%s%%</string>
     <string name="download_deck">Iscàrriga su matzu</string>
-    <string name="open_in_browser" comment="Label of a button inviting to open ankiweb\'s shared deck page if automated download failed">Open in Browser</string>
+    <string name="open_in_browser" comment="Label of a button inviting to open ankiweb\'s shared deck page if automated download failed">Open in browser</string>
     <string name="try_again">Torra a proare</string>
     <string name="cancel_download">Annulla s\'iscarrigamentu</string>
     <string name="cancel_download_question_title">Annullare s\'iscarrigamentu?</string>

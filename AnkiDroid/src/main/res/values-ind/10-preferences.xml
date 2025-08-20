@@ -81,7 +81,7 @@
     <string name="button_size" maxLength="41">Ukuran tombol jawaban</string>
     <string name="card_browser_font_size" maxLength="41">Skala fon penelusur kartu</string>
     <string name="card_browser_hide_media" maxLength="41">Tampilkan nama berkas di penelusur kartu</string>
-    <string name="card_browser_hide_media_summary">Tampilkan nama berkas media di kolom tanya/jawab penelusur kartu</string>
+    <string name="card_browser_hide_media_summary">Display audio filenames in the card browser question/answer fields</string>
     <string name="col_path" maxLength="41">Direktori AnkiDroid</string>
     <string name="fullscreen_review" maxLength="41">Mode layar penuh</string>
     <string name="full_screen_off">Mati</string>
@@ -258,7 +258,7 @@
     <string name="type_in_answer_focus" maxLength="41">Fokus \'ketik di jawaban\'</string>
     <string name="type_in_answer_focus_summ">Automatically focus the ‘type in answer’ field in the study screen</string>
     <!-- About -->
-    <string name="open_changelog">Buka Changelog</string>
+    <string name="open_changelog">Open changelog</string>
     <string name="pref_cat_about_title" maxLength="41">Tentang</string>
     <string name="contributors_title">Kontributor</string>
     <string name="about_contributors_description"><![CDATA[Ini merupakan <a href=\"%1$s\">para kontributor</a> keren kami. Anda dapat membantu AnkiDroid juga dengan pemrograman, penerjemahan, donasi, dan <a href=\"%2$s\">masih banyak lagi</a>!]]></string>

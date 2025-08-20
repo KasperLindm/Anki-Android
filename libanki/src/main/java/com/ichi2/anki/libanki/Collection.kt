@@ -1,7 +1,8 @@
 /*
  * Copyright (c) 2011 Norbert Nagold <norbert.nagold@gmail.com>
  * Copyright (c) 2012 Kostas Spyropoulos <inigo.aldana@gmail.com>
- * Copyright (c) 2024 David Allison <davidallisongithub@gmail.com>
+ * Copyright (c) 2022 Ankitects Pty Ltd <http://apps.ankiweb.net>
+ * Copyright (c) 2025 David Allison <davidallisongithub@gmail.com>
  *
  * This program is free software; you can redistribute it and/or modify it under
  * the terms of the GNU General private License as published by the Free Software
@@ -31,6 +32,7 @@ import androidx.annotation.VisibleForTesting
 import androidx.annotation.WorkerThread
 import anki.card_rendering.EmptyCardsReport
 import anki.collection.OpChanges
+import anki.collection.OpChangesAfterUndo
 import anki.collection.OpChangesWithCount
 import anki.config.ConfigKey
 import anki.config.Preferences
@@ -45,14 +47,20 @@ import anki.import_export.ImportCsvRequest
 import anki.import_export.ImportResponse
 import anki.import_export.csvMetadataRequest
 import anki.notes.AddNoteRequest
+import anki.scheduler.stateOrNull
 import anki.search.BrowserColumns
 import anki.search.BrowserRow
 import anki.search.SearchNode
 import anki.search.SearchNode.Group.Joiner
 import anki.stats.CardStatsResponse
 import anki.stats.CardStatsResponse.StatsRevlogEntry
+import anki.sync.MediaSyncStatusResponse
 import anki.sync.SyncAuth
+import anki.sync.SyncCollectionResponse
 import anki.sync.SyncStatusResponse
+import anki.sync.fullUploadOrDownloadRequest
+import anki.sync.syncLoginRequest
+import com.google.protobuf.ByteString
 import com.ichi2.anki.common.time.TimeManager
 import com.ichi2.anki.common.utils.annotation.KotlinCleanup
 import com.ichi2.anki.libanki.CollectionFiles.FolderBasedCollection
@@ -70,17 +78,27 @@ import com.ichi2.anki.libanki.utils.NotInLibAnki
 import net.ankiweb.rsdroid.Backend
 import net.ankiweb.rsdroid.RustCleanup
 import net.ankiweb.rsdroid.exceptions.BackendInvalidInputException
-import org.intellij.lang.annotations.Language
 import timber.log.Timber
 import java.io.File
 
 typealias ImportLogWithChanges = anki.import_export.ImportResponse
+
+@NotInLibAnki
+typealias UndoStepCounter = Int
 
 @NotInLibAnki // Literal["AND", "OR"]
 enum class SearchJoiner {
     AND,
     OR,
 }
+
+@LibAnkiAlias("ComputedMemoryState")
+data class ComputedMemoryState(
+    val desiredRetention: Float,
+    val stability: Float? = null,
+    val difficulty: Float? = null,
+    val decay: Float? = null,
+)
 
 // Anki maintains a cache of used tags so it can quickly present a list of tags
 // for autocomplete and in the browser. For efficiency, deletions are not
@@ -1026,129 +1044,255 @@ class Collection(
      * ***********************************************************
      */
 
-    /** eg "Undo suspend card" if undo available */
-    fun undoLabel(): String? {
-        val action = undoStatus().undo
-        return action?.let { tr.undoUndoAction(it) }
+    /** See [UndoStatus] */
+    @CheckResult
+    @RustCleanup("doesn't match upstream")
+    @LibAnkiAlias("undo_status")
+    fun undoStatus(): UndoStatus = UndoStatus.from(backend.getUndoStatus())
+
+    /**
+     * Add an empty undo entry with the given name.
+     * The return value can be used to merge subsequent changes
+     * with [mergeUndoEntries].
+     *
+     * You should only use this with your own custom actions - when
+     * extending default Anki behaviour, you should merge into an
+     * existing undo entry instead, so the existing undo name is
+     * preserved, and changes are processed correctly.
+     */
+    @LibAnkiAlias("add_custom_undo_entry")
+    fun addCustomUndoEntry(name: String): UndoStepCounter = backend.addCustomUndoEntry(name)
+
+    /**
+     * Combine multiple undoable operations into one.
+     *
+     * After a standard Anki action, you can use
+     * [undoStatus()][undoStatus].[lastStep][UndoStatus.lastStep] to retrieve the target to
+     * merge into. When defining your own custom actions, you can use [addCustomUndoEntry]
+     * to define a custom undo name.
+     */
+    @LibAnkiAlias("merge_undo_entries")
+    fun mergeUndoEntries(target: UndoStepCounter): OpChanges = backend.mergeUndoEntries(target)
+
+    /**
+     * Undo the last backend operation.
+     *
+     * Should be called via [undoableOp], which will notify
+     * [ChangeManager.Subscriber] of the changes.
+     *
+     * Will throw if no undo operation is possible (due to legacy code
+     * directly mutating the database).
+     */
+    @LibAnkiAlias("undo")
+    fun undo(): OpChangesAfterUndo = backend.undo()
+
+    /**
+     * Returns result of backend redo operation, or throws UndoEmpty.
+     */
+    @RustCleanup("document exception")
+    @LibAnkiAlias("redo")
+    fun redo(): OpChangesAfterUndo = backend.redo()
+
+    @Deprecated("Not implemented")
+    @LibAnkiAlias("op_made_changes")
+    fun opMadeChanges(changes: OpChanges): Nothing = TODO()
+
+    /**
+     * Return undo status if undo available on backend.
+     *
+     * If backend has undo available, clear the Kotlin undo state.
+     */
+    @RustCleanup("docs don't match reality ")
+    @LibAnkiAlias("_check_backend_undo_status")
+    private fun checkBackendUndoStatus(): UndoStatus? {
+        val status = backend.getUndoStatus()
+        if (status.undo.any() || status.redo.any()) {
+            return UndoStatus.from(status)
+        } else {
+            return null
+        }
     }
 
-    fun undoAvailable(): Boolean {
-        val status = undoStatus()
-        return status.undo != null
+    /*
+     * DB maintenance
+     * ***********************************************************
+     */
+
+    /**
+     * Fixes and optimizes the database. If any errors are encountered, a list of
+     * problems is returned. Throws if DB is unreadable.
+     */
+    @RustCleanup("doesn't match upstream")
+    @LibAnkiAlias("fix_integrity")
+    fun fixIntegrity(): List<String> = backend.checkDatabase()
+
+    @LibAnkiAlias("optimize")
+    fun optimize() {
+        db.execute("vacuum")
+        db.execute("analyze")
     }
-
-    fun redoLabel(): String? {
-        val action = undoStatus().redo
-        return action?.let { tr.undoRedoAction(it) }
-    }
-
-    fun redoAvailable(): Boolean = undoStatus().redo != null
-
-    lateinit var notetypes: Notetypes
-        protected set
 
     /*
      * ***********************************************************
      */
 
-    @NotInLibAnki
-    @CheckResult
-    fun filterToValidCards(cards: LongArray?): List<Long> = db.queryLongList("select id from cards where id in " + ids2str(cards))
-
-    /** Fixes and optimizes the database. If any errors are encountered, a list of
-     * problems is returned. Throws if DB is unreadable. */
-    fun fixIntegrity(): List<String> = backend.checkDatabase()
+    lateinit var notetypes: Notetypes
+        protected set
 
     /** Change the flag color of the specified cards. flag=0 removes flag. */
     @CheckResult
+    @LibAnkiAlias("set_user_flag_for_cards")
     fun setUserFlagForCards(
         cids: Iterable<Long>,
         flag: Int,
     ): OpChangesWithCount = backend.setFlag(cardIds = cids, flag = flag)
 
-    @Suppress("unused")
-    fun syncStatus(auth: SyncAuth): SyncStatusResponse = backend.syncStatus(input = auth)
-
-    /** Takes raw input from TypeScript frontend and returns suitable translations. */
-    fun i18nResourcesRaw(input: ByteArray): ByteArray = backend.i18nResourcesRaw(input = input)
-
-    // Python code has a cardsOfNote, but not vice-versa yet
-    fun notesOfCards(cids: Iterable<CardId>): List<NoteId> = db.queryLongList("select distinct nid from cards where id in ${ids2str(cids)}")
-
-    /**
-     * returns the list of cloze ordinals in a note
-     *
-     * `"{{c1::A}} {{c3::B}}" => [1, 3]`
-     */
-    fun clozeNumbersInNote(n: Note): List<Int> {
-        // the call appears to be non-deterministic. Sort ascending
-        return backend
-            .clozeNumbersInNote(n.toBackendNote())
-            .sorted()
+    @Deprecated("Recommended to use CollectionManager.setWantsAbort")
+    @LibAnkiAlias("set_wants_abort")
+    fun setWantsAbort() {
+        backend.setWantsAbort()
     }
 
-    fun getImageForOcclusionRaw(input: ByteArray): ByteArray = backend.getImageForOcclusionRaw(input = input)
-
-    fun getImageOcclusionNoteRaw(input: ByteArray): ByteArray = backend.getImageOcclusionNoteRaw(input = input)
-
-    fun getImageOcclusionFieldsRaw(input: ByteArray): ByteArray = backend.getImageOcclusionFieldsRaw(input = input)
-
-    fun addImageOcclusionNoteRaw(input: ByteArray): ByteArray = backend.addImageOcclusionNoteRaw(input = input)
-
-    fun updateImageOcclusionNoteRaw(input: ByteArray): ByteArray = backend.updateImageOcclusionNoteRaw(input = input)
-
-    fun congratsInfoRaw(input: ByteArray): ByteArray = backend.congratsInfoRaw(input = input)
-
+    @NotInLibAnki
     fun setWantsAbortRaw(input: ByteArray): ByteArray = backend.setWantsAbortRaw(input = input)
 
-    fun latestProgressRaw(input: ByteArray): ByteArray = backend.latestProgressRaw(input = input)
+    @CheckResult
+    @LibAnkiAlias("i18n_resources")
+    fun i18nResources(modules: Iterable<String>): ByteString = backend.i18nResources(modules)
 
-    fun getSchedulingStatesWithContextRaw(input: ByteArray): ByteArray = backend.getSchedulingStatesWithContextRaw(input = input)
+    /** Takes raw input from TypeScript frontend and returns suitable translations. */
+    @CheckResult
+    @NotInLibAnki
+    fun i18nResourcesRaw(input: ByteArray): ByteArray = backend.i18nResourcesRaw(input = input)
 
-    fun setSchedulingStatesRaw(input: ByteArray): ByteArray = backend.setSchedulingStatesRaw(input = input)
+    @LibAnkiAlias("abort_media_sync")
+    fun abortMediaSync() {
+        backend.abortMediaSync()
+    }
 
-    fun getChangeNotetypeInfoRaw(input: ByteArray): ByteArray = backend.getChangeNotetypeInfoRaw(input = input)
+    @LibAnkiAlias("abort_sync")
+    fun abortSync() {
+        backend.abortSync()
+    }
 
-    fun changeNotetypeRaw(input: ByteArray): ByteArray = backend.changeNotetypeRaw(input = input)
+    @LibAnkiAlias("full_upload_or_download")
+    fun fullUploadOrDownload(
+        auth: SyncAuth?,
+        serverUsn: Int?,
+        upload: Boolean,
+    ) {
+        backend.fullUploadOrDownload(
+            fullUploadOrDownloadRequest {
+                auth?.let { this.auth = it }
+                serverUsn?.let { this.serverUsn = it }
+                this.upload = upload
+            },
+        )
+    }
 
-    fun importJsonStringRaw(input: ByteArray): ByteArray = backend.importJsonStringRaw(input = input)
+    @LibAnkiAlias("sync_login")
+    fun syncLogin(
+        username: String,
+        password: String,
+        endpoint: String?,
+    ): SyncAuth =
+        backend.syncLogin(
+            syncLoginRequest {
+                this.username = username
+                this.password = password
+                // default endpoint used here, if it is null
+                if (endpoint != null) {
+                    this.endpoint = endpoint
+                }
+            },
+        )
 
-    fun importJsonFileRaw(input: ByteArray): ByteArray = backend.importJsonFileRaw(input = input)
+    @LibAnkiAlias("sync_collection")
+    fun syncCollection(
+        auth: SyncAuth,
+        syncMedia: Boolean,
+    ): SyncCollectionResponse = backend.syncCollection(auth, syncMedia)
 
-    fun getIgnoredBeforeCountRaw(input: ByteArray): ByteArray = backend.getIgnoredBeforeCountRaw(input = input)
+    @LibAnkiAlias("sync_media")
+    fun syncMedia(auth: SyncAuth) = backend.syncMedia(auth)
 
-    fun getRetentionWorkloadRaw(input: ByteArray): ByteArray = backend.getRetentionWorkloadRaw(input = input)
+    @CheckResult
+    @Suppress("unused")
+    @LibAnkiAlias("sync_status")
+    fun syncStatus(auth: SyncAuth): SyncStatusResponse = backend.syncStatus(input = auth)
 
-    fun evaluateParamsLegacyRaw(input: ByteArray): ByteArray = backend.evaluateParamsLegacyRaw(input = input)
+    /** This will throw if the sync failed with an error. */
+    @CheckResult
+    @LibAnkiAlias("media_sync_status")
+    fun mediaSyncStatus(auth: SyncAuth): MediaSyncStatusResponse = backend.mediaSyncStatus()
 
-    /**
-     * Converts Markdown ([text]) to HTML
-     *
-     * @param text Markdown to format as HTML
-     * @param sanitize whether to sanitize the HTML using
-     * [ammonia](https://docs.rs/ammonia/latest/ammonia/). `img` tags are also stripped
-     */
-    @Language("HTML")
+    @CheckResult
+    @LibAnkiAlias("ankihub_login")
+    fun ankiHubLogin(
+        id: String,
+        password: String,
+    ): String = backend.ankihubLogin(id, password)
+
+    @LibAnkiAlias("ankihub_logout")
+    fun ankiHubLogin(token: String) {
+        backend.ankihubLogout(token)
+    }
+
+    @CheckResult
+    @LibAnkiAlias("get_preferences")
+    fun getPreferences(): Preferences = backend.getPreferences()
+
+    @LibAnkiAlias("set_preferences")
+    fun setPreferences(preferences: Preferences): OpChanges = backend.setPreferences(preferences)
+
+    @CheckResult
+    @Deprecated("Not intended for public consumption at this time.")
     @LibAnkiAlias("render_markdown")
     fun renderMarkdown(
         text: String,
-        sanitize: Boolean,
+        sanitize: Boolean = true,
     ): String = backend.renderMarkdown(markdown = text, sanitize = sanitize)
 
+    @CheckResult
+    @LibAnkiAlias("compare_answer")
     fun compareAnswer(
         expected: String,
         provided: String,
         combining: Boolean = true,
     ): String = backend.compareAnswer(expected = expected, provided = provided, combining = combining)
 
+    @CheckResult
+    @LibAnkiAlias("extract_cloze_for_typing")
     fun extractClozeForTyping(
         text: String,
         ordinal: Int,
     ): String = backend.extractClozeForTyping(text = text, ordinal = ordinal)
 
-    fun getPreferences(): Preferences = backend.getPreferences()
+    @CheckResult
+    @LibAnkiAlias("compute_memory_state")
+    fun computeMemoryState(cardId: CardId): ComputedMemoryState {
+        val resp = backend.computeMemoryState(cardId)
+        if (resp.stateOrNull != null) {
+            return ComputedMemoryState(
+                desiredRetention = resp.desiredRetention,
+                stability = resp.state.stability,
+                difficulty = resp.state.difficulty,
+                decay = resp.decay,
+            )
+        }
+        return ComputedMemoryState(
+            desiredRetention = resp.desiredRetention,
+            decay = resp.decay,
+        )
+    }
 
-    fun setPreferences(preferences: Preferences): OpChanges = backend.setPreferences(preferences)
+    /** The delta days of fuzz applied if reviewing the card in v3. */
+    @CheckResult
+    @LibAnkiAlias("fuzz_delta")
+    fun fuzzDelta(
+        cardId: CardId,
+        interval: Int,
+    ): Int = backend.fuzzDelta(cardId = cardId, interval = interval)
 
     /*
      * Timeboxing
@@ -1193,16 +1337,97 @@ class Collection(
             null
         }
     }
+
+    /*
+     * Raw methods used by Anki Pages
+     * ***********************************************************
+     * Not upstream: methods for communication between the Svelte UI and backend
+     * These methods should be blocking (e.g. `latestProgress` should directly use the backend)
+     */
+
+    @NotInLibAnki
+    fun getImageForOcclusionRaw(input: ByteArray): ByteArray = backend.getImageForOcclusionRaw(input = input)
+
+    @NotInLibAnki
+    fun getImageOcclusionNoteRaw(input: ByteArray): ByteArray = backend.getImageOcclusionNoteRaw(input = input)
+
+    @NotInLibAnki
+    fun getImageOcclusionFieldsRaw(input: ByteArray): ByteArray = backend.getImageOcclusionFieldsRaw(input = input)
+
+    @NotInLibAnki
+    fun addImageOcclusionNoteRaw(input: ByteArray): ByteArray = backend.addImageOcclusionNoteRaw(input = input)
+
+    @NotInLibAnki
+    fun updateImageOcclusionNoteRaw(input: ByteArray): ByteArray = backend.updateImageOcclusionNoteRaw(input = input)
+
+    @NotInLibAnki
+    fun congratsInfoRaw(input: ByteArray): ByteArray = backend.congratsInfoRaw(input = input)
+
+    @NotInLibAnki
+    fun getSchedulingStatesWithContextRaw(input: ByteArray): ByteArray = backend.getSchedulingStatesWithContextRaw(input = input)
+
+    @NotInLibAnki
+    fun setSchedulingStatesRaw(input: ByteArray): ByteArray = backend.setSchedulingStatesRaw(input = input)
+
+    @NotInLibAnki
+    fun getChangeNotetypeInfoRaw(input: ByteArray): ByteArray = backend.getChangeNotetypeInfoRaw(input = input)
+
+    @NotInLibAnki
+    fun changeNotetypeRaw(input: ByteArray): ByteArray = backend.changeNotetypeRaw(input = input)
+
+    @NotInLibAnki
+    fun importJsonStringRaw(input: ByteArray): ByteArray = backend.importJsonStringRaw(input = input)
+
+    @NotInLibAnki
+    fun importJsonFileRaw(input: ByteArray): ByteArray = backend.importJsonFileRaw(input = input)
+
+    @NotInLibAnki
+    fun getIgnoredBeforeCountRaw(input: ByteArray): ByteArray = backend.getIgnoredBeforeCountRaw(input = input)
+
+    @NotInLibAnki
+    fun getRetentionWorkloadRaw(input: ByteArray): ByteArray = backend.getRetentionWorkloadRaw(input = input)
+
+    @NotInLibAnki
+    fun evaluateParamsLegacyRaw(input: ByteArray): ByteArray = backend.evaluateParamsLegacyRaw(input = input)
 }
 
 @NotInLibAnki
 fun EmptyCardsReport.emptyCids(): List<CardId> = notesList.flatMap { it.cardIdsList }
+
+// Python code has a cardsOfNote, but not vice-versa yet
+@CheckResult
+@NotInLibAnki
+fun Collection.notesOfCards(cids: Iterable<CardId>): List<NoteId> =
+    db.queryLongList("select distinct nid from cards where id in ${ids2str(cids)}")
+
+/**
+ * returns the list of cloze ordinals in a note
+ *
+ * `"{{c1::A}} {{c3::B}}" => [1, 3]`
+ */
+@CheckResult
+@NotInLibAnki
+fun Collection.clozeNumbersInNote(n: Note): List<Int> {
+    // the call appears to be non-deterministic. Sort ascending
+    return backend
+        .clozeNumbersInNote(n.toBackendNote())
+        .sorted()
+}
+
+/**
+ * Given a list of potential Card Ids, return the subset which are Ids of cards in the collection
+ */
+@NotInLibAnki
+@CheckResult
+fun Collection.filterToValidCards(cards: LongArray?): List<CardId> = db.queryLongList("select id from cards where id in " + ids2str(cards))
 
 /**
  * @return [File] referencing the media folder (`collection.media`)
  *
  * @throws UnsupportedOperationException if the collection is in-memory
  */
+@NotInLibAnki
+@CheckResult
 fun Collection.requireMediaFolder() = collectionFiles.requireMediaFolder()
 
 /**
@@ -1210,4 +1435,6 @@ fun Collection.requireMediaFolder() = collectionFiles.requireMediaFolder()
  *
  * (testing) `null` if the collection is in-memory
  */
+@NotInLibAnki
+@get:CheckResult
 val Collection.mediaFolder: File? get() = collectionFiles.mediaFolder

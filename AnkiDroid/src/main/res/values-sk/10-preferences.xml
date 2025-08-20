@@ -84,7 +84,7 @@
     <string name="button_size" maxLength="41">Veľkosť tlačidla pre odpoveď</string>
     <string name="card_browser_font_size" maxLength="41">Veľkosť písma v prehliadači kartičiek</string>
     <string name="card_browser_hide_media" maxLength="41">Zobraziť názvy súborov v prehliadači kartičiek</string>
-    <string name="card_browser_hide_media_summary">Zobraziť názvy mediálnych súborov v otázkových/odpoveďových poliach prehliadača kartičiek</string>
+    <string name="card_browser_hide_media_summary">Display audio filenames in the card browser question/answer fields</string>
     <string name="col_path" maxLength="41">Adresár AnkiDroid</string>
     <string name="fullscreen_review" maxLength="41">Celoobrazovkový režim</string>
     <string name="full_screen_off">Vypnúť</string>
@@ -204,7 +204,7 @@
     <string name="reset_settings_to_default">Obnoviť pôvodné nastavenia</string>
     <string name="reset">Obnoviť</string>
     <string name="thirdparty_apps_title" maxLength="41">Aplikácie API od tretích strán</string>
-    <string name="thirdparty_apps_summary">Pozrite si zoznam aplikácií, ktoré využívajú Ankidroid API ako sú slovníky, služby.</string>
+    <string name="thirdparty_apps_summary">Pozrite si zoznam aplikácií, ktoré využívajú AnkiDroid API ako sú slovníky, služby.</string>
     <string name="pref_controls_reviews_tab" maxLength="41" comment="Name of the tab to configure controls for the reviews screen">Reviews</string>
     <string name="pref_controls_previews_tab" maxLength="41" comment="Name of the tab to configure controls for the previews screen">Previews</string>
     <string name="toggle_backside_only" maxLength="41" comment="Control setting that toggles \'Backside only\' in the previews screen">Toggle backside only</string>

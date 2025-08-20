@@ -87,7 +87,7 @@
         <item>Bởi nhầm lẫn/sai sót</item>
         <item>Tên bộ thẻ</item>
     </string-array>
-    <string name="chane_browser_column">Thay đổi mục</string>
+    <string name="manage_browser_column">Manage column</string>
     <string name="no_columns_available">Không có mục sẵn có</string>
     <string name="card_browser_select_all" maxLength="28">Chọn tất cả</string>
     <string name="card_browser_select_none" maxLength="28">Không chọn</string>
@@ -111,7 +111,7 @@
     <!-- Manage columns dialog -->
     <string name="browse_manage_columns_main_heading">Các mục</string>
     <string name="browse_manage_columns">Quản lí các mục</string>
-    <string name="user_active_columns">Active</string>
+    <string name="user_active_columns">Hoạt động</string>
     <string name="user_potential_columns">Có sẵn</string>
     <string name="include_column">Chèn thêm mục</string>
     <string name="exclude_column">Loại bỏ mục</string>
