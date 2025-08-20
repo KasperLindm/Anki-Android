@@ -612,6 +612,52 @@ object ImmersiveKit {
         dialog.show()
     }
 
+    fun downloadCard(
+        name: String,
+        urlString: String,
+        folder: File,
+        fileExtension: String,
+    ): File? {
+        return try {
+            val url = URL(urlString)
+            val connection = url.openConnection() as HttpURLConnection
+            connection.requestMethod = "GET"
+            connection.instanceFollowRedirects = false // we handle redirects manually
+            connection.setRequestProperty("User-Agent", "Mozilla/5.0") // some servers require it
+            connection.connect()
+
+            Timber.i("Response code for $urlString: ${connection.responseCode}")
+
+            when (connection.responseCode) {
+                HttpURLConnection.HTTP_MOVED_PERM,
+                HttpURLConnection.HTTP_MOVED_TEMP,
+                -> {
+                    val newUrl = connection.getHeaderField("Location")
+                    return downloadCard(name, newUrl, folder, fileExtension) // **return here**
+                }
+                HttpURLConnection.HTTP_OK -> {
+                    if (!folder.exists()) folder.mkdirs()
+                    val randomString = UUID.randomUUID().toString().take(8)
+                    val file = File(folder, "${name}_$randomString.$fileExtension")
+
+                    connection.inputStream.use { input ->
+                        file.outputStream().use { output ->
+                            input.copyTo(output)
+                        }
+                    }
+                    file
+                }
+                else -> {
+                    Timber.i("Failed to download file: ${connection.responseCode}")
+                    null
+                }
+            }
+        } catch (e: Exception) {
+            Timber.i("Error downloading file: $urlString - ${e.message}")
+            null
+        }
+    }
+
     fun downloadFile(
         name: String,
         urlString: String,
@@ -1140,8 +1186,6 @@ object ImmersiveKit {
                         fieldValues,
                         note,
                         col,
-                        picFileName,
-                        audioFileName,
                         settings.pictureField,
                         settings.audioField,
                         keyword!!,
@@ -1163,38 +1207,43 @@ object ImmersiveKit {
         }
     }
 
-    private suspend fun handleMediaDownloadAndUpdate(
-        fieldNames: Array<String>,
-        fieldValues: MutableList<String>,
-        note: Note,
-        col: Collection,
-        fieldName: String,
-        keyword: String,
-        mediaUrl: String,
+    fun extractMediaFromApkg(
+        apkgFile: File,
         folder: File,
-        extension: String,
-        tagBuilder: (String) -> String,
-    ): Boolean {
-        val index = fieldNames.indexOf(fieldName).takeIf { it >= 0 } ?: return false
-        val result = downloadFile(keyword, mediaUrl, folder, extension)
-        withContext(Dispatchers.Main) {
-            if (result != null) {
-                val fileName = File(result).name
-                val content = tagBuilder(fileName)
-                note.setField(index, content)
-                fieldValues[index] = content
-                Timber.i("${extension.uppercase()} added successfully: $content")
-                content
-            } else {
-                note.setField(index, "")
-                fieldValues[index] = ""
-                Timber.i("Failed to find $extension")
-                ""
+    ): Pair<File?, File?> {
+        val zip = ZipFile(apkgFile)
+        val mediaJson = zip.getInputStream(zip.getEntry("media")).bufferedReader().use { it.readText() }
+        val mediaMap = JSONObject(mediaJson)
+
+        var picFile: File? = null
+        var audioFile: File? = null
+
+        // Helper to check file extensions
+        fun String.isImage() = endsWith(".png", true) || endsWith(".jpg", true) || endsWith(".jpeg", true)
+
+        fun String.isAudio() = endsWith(".mp3", true) || endsWith(".wav", true)
+
+        // Extract media files from the zip using the integer keys
+        for (key in mediaMap.keys()) {
+            val filename = mediaMap.getString(key)
+            val entry = zip.getEntry(key) ?: continue
+            val outputFile = File(folder, filename)
+
+            outputFile.outputStream().use { output ->
+                zip.getInputStream(entry).use { input ->
+                    input.copyTo(output)
+                }
             }
-            note.fields = fieldValues
-            col.updateNote(note)
+
+            if (picFile == null && filename.isImage()) {
+                picFile = outputFile
+            }
+            if (audioFile == null && filename.isAudio()) {
+                audioFile = outputFile
+            }
         }
-        return result != null
+
+        return Pair(picFile, audioFile)
     }
 
     private fun handleCardDownloadAndUpdate(
@@ -1202,8 +1251,6 @@ object ImmersiveKit {
         fieldValues: MutableList<String>,
         note: Note,
         col: Collection,
-        picFileName: String,
-        audioFileName: String,
         picFieldName: String,
         audioFieldName: String,
         keyword: String,
@@ -1213,31 +1260,23 @@ object ImmersiveKit {
     ): Boolean {
         val picIndex = fieldNames.indexOf(picFieldName).takeIf { it >= 0 } ?: return false
         val audioIndex = fieldNames.indexOf(audioFieldName).takeIf { it >= 0 } ?: return false
-        val apkgFile = downloadFile(keyword, mediaUrl, folder, ".apkg")
+        val apkgFile = downloadCard(keyword, mediaUrl, folder, "apkg")
+        if (apkgFile == null) {
+            return false
+        }
 
         val zip = ZipFile(apkgFile)
         val mediaJson =
             zip.getInputStream(zip.getEntry("media")).bufferedReader().use {
                 it.readText()
             }
-        val mediaMap = JSONObject(mediaJson)
+        val (pic, audio) = extractMediaFromApkg(apkgFile, folder)
 
-        val picFile =
-            zip.getInputStream(zip.getEntry(picFileName)).use { input ->
-                File(folder, mediaMap.getString(picFileName)).apply {
-                    outputStream().use {
-                        input.copyTo(it)
-                    }
-                }
-            }
-        val audioFile =
-            zip.getInputStream(zip.getEntry(audioFileName)).use { input ->
-                File(folder, mediaMap.getString(audioFileName)).apply { outputStream().use { input.copyTo(it) } }
-            }
-        note.setField(picIndex, tagBuilder(picFile.name))
-        note.setField(audioIndex, tagBuilder(audioFile.name))
+        // Only set fields if the files were actually extracted
+        pic?.let { note.setField(picIndex, tagBuilder(it.name)) }
+        audio?.let { note.setField(audioIndex, tagBuilder(it.name)) }
         val c = col.updateNote(note)
 
-        return apkgFile != null
+        return true
     }
 }
