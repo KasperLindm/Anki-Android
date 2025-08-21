@@ -1269,7 +1269,7 @@ object ImmersiveKit {
 
         // Only set fields if the files were actually extracted
         pic?.let { note.setField(picIndex, "<img src=\"${it.name}\">") }
-        audio?.let { note.setField(audioIndex, tagBuilder("[sound:${it.name}")) }
+        audio?.let { note.setField(audioIndex, tagBuilder("[sound:${it.name}]")) }
         val c = col.updateNote(note)
 
         return true
