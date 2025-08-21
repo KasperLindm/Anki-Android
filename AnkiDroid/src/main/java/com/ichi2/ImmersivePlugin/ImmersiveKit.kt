@@ -1192,7 +1192,7 @@ object ImmersiveKit {
                         immersionCardUrl,
                         folderPath,
                     ) { fileName ->
-                        "[sound:$fileName]"
+                        fileName
                     }
                 }
             refreshCard(context, startToast)
@@ -1265,16 +1265,11 @@ object ImmersiveKit {
             return false
         }
 
-        val zip = ZipFile(apkgFile)
-        val mediaJson =
-            zip.getInputStream(zip.getEntry("media")).bufferedReader().use {
-                it.readText()
-            }
         val (pic, audio) = extractMediaFromApkg(apkgFile, folder)
 
         // Only set fields if the files were actually extracted
-        pic?.let { note.setField(picIndex, tagBuilder(it.name)) }
-        audio?.let { note.setField(audioIndex, tagBuilder(it.name)) }
+        pic?.let { note.setField(picIndex, "<img src=\"${it.name}\">") }
+        audio?.let { note.setField(audioIndex, tagBuilder("[sound:${it.name}")) }
         val c = col.updateNote(note)
 
         return true
