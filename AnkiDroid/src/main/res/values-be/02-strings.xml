@@ -83,6 +83,7 @@
     <string name="webview_crash_fatal">Крытычная памылка: збой апрацоўшчыка WebView. Прычына: %s</string>
     <string name="webview_crash_loop_dialog_title">Памылка апрацоўшчыка сістэмнага WebView</string>
     <string name="webview_crash_loop_dialog_content">Сістэмнаму WebView не атрымалася апрацаваць картку \'%1$s\'.\n %2$s</string>
+    <string name="slide_to_cancel" comment="Message shown when pressing the record button">Slide to cancel</string>
     <string name="filter_by_flags" maxLength="41">Сцягі</string>
     <!-- Custom study options -->
     <string name="custom_study_loading_tags">Building list of tags&#8230;</string>
@@ -186,13 +187,6 @@
     <string name="tag_editor_add_feedback">Націсніце “%2$s”, каб пацвердзіць даданне “%1$s”</string>
     <string name="tag_editor_add_feedback_existing">Выбрана існуючая метка \"%1$s\"</string>
     <!-- Time spans -->
-    <string name="reminder_title">Не забудзьцеся пра сённяшняе навучанне!</string>
-    <plurals name="reminder_text">
-        <item quantity="one">%2$d картка для паўтарэння ў %1$s</item>
-        <item quantity="few">%2$d карткі для паўтарэння ў %1$s</item>
-        <item quantity="many">%2$d картак для паўтарэння ў %1$s</item>
-        <item quantity="other">%2$d картак для паўтарэння ў %1$s</item>
-    </plurals>
     <!-- Currently only used if exporting APKG fails -->
     <string name="apk_share_error">Памылка агульнага доступу да файла apkg</string>
     <!-- Import and export v2 feedback -->

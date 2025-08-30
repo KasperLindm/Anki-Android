@@ -83,6 +83,7 @@
     <string name="webview_crash_fatal">שגיאה קריטית: הדמיית ה WebView קרסה. הסיבה: %s</string>
     <string name="webview_crash_loop_dialog_title">נכשלה הדמיית WebView של המערכת.</string>
     <string name="webview_crash_loop_dialog_content">מנוע התצוגה נכשל להציג את הכרטיס: %1$s. \n %2$s</string>
+    <string name="slide_to_cancel" comment="Message shown when pressing the record button">Slide to cancel</string>
     <string name="filter_by_flags" maxLength="41">דגלים</string>
     <!-- Custom study options -->
     <string name="custom_study_loading_tags">בניית רשימת תגיות&#8230;</string>
@@ -186,13 +187,6 @@
     <string name="tag_editor_add_feedback">לחץ \"%2$s\" לאישור הוספת \"%1$s\"</string>
     <string name="tag_editor_add_feedback_existing">תגית קיימת \"%1$s\" נבחרה</string>
     <!-- Time spans -->
-    <string name="reminder_title">לא לשכוח ללמוד היום!</string>
-    <plurals name="reminder_text">
-        <item quantity="one">כרטיס אחד לשינון בעוד %1$s</item>
-        <item quantity="two">%2$d כרטיסים לשינון בעוד %1$s</item>
-        <item quantity="many">%2$d כרטיסים לשינון בעוד %1$s</item>
-        <item quantity="other">%2$d כרטיסים לשינון בעוד %1$s</item>
-    </plurals>
     <!-- Currently only used if exporting APKG fails -->
     <string name="apk_share_error">שגיאה בשיתוף קובץ apkg</string>
     <!-- Import and export v2 feedback -->

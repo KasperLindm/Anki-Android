@@ -83,6 +83,7 @@
     <string name="webview_crash_fatal">ئېغىر خاتالىق: WebView ھاسىللىغۇچ يىمىرىلدى. سەۋەبى: %s</string>
     <string name="webview_crash_loop_dialog_title">سىستېما WebView ھاسىللىيالمىدى</string>
     <string name="webview_crash_loop_dialog_content">سىستېما WebView دا «%1$s» كارتىنى ھاسىللىيالمىدى.\n %2$s</string>
+    <string name="slide_to_cancel" comment="Message shown when pressing the record button">Slide to cancel</string>
     <string name="filter_by_flags" maxLength="41">بايراق</string>
     <!-- Custom study options -->
     <string name="custom_study_loading_tags">بەلگە تىزىمى ھاسىللاۋاتىدۇ&#8230;</string>
@@ -180,11 +181,6 @@
     <string name="tag_editor_add_feedback">«%2$s» نى چېكىپ «%1$s» نى قوشۇش  جەزملىنىدۇ</string>
     <string name="tag_editor_add_feedback_existing">مەۋجۇت «%1$s» بەلگە تاللاندى</string>
     <!-- Time spans -->
-    <string name="reminder_title">بۈگۈن ئۆگىنىشنى ئۇنتۇماڭ!</string>
-    <plurals name="reminder_text">
-        <item quantity="one">%1$s دىكى %2$d كارتا تەكرارلىنىدۇ</item>
-        <item quantity="other">%1$s دىكى %2$d كارتا تەكرارلىنىدۇ</item>
-    </plurals>
     <!-- Currently only used if exporting APKG fails -->
     <string name="apk_share_error">apkg ھۆججەتنى ھەمبەھىرلەش خاتالىقى</string>
     <!-- Import and export v2 feedback -->

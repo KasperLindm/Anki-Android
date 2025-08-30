@@ -47,7 +47,7 @@
     <!-- Navigation drawer strings -->
     <string name="drawer_open">Abrir gaveta</string>
     <string name="drawer_close">Fechar gaveta</string>
-    <string name="note_message">Note saved</string>
+    <string name="note_message">Nota salva</string>
     <string name="CardEditorCardDeck">Baralho de cartões:</string>
     <string name="CardEditorNoteDeck">Baralho:</string>
     <string name="CardEditorModel">Tipo:</string>
@@ -83,6 +83,7 @@
     <string name="webview_crash_fatal">Erro Fatal: WebView renderer crashou. Causa: %s</string>
     <string name="webview_crash_loop_dialog_title">Falha no System Rendering WebView</string>
     <string name="webview_crash_loop_dialog_content">O System WebView falhou ao renderizar o card \'%1$s\'.\n %2$s</string>
+    <string name="slide_to_cancel" comment="Message shown when pressing the record button">Slide to cancel</string>
     <string name="filter_by_flags" maxLength="41">Bandeiras</string>
     <!-- Custom study options -->
     <string name="custom_study_loading_tags">Criando lista de tags&#8230;</string>
@@ -180,11 +181,6 @@
     <string name="tag_editor_add_feedback">Toque \"%2$s\" para confirmar a adição de \"%1$s\"</string>
     <string name="tag_editor_add_feedback_existing">Tag existente \"%1$s\" selecionada</string>
     <!-- Time spans -->
-    <string name="reminder_title">Não se esqueça de estudar hoje!</string>
-    <plurals name="reminder_text">
-        <item quantity="one">%2$d novo card para revisar em %1$s</item>
-        <item quantity="other">%2$d novos cards para revisar em %1$s</item>
-    </plurals>
     <!-- Currently only used if exporting APKG fails -->
     <string name="apk_share_error">Erro ao compartilhar arquivo apkg</string>
     <!-- Import and export v2 feedback -->
@@ -328,8 +324,8 @@
     <string name="tts_voices_failed_opening_tts_system_settings" comment="error message if opening the system text to speech settings fails">Falha ao abrir configurações de texto para fala</string>
     <string name="shared_decks_login_required">Faça login para baixar mais baralhos</string>
     <string name="deck_description_field_hint">Descrição</string>
-    <string name="deck_description_saved">Description updated</string>
-    <string name="format_deck_description_as_markdown">Format as Markdown</string>
+    <string name="deck_description_saved">Descrição atualizada</string>
+    <string name="format_deck_description_as_markdown">Formatar como Markdown</string>
     <string name="help_button_content_description">Open help for ‘%s’</string>
     <string name="failed_to_copy">Falha ao copiar</string>
     <string name="card_browser_unavailable_when_notes_mode">Indisponível no modo \'Notas\'</string>

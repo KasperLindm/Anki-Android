@@ -65,7 +65,7 @@
     <string name="answering_error_message">Writing to the collection failed. The database could be corrupt or there may not to be enough empty space on disk.\n\nIf this happens more often, try checking the database, repairing the collection or restoring it from a backup. Touch “options” for that.\n\Or it could be an AnkiDroid bug as well; please report the error so that we can check this.</string>
     <string name="answering_error_report">Merei airzein</string>
     <string name="storage_full_message">Nist ganoh rumis in stada du uslukan AnkiDroid. Ufarþeihai rum du þairhwisan.</string>
-    <string name="repair_deck_dialog">Do you really want to try to repair the database?\n\nBefore starting the attempt, a copy will be created in subfolder “%s”.</string>
+    <string name="repair_deck_dialog">Wileizu bi sunjai datahuzd gabotjan?\n\nFaurþizei duginnais sokn, gagaleikoþ in ufstada  “%s”.</string>
     <string name="intent_aedict_empty">Category “default” is empty</string>
     <string name="intent_aedict_category">To add cards to AnkiDroid remove all Notepad categories or add one named “default”</string>
     <string name="custom_study_new_extend">Increase/decrease (“-3”) today’s new card limit by</string>
@@ -96,7 +96,7 @@
     <string name="dialog_positive_disable" tools:ignore="UnusedResources">Disable</string>
     <string name="dialog_positive_overwrite">Ufarmeljan</string>
     <string name="dialog_positive_repair">Nasei</string>
-    <string name="dialog_positive_replace">Replace</string>
+    <string name="dialog_positive_replace">Miþsatjan</string>
     <string name="dialog_collection_path_not_dir">The path specified wasn’t a valid directory</string>
     <string name="dialog_invalid_custom_certificate">The provided text does not resolve to a valid PEM-encoded X509 certificate</string>
     <string name="dialog_invalid_custom_certificate_title">Error parsing certificate</string>
@@ -124,6 +124,8 @@
     <string name="multimedia_editor_failed">Ni mahta Inmaidjan Managmaidje uslukan</string>
     <!-- Multimedia - Audio View -->
     <string name="multimedia_editor_audio_permission_denied">Audio recording permission denied</string>
+    <string name="permission_denied">Permission denied</string>
+    <string name="recording_permission_denied_message">Microphone permission is necessary for the “Record voice” feature. Please grant it in the app settings.</string>
     <!-- Database Integrity Check -->
     <string name="integrity_check_startup_title">AnkiDroid aftraananiujida</string>
     <string name="integrity_check_startup_content">AnkiDroid has been upgraded. This upgrade includes fixes for possible database problems, and we advise you to run check database now.</string>
@@ -170,7 +172,7 @@
     <string name="help_title_support_ankidroid" maxLength="28">AnkiDroid Stodjan</string>
     <string name="help_item_support_opencollective_donate">Andstaldan</string>
     <string name="help_item_support_develop_ankidroid">Andwaibei</string>
-    <string name="help_item_support_rate_ankidroid">Rate</string>
+    <string name="help_item_support_rate_ankidroid">Wairþon</string>
     <string name="help_item_support_other_ankidroid">Anþar</string>
     <string name="multimedia_editor_trans_translate">Gaskeirjan</string>
     <string name="help_title_community">Gamainduþs</string>

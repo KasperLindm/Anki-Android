@@ -105,7 +105,7 @@
     <string name="check_media_title">Kontrollera media?</string>
     <string name="check_media_warning">Det här kan ta lång tid för stora mediasamlingar</string>
     <string name="check_media_message">Kontrollerar media&#8230;</string>
-    <string name="check_media_adding_missing_tag">Adding tags&#8230;</string>
+    <string name="check_media_adding_missing_tag">Lägger till taggar&#8230;</string>
     <string name="check_media_tags_added">Tags added</string>
     <string name="delete_media_message">Tar bort media&#8230;</string>
     <string name="delete_media_result_title">Raderingsresultat</string>
@@ -124,6 +124,8 @@
     <string name="multimedia_editor_failed">Det gick inte att öppna Multimedia Editor</string>
     <!-- Multimedia - Audio View -->
     <string name="multimedia_editor_audio_permission_denied">Behörighet för ljudinspelning nekad</string>
+    <string name="permission_denied">Permission denied</string>
+    <string name="recording_permission_denied_message">Microphone permission is necessary for the “Record voice” feature. Please grant it in the app settings.</string>
     <!-- Database Integrity Check -->
     <string name="integrity_check_startup_title">AnkiDroid uppgraderat</string>
     <string name="integrity_check_startup_content">AnkiDroid har uppgraderats. Denna uppgradering innehåller rättelser för eventuella databasproblem, och vi rekommenderar dig att köra databaskontrollen nu.</string>

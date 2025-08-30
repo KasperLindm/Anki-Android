@@ -83,6 +83,7 @@
     <string name="webview_crash_fatal">Fataal Fout: WebView-renderer het gecrash. Oorsaak: %s</string>
     <string name="webview_crash_loop_dialog_title">Stelsel WebView Weergawes Fout</string>
     <string name="webview_crash_loop_dialog_content">Stelsel webaansig kon nie kaart verbeeld nie \'%1$s\'.\n%2$s</string>
+    <string name="slide_to_cancel" comment="Message shown when pressing the record button">Slide to cancel</string>
     <string name="filter_by_flags" maxLength="41">Etikette</string>
     <!-- Custom study options -->
     <string name="custom_study_loading_tags">Building list of tags&#8230;</string>
@@ -180,11 +181,6 @@
     <string name="tag_editor_add_feedback">Raak \"%2$s\" aan om \"%1$s\" by te voeg</string>
     <string name="tag_editor_add_feedback_existing">Bestaande etiket “%1$s” gekies</string>
     <!-- Time spans -->
-    <string name="reminder_title">Moet nie vergeet om vandag te studeer nie!</string>
-    <plurals name="reminder_text">
-        <item quantity="one">%2$d Kaart Om Te Hersien In %1$s</item>
-        <item quantity="other">%2$d kaarte om te hersien in %1$s</item>
-    </plurals>
     <!-- Currently only used if exporting APKG fails -->
     <string name="apk_share_error">Fout met die deel van apkg-lêer</string>
     <!-- Import and export v2 feedback -->

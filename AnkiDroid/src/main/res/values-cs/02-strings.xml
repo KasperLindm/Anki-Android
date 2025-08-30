@@ -83,6 +83,7 @@
     <string name="webview_crash_fatal">Kritická chyba: Vykreslování WebView selhalo. Příčina: %s</string>
     <string name="webview_crash_loop_dialog_title">Selhání vykreslování systémového webView</string>
     <string name="webview_crash_loop_dialog_content">Systémovému WebView se nepodařilo vykreslit kartu „%1$s“.\n %2$s</string>
+    <string name="slide_to_cancel" comment="Message shown when pressing the record button">Slide to cancel</string>
     <string name="filter_by_flags" maxLength="41">Příznaky</string>
     <!-- Custom study options -->
     <string name="custom_study_loading_tags">Vytváří se seznam štítků&#8230;</string>
@@ -186,13 +187,6 @@
     <string name="tag_editor_add_feedback">Klepněte na „%2$s“, abyste potvrdili přidání „%1$s“</string>
     <string name="tag_editor_add_feedback_existing">Vybrán stávající štítek „%1$s“</string>
     <!-- Time spans -->
-    <string name="reminder_title">Nezapomeňte dnes studovat!</string>
-    <plurals name="reminder_text">
-        <item quantity="one">%2$d karta k zopakování v %1$s</item>
-        <item quantity="few">%2$d karty k zopakování v %1$s</item>
-        <item quantity="many">%2$d karty k zopakování v %1$s</item>
-        <item quantity="other">%2$d karet k zopakování v %1$s</item>
-    </plurals>
     <!-- Currently only used if exporting APKG fails -->
     <string name="apk_share_error">Chyba sdílení souboru apkg</string>
     <!-- Import and export v2 feedback -->

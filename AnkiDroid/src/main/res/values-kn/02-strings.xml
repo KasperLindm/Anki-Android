@@ -83,6 +83,7 @@
     <string name="webview_crash_fatal">ಮಾರಕ ದೋಷ: ವೆಬ್‌ವೀಕ್ಷಣೆ ರೆಂಡರರ್ ಕ್ರ್ಯಾಶ್ ಆಗಿದೆ. ಕಾರಣ:%s</string>
     <string name="webview_crash_loop_dialog_title">ಸಿಸ್ಟಮ್ ವೆಬ್‌ವೀಕ್ಷಣೆ ರೆಂಡರಿಂಗ್ ವಿಫಲತೆ</string>
     <string name="webview_crash_loop_dialog_content">\'%1$s\' ಕಾರ್ಡ್ ಅನ್ನು ನಿರೂಪಿಸಲು ಸಿಸ್ಟಮ್ ವೆಬ್‌ವೀಕ್ಷಣೆ ವಿಫಲವಾಗಿದೆ.\n %2$s</string>
+    <string name="slide_to_cancel" comment="Message shown when pressing the record button">Slide to cancel</string>
     <string name="filter_by_flags" maxLength="41">ಧ್ವಜಗಳು</string>
     <!-- Custom study options -->
     <string name="custom_study_loading_tags">Building list of tags&#8230;</string>
@@ -180,11 +181,6 @@
     <string name="tag_editor_add_feedback">“%1$s” ಸೇರಿಸುವುದನ್ನು ಖಚಿತಪಡಿಸಲು “%2$s” ಸ್ಪರ್ಶಿಸಿ</string>
     <string name="tag_editor_add_feedback_existing">ಅಸ್ತಿತ್ವದಲ್ಲಿರುವ ಟ್ಯಾಗ್ “%1$s” ಆಯ್ಕೆ ಮಾಡಲಾಗಿದೆ</string>
     <!-- Time spans -->
-    <string name="reminder_title">ಇಂದು ಅಧ್ಯಯನ ಮಾಡಲು ಮರೆಯಬೇಡಿ!</string>
-    <plurals name="reminder_text">
-        <item quantity="one">%1$s ನಲ್ಲಿ ಪರಿಶೀಲಿಸಲು%2$d ಕಾರ್ಡ್</item>
-        <item quantity="other">%1$s ನಲ್ಲಿ ಪರಿಶೀಲಿಸಲು%2$d ಕಾರ್ಡ್‌ಗಳು</item>
-    </plurals>
     <!-- Currently only used if exporting APKG fails -->
     <string name="apk_share_error">ಎಪಿಕೆಜಿ ಫೈಲ್ ಹಂಚುವಲ್ಲಿ ದೋಷ</string>
     <!-- Import and export v2 feedback -->

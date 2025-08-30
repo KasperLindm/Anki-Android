@@ -83,6 +83,7 @@
     <string name="webview_crash_fatal">गंभीर त्रुटी: वेबव्यू प्रस्तुतकर्ता क्रॅश झाला. कारणः%s</string>
     <string name="webview_crash_loop_dialog_title">सिस्टम वेबव्यू प्रस्तुत करणे अयशस्वी</string>
     <string name="webview_crash_loop_dialog_content">सिस्टम \'वेबव्यू\' \'%1$s\' कार्ड प्रस्तुत करण्यात अयशस्वी. \ N%2$s</string>
+    <string name="slide_to_cancel" comment="Message shown when pressing the record button">Slide to cancel</string>
     <string name="filter_by_flags" maxLength="41">ध्वज</string>
     <!-- Custom study options -->
     <string name="custom_study_loading_tags">Building list of tags&#8230;</string>
@@ -180,11 +181,6 @@
     <string name="tag_editor_add_feedback">\"%1$s\" जोडण्याची पुष्टी करण्यासाठी \"%2$s\" ला स्पर्श करा</string>
     <string name="tag_editor_add_feedback_existing">\"%1$s\" विद्यमान टॅग निवडला.</string>
     <!-- Time spans -->
-    <string name="reminder_title">आज अभ्यास करायला विसरू नका!</string>
-    <plurals name="reminder_text">
-        <item quantity="one">%1$s मध्ये पुनरावलोकन करण्यासाठी %2$d कार्ड</item>
-        <item quantity="other">%1$s मध्ये पुनरावलोकन करण्यासाठी %2$d कार्ड</item>
-    </plurals>
     <!-- Currently only used if exporting APKG fails -->
     <string name="apk_share_error">apkg फाइल शेअर करताना त्रुटी</string>
     <!-- Import and export v2 feedback -->

@@ -83,6 +83,7 @@
     <string name="webview_crash_fatal">ფატალური შეცდომა: WebView მიმღები ავარიულად გაითიშა. მიზეზი: %s</string>
     <string name="webview_crash_loop_dialog_title">შეცდომა WebView სისტემის დამუშავებისას</string>
     <string name="webview_crash_loop_dialog_content">WebView სისტემამ ვერ დაამუშავა ბარათი „%1$s“.\n %2$s</string>
+    <string name="slide_to_cancel" comment="Message shown when pressing the record button">Slide to cancel</string>
     <string name="filter_by_flags" maxLength="41">დროშები</string>
     <!-- Custom study options -->
     <string name="custom_study_loading_tags">იქმნება იარლიყების სია&#8230;</string>
@@ -180,11 +181,6 @@
     <string name="tag_editor_add_feedback">„%1$s-ის“ დამატების დასადასტურებლად შეეხეთ „%2$s-ს“</string>
     <string name="tag_editor_add_feedback_existing">მოინიშნა არსებული იარლიყი „%1$s“</string>
     <!-- Time spans -->
-    <string name="reminder_title">დღესაც ვიმეცადინოთ!</string>
-    <plurals name="reminder_text">
-        <item quantity="one">%2$d ბარათია გადასახედი %1$s-ში</item>
-        <item quantity="other">%2$d ბარათია გადასახედი %1$s-ში</item>
-    </plurals>
     <!-- Currently only used if exporting APKG fails -->
     <string name="apk_share_error">შეცდომა APKG ფაილის გაზიარებისას</string>
     <!-- Import and export v2 feedback -->

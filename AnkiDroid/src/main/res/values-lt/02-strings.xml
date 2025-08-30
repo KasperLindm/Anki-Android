@@ -83,6 +83,7 @@
     <string name="webview_crash_fatal">Fatališka klaida: Klaida: WebView rendereris sugedo. Priežastis: %s</string>
     <string name="webview_crash_loop_dialog_title">Sistemos \"WebView\" atvaizdavimo sutrikimas</string>
     <string name="webview_crash_loop_dialog_content">System WebView failed to render card \'%1$s\'.\n %2$s</string>
+    <string name="slide_to_cancel" comment="Message shown when pressing the record button">Slide to cancel</string>
     <string name="filter_by_flags" maxLength="41">Žymos</string>
     <!-- Custom study options -->
     <string name="custom_study_loading_tags">Žymų sąrašo kūrimas</string>
@@ -186,13 +187,6 @@
     <string name="tag_editor_add_feedback">Norėdami pridėti „%1$s“, spauskite „%2$s“</string>
     <string name="tag_editor_add_feedback_existing">Pasirinkta esama žymė „%1$s“</string>
     <!-- Time spans -->
-    <string name="reminder_title">Nepamirškite šiandien pasimokyti!</string>
-    <plurals name="reminder_text">
-        <item quantity="one">Peržiūrėti %2$d kortelę per %1$s</item>
-        <item quantity="few">Peržiūrėti %2$d korteles per %1$s</item>
-        <item quantity="many">Peržiūrėti %2$d kortelių per %1$s</item>
-        <item quantity="other">Peržiūrėti %2$d kort. per %1$s</item>
-    </plurals>
     <!-- Currently only used if exporting APKG fails -->
     <string name="apk_share_error">Pasidalinti apkg failo nepavyko</string>
     <!-- Import and export v2 feedback -->

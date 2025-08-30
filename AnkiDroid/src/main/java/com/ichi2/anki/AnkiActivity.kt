@@ -463,10 +463,13 @@ open class AnkiActivity :
         }
     }
 
-    internal fun mayOpenUrl(url: Uri) {
-        val success = customTabActivityHelper.mayLaunchUrl(url, null, null)
+    internal fun mayOpenUrl(
+        @StringRes url: Int,
+    ) {
+        val url = getString(url)
+        val success = customTabActivityHelper.mayLaunchUrl(url.toUri(), null, null)
         if (!success) {
-            Timber.w("Couldn't preload url: %s", url.toString())
+            Timber.w("Couldn't preload url: %s", url)
         }
     }
 
@@ -928,8 +931,11 @@ open class AnkiActivity :
 }
 
 fun Fragment.requireAnkiActivity(): AnkiActivity =
-    requireActivity() as? AnkiActivity?
+    ankiActivity
         ?: throw java.lang.IllegalStateException("Fragment $this not attached to an AnkiActivity.")
+
+val Fragment.ankiActivity: AnkiActivity?
+    get() = this.requireActivity() as? AnkiActivity?
 
 interface AnkiActivityProvider {
     val ankiActivity: AnkiActivity

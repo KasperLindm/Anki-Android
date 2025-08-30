@@ -83,6 +83,7 @@
     <string name="webview_crash_fatal">Критична помилка WebView. Причина: %s</string>
     <string name="webview_crash_loop_dialog_title">Збій системного WebView</string>
     <string name="webview_crash_loop_dialog_content">Системою WebView не вдалося відобразити картку \'%1$s\'.\n %2$s</string>
+    <string name="slide_to_cancel" comment="Message shown when pressing the record button">Slide to cancel</string>
     <string name="filter_by_flags" maxLength="41">Прапорці</string>
     <!-- Custom study options -->
     <string name="custom_study_loading_tags">Створюється список тегів&#8230;</string>
@@ -186,13 +187,6 @@
     <string name="tag_editor_add_feedback">Натисніть \"%2$s\", аби підтвердити додавання \"%1$s\"</string>
     <string name="tag_editor_add_feedback_existing">Обрано існуючу позначку \"%1$s\"</string>
     <!-- Time spans -->
-    <string name="reminder_title">Не забудьте про сьогоднішнє навчання!</string>
-    <plurals name="reminder_text">
-        <item quantity="one">%2$d картка для повторення в %1$s</item>
-        <item quantity="few">%2$d картки для повторення в %1$s</item>
-        <item quantity="many">%2$d карток для повторення в %1$s</item>
-        <item quantity="other">%2$d карток для повторення в %1$s</item>
-    </plurals>
     <!-- Currently only used if exporting APKG fails -->
     <string name="apk_share_error">Помилка поширення файлу apkg</string>
     <!-- Import and export v2 feedback -->

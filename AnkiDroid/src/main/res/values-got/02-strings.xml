@@ -64,7 +64,7 @@
     <!-- Reviewer.kt (Study Screen) -->
     <string name="save_whiteboard" maxLength="28">Gafastai ƕeitabaurd</string>
     <string name="enable_stylus" maxLength="28">Enable stylus writing</string>
-    <string name="disable_stylus">Disable stylus writing</string>
+    <string name="disable_stylus">Melein stwlaus blauþjan</string>
     <string name="enable_whiteboard" maxLength="28">Brukei ƕeitabaurd</string>
     <string name="disable_whiteboard">Unsatei ƕeitabaurd</string>
     <string name="show_whiteboard">Bandwei ƕeitabaurd</string>
@@ -83,6 +83,7 @@
     <string name="webview_crash_fatal">Ustiuhandei Airzei: WabjaSiunais ataugja brak. Grundus: %s</string>
     <string name="webview_crash_loop_dialog_title">System WebView Rendering Failure</string>
     <string name="webview_crash_loop_dialog_content">System WebView failed to render card \'%1$s\'.\n %2$s</string>
+    <string name="slide_to_cancel" comment="Message shown when pressing the record button">Slide to cancel</string>
     <string name="filter_by_flags" maxLength="41">Fanans</string>
     <!-- Custom study options -->
     <string name="custom_study_loading_tags">Wiko gatimrjada sokniwaurde&#8230;</string>
@@ -180,33 +181,28 @@
     <string name="tag_editor_add_feedback">Attek \"%2$s\" gatulgjan biaukan \"%1$s\"</string>
     <string name="tag_editor_add_feedback_existing">Wisando sokniwaurd \"%1$s\" gawaliþ</string>
     <!-- Time spans -->
-    <string name="reminder_title">Ni ufarmunno laiseinai himma daga!</string>
-    <plurals name="reminder_text">
-        <item quantity="one">%2$d card to review in %1$s</item>
-        <item quantity="other">%2$d cards to review in %1$s</item>
-    </plurals>
     <!-- Currently only used if exporting APKG fails -->
     <string name="apk_share_error">Airzei warþ dailjan apkg fajl</string>
     <!-- Import and export v2 feedback -->
     <string name="activity_start_failed">The system does not have an app installed that can perform this action.</string>
-    <string name="multimedia_editor_image_compression_failed"><![CDATA[Camera images may be large. You may wish to compress & resize images in the media directory]]></string>
+    <string name="multimedia_editor_image_compression_failed"><![CDATA[Frisahteis kamairos magun mikilos wisan. Magt gaþrukjan jah aftramikiljan frisahtins in stada maidje]]></string>
     <string name="no_browser_msg">Ni bigat brawsair du uslukan gawiss: %s</string>
     <string name="web_page_error">Airzei warþ atbairan lauf: %s</string>
     <!-- The name of the deck which corrupt cards will be moved to -->
     <!-- Deckpicker Background -->
-    <string name="background_image_title" maxLength="41">Background</string>
+    <string name="background_image_title" maxLength="41">Hindargrundus</string>
     <string name="choose_an_image" maxLength="41">Frisaht waljan</string>
-    <string name="remove_wallpaper_image" maxLength="41">Remove background</string>
-    <string name="remove_background_image">Remove background?</string>
+    <string name="remove_wallpaper_image" maxLength="41">Hindargrundu usniman</string>
+    <string name="remove_background_image">Hindargrundu usniman?</string>
     <!-- Card Template Browser Appearance -->
     <string name="restore_default" maxLength="28">Biuht nasjan</string>
-    <string name="reviewer_tts_cloze_spoken_replacement">Blank</string>
+    <string name="reviewer_tts_cloze_spoken_replacement">Blagk</string>
     <!-- Whiteboard eraser mode toggle message in Reviewer -->
-    <string name="white_board_eraser_enabled">Eraser mode activated</string>
-    <string name="white_board_eraser_disabled">Eraser mode deactivated</string>
+    <string name="white_board_eraser_enabled">Afhvairbandis modus inlagiþs</string>
+    <string name="white_board_eraser_disabled">Afhvairbandis modus unlagiþs</string>
     <!-- Whiteboard save image message in the Study Screen -->
-    <string name="white_board_image_save_failed">Failed to save whiteboard image. %s</string>
-    <string name="white_board_image_saved">Whiteboard image saved to %s</string>
+    <string name="white_board_image_save_failed">Ni mahta gafastan frisaht hveitabaurdis. %s</string>
+    <string name="white_board_image_saved">Frisahts hveitabaurdis gafastana du %s</string>
     <string name="title_whiteboard_editor" maxLength="28">Inmaidja ƕeitabaurdis</string>
     <string name="user_is_a_robot">Detected automated test. If you are a human, contact AnkiDroid support</string>
     <!-- JS api -->
@@ -247,7 +243,7 @@
     <string name="note_editor_audio_too_large">The audio file is too large, please insert the audio manually</string>
     <string name="ankidroid_cannot_open_after_backup_try_again" comment="After an Android backup is restored, AnkiDroid opens and shows this message.         Opening AnkiDroid again will work correctly">Android baik-ap in framgahtai. Bidjam þuk, sokei aftra.</string>
     <string name="create_shortcut_error_vivo" comment="iManager is an app on Vivo phones">You may need to use iManager to allow AnkiDroid to add shortcuts</string>
-    <string name="create_shortcut_failed" comment="home screen == launcher">Your home screen does not allow AnkiDroid to add shortcuts</string>
+    <string name="create_shortcut_failed" comment="home screen == launcher">Gardiskairms þeins ni andletiþ AnkiDroid biaukan maurguwigans</string>
     <string name="create_shortcut_error">Airzei warþ biaukan maurguwig: %s</string>
     <string name="note_editor_capitalize" comment="This is for a switch with a checkbox - on: enabled" maxLength="28">Capitalize sentences</string>
     <string name="menu_scroll_toolbar" comment="Checkbox stating whether note editor toolbar is scrollable or stacked. Checked: Scroll" maxLength="28">Scroll toolbar</string>
@@ -324,8 +320,8 @@
     <string name="tts_voices_playback_error_new" comment="an error occurred when playing a text to speech voice. The parameter is a technical error code such as \'ERROR_NOT_INSTALLED_YET\' or \'ERROR_NETWORK_TIMEOUT\'">Bokos du stibnai airzei (%s)</string>
     <!-- Chips should probably be in a separate file, due to the additional length req -->
     <string name="tts_voices_chip_filter_to_internet" comment="     Filters a list of text to speech voices, to enable/disable voices which require the internet to     function.     This is on a chip control, so keep the text short, ideally one word">Ganati</string>
-    <string name="tts_voices_chip_filter_to_installable_audio" comment="     Displays a list of Text to Speech voices which should be downloaded/installed before use     This is on a chip control, so keep the text short, ideally one word">Install</string>
-    <string name="tts_voices_failed_opening_tts_system_settings" comment="error message if opening the system text to speech settings fails">Failed to open text to speech settings</string>
+    <string name="tts_voices_chip_filter_to_installable_audio" comment="     Displays a list of Text to Speech voices which should be downloaded/installed before use     This is on a chip control, so keep the text short, ideally one word">Gasuljan</string>
+    <string name="tts_voices_failed_opening_tts_system_settings" comment="error message if opening the system text to speech settings fails">Ni mahta boko-du-stibnai lageinins uslukan</string>
     <string name="shared_decks_login_required">Bidjam þuk, atgagg du atdragan kartahuzda managizona</string>
     <string name="deck_description_field_hint">Gaskeireins</string>
     <string name="deck_description_saved">Description updated</string>
@@ -354,7 +350,7 @@
     <string name="note_editor_group" comment="Label for the group of shortcuts related to the note editor">Inmaidja Meleino</string>
     <string name="select_deck" comment="Description of the shortcut that opens the deck selection dialog">Kartahuzd Waljan</string>
     <string name="select_note_type" comment="Description of the shortcut that shows the note selection spinner">Select note type</string>
-    <string name="tag_editor" comment="Description of the shortcut that opens the tags dialog">Tag editor</string>
+    <string name="tag_editor" comment="Description of the shortcut that opens the tags dialog">Inmaidja sokniwaurde</string>
     <string name="card_template_editor_group" comment="Label for the group of shortcuts related to the card template editor">Karto faurameleino Inmaidja</string>
     <string name="edit_front_template" comment="Description of the shortcut that shows the question side of the card template">Edit front template</string>
     <string name="edit_back_template" comment="Description of the shortcut that shows the answer side of the card template">Edit back template</string>

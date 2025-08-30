@@ -32,6 +32,7 @@ import android.webkit.WebView
 import android.webkit.WebViewClient
 import android.widget.FrameLayout
 import android.widget.LinearLayout
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.widget.ActionMenuView
 import androidx.appcompat.widget.AppCompatImageButton
 import androidx.appcompat.widget.AppCompatImageView
@@ -47,6 +48,7 @@ import androidx.core.view.isVisible
 import androidx.core.view.updateLayoutParams
 import androidx.core.view.updatePadding
 import androidx.core.widget.addTextChangedListener
+import androidx.fragment.app.FragmentContainerView
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.flowWithLifecycle
@@ -58,6 +60,7 @@ import com.google.android.material.card.MaterialCardView
 import com.google.android.material.shape.ShapeAppearanceModel
 import com.google.android.material.textfield.TextInputEditText
 import com.google.android.material.textview.MaterialTextView
+import com.ichi2.anki.CollectionManager
 import com.ichi2.anki.DispatchKeyEventListener
 import com.ichi2.anki.Flag
 import com.ichi2.anki.R
@@ -92,12 +95,14 @@ import com.ichi2.anki.utils.ext.window
 import com.ichi2.anki.utils.isWindowCompact
 import com.ichi2.themes.Themes
 import com.ichi2.utils.dp
+import com.ichi2.utils.show
 import com.squareup.seismic.ShakeDetector
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import timber.log.Timber
 import java.lang.IllegalArgumentException
+import kotlin.math.roundToInt
 
 class ReviewerFragment :
     CardViewerFragment(R.layout.reviewer2),
@@ -184,6 +189,8 @@ class ReviewerFragment :
         setupToolbarPosition(view)
         setupAnswerTimer(view)
         setupMargins(view)
+        setupCheckPronunciation(view)
+        setupTimebox()
 
         viewModel.actionFeedbackFlow
             .flowWithLifecycle(lifecycle)
@@ -320,12 +327,8 @@ class ReviewerFragment :
                 }
             }
         }
-        lifecycleScope.launch {
-            lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
-                viewModel.clearTypeAnswerFlow.collect {
-                    typeAnswerEditText.text = null
-                }
-            }
+        viewModel.onShowQuestionFlow.flowWithLifecycle(lifecycle).collectIn(lifecycleScope) {
+            typeAnswerEditText.text = null
         }
     }
 
@@ -369,7 +372,7 @@ class ReviewerFragment :
 
     private fun setupAnswerButtons(view: View) {
         val answerArea = view.findViewById<FrameLayout>(R.id.answer_area)
-        if (Prefs.hideAnswerButtons) {
+        if (!Prefs.showAnswerButtons) {
             answerArea.isVisible = false
             return
         }
@@ -537,7 +540,7 @@ class ReviewerFragment :
      * of [Prefs.toolbarPosition] and `Hide answer buttons`
      */
     private fun setupMargins(view: View) {
-        val hideAnswerButtons = Prefs.hideAnswerButtons
+        val hideAnswerButtons = !Prefs.showAnswerButtons
         // In big screens, let the menu expand if there are no answer buttons
         if (hideAnswerButtons && !resources.isWindowCompact()) {
             val constraintLayout = view.findViewById<ConstraintLayout>(R.id.tools_layout)
@@ -590,6 +593,38 @@ class ReviewerFragment :
                 null -> {
                     timer.isVisible = false
                 }
+            }
+        }
+    }
+
+    private fun setupCheckPronunciation(view: View) {
+        val container = view.findViewById<FragmentContainerView>(R.id.check_pronunciation_container)
+        viewModel.voiceRecorderEnabledFlow.flowWithLifecycle(lifecycle).collectIn(lifecycleScope) { isEnabled ->
+            container.isVisible = isEnabled
+        }
+    }
+
+    private fun setupTimebox() {
+        viewModel.timeBoxReachedFlow.flowWithLifecycle(lifecycle).collectIn(lifecycleScope) { timebox ->
+            Timber.i("ReviewerFragment: Timebox reached (reps %d - secs %d)", timebox.reps, timebox.secs)
+
+            viewModel.stopAutoAdvance()
+
+            val minutes = (timebox.secs / 60f).roundToInt()
+            val message = CollectionManager.TR.studyingCardStudiedIn(timebox.reps) + " " + CollectionManager.TR.studyingMinute(minutes)
+
+            AlertDialog.Builder(requireContext()).show {
+                setTitle(R.string.timebox_reached_title)
+                setMessage(message)
+                setPositiveButton(CollectionManager.TR.studyingContinue()) { _, _ ->
+                    Timber.i("ReviewerFragment: Timebox 'Continue'")
+                    viewModel.onPageFinished(false)
+                }
+                setNegativeButton(CollectionManager.TR.studyingFinish()) { _, _ ->
+                    Timber.i("ReviewerFragment: Timebox 'Finish'")
+                    requireActivity().finish()
+                }
+                setCancelable(false)
             }
         }
     }

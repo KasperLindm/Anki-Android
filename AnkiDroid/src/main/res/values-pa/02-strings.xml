@@ -83,6 +83,7 @@
     <string name="webview_crash_fatal">ਘਾਤਕ ਗੜਬੜ: WebView ਰੈਂਡਰਰ ਕ੍ਰੈਸ਼ ਹੋ ਗਿਆ। ਕਾਰਨ: %s</string>
     <string name="webview_crash_loop_dialog_title">ਸਿਸਟਮ WebView ਰੈਂਡਰਿੰਗ ਅਸਫਲਤਾ</string>
     <string name="webview_crash_loop_dialog_content">System WebView failed to render card \'%1$s\'.\n %2$s</string>
+    <string name="slide_to_cancel" comment="Message shown when pressing the record button">Slide to cancel</string>
     <string name="filter_by_flags" maxLength="41">Flags</string>
     <!-- Custom study options -->
     <string name="custom_study_loading_tags">Building list of tags&#8230;</string>
@@ -180,11 +181,6 @@
     <string name="tag_editor_add_feedback">\"%1$s\" ਨੂੰ ਜੋੜਨ ਦੀ ਪੁਸ਼ਟੀ ਕਰਨ ਲਈ \"%2$s\" ਨੂੰ ਛੋਹਵੋ।</string>
     <string name="tag_editor_add_feedback_existing">ਮੌਜੂਦਾ ਟੈਗ “%1$s” ਚੁਣਿਆ ਗਿਆ</string>
     <!-- Time spans -->
-    <string name="reminder_title">ਅੱਜ ਦਾ ਅਧਿਐਨ ਕਰਨਾ ਨਾ ਭੁੱਲੋ!</string>
-    <plurals name="reminder_text">
-        <item quantity="one">%1$s ਵਿੱਚ ਸਮੀਖਿਆ ਕਰਨ ਲਈ %2$d ਕਾਰਡ</item>
-        <item quantity="other">%1$s ਵਿੱਚ ਸਮੀਖਿਆ ਕਰਨ ਲਈ %2$d ਕਾਰਡ</item>
-    </plurals>
     <!-- Currently only used if exporting APKG fails -->
     <string name="apk_share_error">apkk ਫਾਈਲ ਨੂੰ ਸਾਂਝਾ ਕਰਨ ਵਿੱਚ ਤਰੁੱਟੀ</string>
     <!-- Import and export v2 feedback -->

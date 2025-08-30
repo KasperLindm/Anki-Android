@@ -71,8 +71,6 @@ import androidx.core.view.doOnLayout
 import androidx.core.view.isVisible
 import androidx.draganddrop.DropHelper
 import androidx.fragment.app.commit
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.flowWithLifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -107,6 +105,8 @@ import com.ichi2.anki.android.input.shortcut
 import com.ichi2.anki.common.annotations.NeedsTest
 import com.ichi2.anki.common.time.TimeManager
 import com.ichi2.anki.common.utils.annotation.KotlinCleanup
+import com.ichi2.anki.contextmenu.DeckPickerMenuContentProvider
+import com.ichi2.anki.contextmenu.MouseContextMenuHandler
 import com.ichi2.anki.deckpicker.BITMAP_BYTES_PER_PIXEL
 import com.ichi2.anki.deckpicker.BackgroundImage
 import com.ichi2.anki.deckpicker.DeckDeletionResult
@@ -249,23 +249,12 @@ open class DeckPicker :
     ApkgImportResultLauncherProvider,
     CsvImportResultLauncherProvider,
     CollectionPermissionScreenLauncher {
-    val viewModel: DeckPickerViewModel by viewModels {
-        object : ViewModelProvider.Factory {
-            override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                val fragmented =
-                    (
-                        resources.configuration.screenLayout and
-                            Configuration.SCREENLAYOUT_SIZE_MASK
-                    ) ==
-                        Configuration.SCREENLAYOUT_SIZE_XLARGE
-                @Suppress("UNCHECKED_CAST")
-                return DeckPickerViewModel(fragmented) as T
-            }
-        }
-    }
+    val viewModel: DeckPickerViewModel by viewModels()
 
     override var fragmented: Boolean
-        get() = viewModel.fragmented
+        get() =
+            resources.configuration.screenLayout and Configuration.SCREENLAYOUT_SIZE_MASK ==
+                Configuration.SCREENLAYOUT_SIZE_XLARGE
         set(_) = throw UnsupportedOperationException()
 
     // Short animation duration from system
@@ -284,6 +273,9 @@ open class DeckPicker :
     private lateinit var deckListAdapter: DeckAdapter
     private lateinit var noDecksPlaceholder: LinearLayout
     private lateinit var pullToSyncWrapper: SwipeRefreshLayout
+
+    // Right-click context menu handler using decoupled menu system
+    private lateinit var mouseContextMenuHandler: MouseContextMenuHandler
 
     private lateinit var reviewSummaryTextView: TextView
 
@@ -488,6 +480,27 @@ open class DeckPicker :
         }
     }
 
+    private fun showDeckPickerRightClickContextMenu(
+        deckId: DeckId,
+        x: Float,
+        y: Float,
+    ) {
+        launchCatchingTask {
+            val (isDynamic, hasBuriedInDeck) =
+                withCol {
+                    decks.select(deckId)
+                    Pair(
+                        decks.isFiltered(deckId),
+                        sched.haveBuried(),
+                    )
+                }
+            updateDeckList()
+            val menuContentProvider = DeckPickerMenuContentProvider(deckId, isDynamic, hasBuriedInDeck, this@DeckPicker)
+            mouseContextMenuHandler = MouseContextMenuHandler(deckPickerContent, menuContentProvider)
+            mouseContextMenuHandler.showContextMenu(recyclerView, x, y)
+        }
+    }
+
     private val notificationPermissionLauncher =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) {
             Timber.i("notification permission: %b", it)
@@ -575,6 +588,10 @@ open class DeckPicker :
                     dismissAllDialogFragments()
                 },
                 onDeckContextRequested = ::showDeckPickerContextMenu,
+                onDeckRightClick = { deckId, x, y ->
+                    showDeckPickerRightClickContextMenu(deckId, x, y)
+                    Timber.d("Right Click on deck recorded!! %d, %f %f", deckId, x, y)
+                },
             )
         recyclerView.adapter = deckListAdapter
 
@@ -628,6 +645,19 @@ open class DeckPicker :
                     ?: error("Unable to retrieve selected context menu option"),
                 bundle.getLong(DeckPickerContextMenu.CONTEXT_MENU_DECK_ID, -1),
             )
+        }
+
+        setFragmentResultListener(DeckPickerMenuContentProvider.REQUEST_KEY_CONTEXT_MENU) { _, bundle ->
+            handleContextMenuSelection(
+                bundle.getSerializableCompat<DeckPickerContextMenuOption>(DeckPickerMenuContentProvider.CONTEXT_MENU_DECK_OPTION)
+                    ?: error("Unable to retrieve selected context menu option"),
+                bundle.getLong(DeckPickerMenuContentProvider.CONTEXT_MENU_DECK_ID, -1),
+            )
+        }
+
+        setFragmentResultListener(StudyOptionsFragment.REQUEST_STUDY_OPTIONS_STUDY) { _, _ ->
+            Timber.d("Opening study screen from DeckPicker's study options panel")
+            openReviewer()
         }
 
         pullToSyncWrapper.configureView(
@@ -762,9 +792,9 @@ open class DeckPicker :
             }
         }
 
-        fun onStudyOptionsVisibilityChanged(isVisible: Boolean) {
+        fun onStudyOptionsVisibilityChanged(collectionHasNoCards: Boolean) {
             invalidateOptionsMenu()
-            studyoptionsFrame?.isVisible = isVisible
+            studyoptionsFrame?.isVisible = fragmented && !collectionHasNoCards
         }
 
         fun onDeckListChanged(deckList: FlattenedDeckList) {
@@ -838,7 +868,7 @@ open class DeckPicker :
         viewModel.flowOfStudiedTodayStats.launchCollectionInLifecycleScope(::onStudiedTodayChanged)
         viewModel.flowOfDeckListInInitialState.filterNotNull().launchCollectionInLifecycleScope(::onCollectionStatusChanged)
         viewModel.flowOfCardsDue.launchCollectionInLifecycleScope(::onCardsDueChanged)
-        viewModel.flowOfStudyOptionsVisible.launchCollectionInLifecycleScope(::onStudyOptionsVisibilityChanged)
+        viewModel.flowOfCollectionHasNoCards.launchCollectionInLifecycleScope(::onStudyOptionsVisibilityChanged)
         viewModel.flowOfDeckList.launchCollectionInLifecycleScope(::onDeckListChanged)
         viewModel.flowOfFocusedDeck.launchCollectionInLifecycleScope(::onFocusedDeckChanged)
         viewModel.flowOfResizingDividerVisible.launchCollectionInLifecycleScope(::onResizingDividerVisibilityChanged)
@@ -1428,6 +1458,9 @@ open class DeckPicker :
     private fun processReviewResults(resultCode: Int) {
         if (resultCode == AbstractFlashcardViewer.RESULT_NO_MORE_CARDS) {
             CongratsPage.onReviewsCompleted(this, getColUnsafe.sched.totalCount() == 0)
+            if (fragmented) {
+                fragment?.refreshInterface()
+            }
         }
     }
 

@@ -84,6 +84,7 @@
     <string name="webview_crash_loop_dialog_title">Fallimentu de sa renderizatzione WebView de sistema</string>
     <string name="webview_crash_loop_dialog_content">Su renderizadore WebView de sistema no est resèssidu a renderizare sa carta \'%1$s\'.\n
    %2$s</string>
+    <string name="slide_to_cancel" comment="Message shown when pressing the record button">Slide to cancel</string>
     <string name="filter_by_flags" maxLength="41">Banderas</string>
     <!-- Custom study options -->
     <string name="custom_study_loading_tags">Building list of tags&#8230;</string>
@@ -182,11 +183,6 @@
     <string name="tag_editor_add_feedback">Toca “%2$s” pro cunfirmare s\'annanta de “%1$s”</string>
     <string name="tag_editor_add_feedback_existing">Eticheta chi esistit “%1$s” seletzionada</string>
     <!-- Time spans -->
-    <string name="reminder_title">Non t\'ismèntighes de istudiare oe!</string>
-    <plurals name="reminder_text">
-        <item quantity="one">%2$d carta de revisionare in %1$s</item>
-        <item quantity="other">%2$d cartas de revisionare in %1$s</item>
-    </plurals>
     <!-- Currently only used if exporting APKG fails -->
     <string name="apk_share_error">Faddina cumpartzende su documentu apkg</string>
     <!-- Import and export v2 feedback -->

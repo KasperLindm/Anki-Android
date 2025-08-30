@@ -60,7 +60,7 @@
     <string name="pref_cat_reviewing" maxLength="41">مرور</string>
     <string name="pref_cat_sync" comment="title of the sync preferences category" maxLength="41">همگام سازی</string>
     <string name="pref_cat_scheduling" maxLength="41">زمان‌بندی</string>
-    <string name="pref_cat_whiteboard" maxLength="41">تخته سفید</string>
+    <string name="pref_cat_whiteboard" maxLength="41">وایت بورد</string>
     <string name="pref_cat_appearance" maxLength="41">ظاهر</string>
     <string name="pref_cat_themes" maxLength="41">تِم ها</string>
     <string name="pref_cat_gestures" maxLength="41">حرکات دست</string>
@@ -82,7 +82,7 @@
     <string name="button_size" maxLength="41">اندازه دکمه پاسخ</string>
     <string name="card_browser_font_size" maxLength="41">تغییر اندازه فونت مرورگر کارت</string>
     <string name="card_browser_hide_media" maxLength="41">نمایش نام فایل‌ها در مرورگر کارت</string>
-    <string name="card_browser_hide_media_summary">Display audio filenames in the card browser question/answer fields</string>
+    <string name="card_browser_hide_media_summary">نمایش نام فایل‌های صوتی در کادر‌های پرسش/پاسخ مرورگر کارت</string>
     <string name="col_path" maxLength="41">مسیر قرارگیری AnkiDroid</string>
     <string name="fullscreen_review" maxLength="41">حالت تمام‌صفحه</string>
     <string name="full_screen_off">خاموش</string>
@@ -116,9 +116,9 @@
     <string name="gestures_corner_tap_middle_center" maxLength="41">لمس بالای وسط</string>
     <string name="gestures_corner_tap_bottom_left" maxLength="41">لمس پایین سمت چپ</string>
     <string name="gestures_corner_tap_bottom_right" maxLength="41">لمس پایین سمت راست</string>
-    <string name="gestures_two_finger_tap" maxLength="41">Two-finger tap</string>
-    <string name="gestures_three_finger_tap" maxLength="41">Three-finger tap</string>
-    <string name="gestures_four_finger_tap" maxLength="41">Four-finger tap</string>
+    <string name="gestures_two_finger_tap" maxLength="41">لمس با دو انگشت</string>
+    <string name="gestures_three_finger_tap" maxLength="41">لمس سه انگشتی</string>
+    <string name="gestures_four_finger_tap" maxLength="41">لمس چهار انگشتی</string>
     <string name="gestures_shake" maxLength="41">لرزش دستگاه</string>
     <string name="card_browser_enable_external_context_menu" maxLength="41">منوی \'%s\'</string>
     <string name="card_browser_enable_external_context_menu_summary">\'%s\' را در لیست به صورت عمومی فعال می‌کند</string>
@@ -171,7 +171,7 @@
     <string name="show_estimates" maxLength="41">نمایش  دکمه زمان</string>
     <string name="show_estimates_summ">نمایش زمان مرور بعدی در بالای دکمه پاسخ</string>
     <string name="show_large_answer_buttons" maxLength="41">دکمه های بزرگ جواب نشان بده</string>
-    <string name="show_large_answer_buttons_summ">Show answer button in 2 rows</string>
+    <string name="show_large_answer_buttons_summ">نمایش دکمه پاسخ در ۲ ردیف</string>
     <string name="show_top_bar" maxLength="41">نمایش نوار بالا</string>
     <string name="show_top_bar_summary">نمایش تعداد کارت ها، ساعت شمار پاسخ، پرچم و علامت در نوار بالا</string>
     <string name="show_progress" maxLength="41">نمایش باقیمانده</string>
@@ -204,7 +204,7 @@
     <string name="pref_controls_previews_tab" maxLength="41" comment="Name of the tab to configure controls for the previews screen">پیش نمایش</string>
     <string name="toggle_backside_only" maxLength="41" comment="Control setting that toggles \'Backside only\' in the previews screen">Toggle backside only</string>
     <!-- Appearance settings -->
-    <string name="pref_cat_reviewer" maxLength="41">Study Screen</string>
+    <string name="pref_cat_reviewer" maxLength="41">صفحه مطالعه</string>
     <string name="show_deck_title" maxLength="41">نمایش عنوان دسته کارت</string>
     <string name="accessibility" maxLength="41">قابلیت دسترسی</string>
     <!-- Paste clipboard image as png option -->
@@ -239,7 +239,6 @@
     <string name="studyoptions_limit_select_tags">انتخاب برچسبها</string>
     <!-- Deck configurations -->
     <string name="deck_conf_general" maxLength="41" comment="Label of the submenu for the general options of new deck">عمومی</string>
-    <string name="deck_conf_reminders" maxLength="41">یادآورها</string>
     <string name="deck_conf_cram_filter" maxLength="41">فیلتر</string>
     <string name="deck_conf_cram_search" maxLength="41" comment="Label of a text field that contains a search query.">جستجو</string>
     <string name="deck_conf_cram_limit" maxLength="41">محدود به</string>
@@ -371,7 +370,7 @@
     <string name="hide_system_bars_navigation_bar" comment="Setting option to hide the system navigation bar (the bottom one that can go back, to home, etc)">نوار پیمایش</string>
     <string name="hide_system_bars_all_bars" comment="Setting option to hide all the system bars">همه</string>
     <string name="ignore_display_cutout" maxLength="41">نادیده گرفتن بریدگی صفحه نمایش</string>
-    <string name="hide_answer_buttons" maxLength="41">مخفی کردن دکمه‌های پاسخ</string>
+    <string name="show_answer_buttons" maxLength="41">Show answer buttons</string>
     <string name="hide_hard_and_easy" maxLength="41">دکمه \"دشوار\" و \"آسان\" را پنهان کن</string>
     <string name="reviewer_frame_style" maxLength="41">طرح حاشیه</string>
     <string name="reviewer_frame_style_card" maxLength="41" comment="Style name of the \'Card\' card frame of the Study Screen">کارت</string>
@@ -385,6 +384,7 @@
     <string name="new_study_screen" maxLength="41">New study screen</string>
     <string name="new_study_screen_summ"><![CDATA[Improved study screen that will succeed the current one. Some features of the old screen have been changed or removed. Please report any <a href="%1$s">feedback</a> or <a href="%2$s">bugs</a>.]]></string>
     <string name="show_answer_feedback" maxLength="41">Show answer feedback</string>
+    <string name="screen" maxLength="41">Screen</string>
     <!--Keyboard shortcuts dialog-->
     <string name="open_settings" comment="Description of the shortcut that opens the app settings">تنظیمات را باز کنید</string>
 </resources>

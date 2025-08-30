@@ -83,6 +83,7 @@
     <string name="webview_crash_fatal">Ralat Maut: Pemapar WebView ranap. Punca: %s</string>
     <string name="webview_crash_loop_dialog_title">Kegagalan Pemaparan Sistem WebView</string>
     <string name="webview_crash_loop_dialog_content">WebView Sistem gagal memapar kad \'%1$s\'.\n %2$s</string>
+    <string name="slide_to_cancel" comment="Message shown when pressing the record button">Slide to cancel</string>
     <string name="filter_by_flags" maxLength="41">Tanda</string>
     <!-- Custom study options -->
     <string name="custom_study_loading_tags">Building list of tags&#8230;</string>
@@ -177,10 +178,6 @@
     <string name="tag_editor_add_feedback">Sentuh “%2$s” untuk sahkan tambah “%1$s”</string>
     <string name="tag_editor_add_feedback_existing">Tag “%1$s” sedia ada dipilih</string>
     <!-- Time spans -->
-    <string name="reminder_title">Janngan lupa ulang kaji hari ini!</string>
-    <plurals name="reminder_text">
-        <item quantity="other">%2$d kad untuk disemak dalam %1$s</item>
-    </plurals>
     <!-- Currently only used if exporting APKG fails -->
     <string name="apk_share_error">Ralat kongsikan fail apkg</string>
     <!-- Import and export v2 feedback -->

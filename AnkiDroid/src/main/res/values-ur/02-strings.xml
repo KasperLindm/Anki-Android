@@ -83,6 +83,7 @@
     <string name="webview_crash_fatal">مہلک خرابی: WebView پیش کنندہ کریش ہو گیا۔ وجہ: %s</string>
     <string name="webview_crash_loop_dialog_title">سسٹم ویب ویو رینڈرنگ میں ناکامی۔</string>
     <string name="webview_crash_loop_dialog_content">سسٹم WebView کارڈ \'%1$s\' رینڈر کرنے میں ناکام رہا۔\n %2$s</string>
+    <string name="slide_to_cancel" comment="Message shown when pressing the record button">Slide to cancel</string>
     <string name="filter_by_flags" maxLength="41">جھنڈے</string>
     <!-- Custom study options -->
     <string name="custom_study_loading_tags">Building list of tags&#8230;</string>
@@ -181,11 +182,6 @@
     <string name="tag_editor_add_feedback">\"%1$s\" کو شامل کرنے کی تصدیق کرنے کے لیے \"%2$s\" کو ٹچ کریں</string>
     <string name="tag_editor_add_feedback_existing">موجودہ ٹیگ \"%1$s\" کو منتخب کیا گیا۔</string>
     <!-- Time spans -->
-    <string name="reminder_title">آج مطالعہ کرنا نہ بھولیں!</string>
-    <plurals name="reminder_text">
-        <item quantity="one">%1$s میں جائزہ لینے کے لیے %2$d کارڈ</item>
-        <item quantity="other">%1$s میں جائزہ لینے کے لیے %2$d کارڈز</item>
-    </plurals>
     <!-- Currently only used if exporting APKG fails -->
     <string name="apk_share_error">apkg فائل کا اشتراک کرنے میں خرابی۔</string>
     <!-- Import and export v2 feedback -->

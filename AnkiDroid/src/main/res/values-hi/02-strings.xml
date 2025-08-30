@@ -83,6 +83,7 @@
     <string name="webview_crash_fatal">Fatal Error: WebView रेंडरर क्रैश हो गया। कारण: %s</string>
     <string name="webview_crash_loop_dialog_title">सिस्टम WebView रेंडरिंग विफलता</string>
     <string name="webview_crash_loop_dialog_content">सिस्टम WebView कार्ड रेंडर करने में विफल रहा \'%1$s\'.\n %2$s</string>
+    <string name="slide_to_cancel" comment="Message shown when pressing the record button">Slide to cancel</string>
     <string name="filter_by_flags" maxLength="41">झंडे</string>
     <!-- Custom study options -->
     <string name="custom_study_loading_tags">Building list of tags&#8230;</string>
@@ -180,11 +181,6 @@
     <string name="tag_editor_add_feedback">\"%1$s\" जोड़ने की पुष्टि करने के लिए \"%2$s\" स्पर्श करें</string>
     <string name="tag_editor_add_feedback_existing">मौजूदा टैग \"%1$s\" चयनित</string>
     <!-- Time spans -->
-    <string name="reminder_title">आज पढ़ाई करना न भूलें!</string>
-    <plurals name="reminder_text">
-        <item quantity="one">%2$d कार्ड %1$s मे पुनरावलोकन कीजिये</item>
-        <item quantity="other">%2$d कार्डस %1$s मे पुनरावलोकन कीजिये</item>
-    </plurals>
     <!-- Currently only used if exporting APKG fails -->
     <string name="apk_share_error">Apkg फ़ाइल साझा करने में त्रुटि</string>
     <!-- Import and export v2 feedback -->

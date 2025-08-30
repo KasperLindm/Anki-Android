@@ -83,6 +83,7 @@
     <string name="webview_crash_fatal">Kriittinen virhe: WebView-renderöijä kaatui. Syy: %s</string>
     <string name="webview_crash_loop_dialog_title">Järjestelmän WebView Renderöinti Epäonnistui</string>
     <string name="webview_crash_loop_dialog_content">Järjestelmän WebView ei pystynyt näyttämään korttia \'%1$s\'.\n %2$s</string>
+    <string name="slide_to_cancel" comment="Message shown when pressing the record button">Slide to cancel</string>
     <string name="filter_by_flags" maxLength="41">Liput</string>
     <!-- Custom study options -->
     <string name="custom_study_loading_tags">Building list of tags&#8230;</string>
@@ -180,11 +181,6 @@
     <string name="tag_editor_add_feedback">Paina ”%2$s” vahvistaaksesi ”%1$s”:n lisääminen</string>
     <string name="tag_editor_add_feedback_existing">Olemassa oleva tunniste ”%1$s” valittu</string>
     <!-- Time spans -->
-    <string name="reminder_title">Älä unohda opiskella tänään!</string>
-    <plurals name="reminder_text">
-        <item quantity="one">%2$d kortti kerrattavana %1$s :ssa</item>
-        <item quantity="other">%2$d korttia kerrattavana %1$s :ssa</item>
-    </plurals>
     <!-- Currently only used if exporting APKG fails -->
     <string name="apk_share_error">Virhe jaettaessa apkg-tiedostoa</string>
     <!-- Import and export v2 feedback -->

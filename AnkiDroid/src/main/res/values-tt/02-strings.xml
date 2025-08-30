@@ -83,6 +83,7 @@
     <string name="webview_crash_fatal">Критик хата: WebView ябылды. Сәбәбе: %s</string>
     <string name="webview_crash_loop_dialog_title">Система WebViewының хатасы</string>
     <string name="webview_crash_loop_dialog_content">Система WebViewы \'%1$s\' кәртен ача алмады.\n %2$s</string>
+    <string name="slide_to_cancel" comment="Message shown when pressing the record button">Slide to cancel</string>
     <string name="filter_by_flags" maxLength="41">Байраклар</string>
     <!-- Custom study options -->
     <string name="custom_study_loading_tags">Building list of tags&#8230;</string>
@@ -178,10 +179,6 @@
     <string name="tag_editor_add_feedback">Touch “%2$s” to confirm adding “%1$s”</string>
     <string name="tag_editor_add_feedback_existing">Existing tag “%1$s” selected</string>
     <!-- Time spans -->
-    <string name="reminder_title">Do not forget to study today!</string>
-    <plurals name="reminder_text">
-        <item quantity="other">%2$d cards to review in %1$s</item>
-    </plurals>
     <!-- Currently only used if exporting APKG fails -->
     <string name="apk_share_error">apkg файлын экспортлаганда хата</string>
     <!-- Import and export v2 feedback -->
