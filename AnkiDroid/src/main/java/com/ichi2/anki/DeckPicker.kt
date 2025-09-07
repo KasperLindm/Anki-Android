@@ -819,10 +819,12 @@ open class DeckPicker :
         fun onStartupResponse(response: StartupResponse) {
             Timber.d("onStartupResponse: %s", response)
             when (response) {
-                is StartupResponse.RequestPermissions ->
+                is StartupResponse.RequestPermissions -> {
+                    viewModel.flowOfStartupResponse.value = null // Prevent duplicate permission screen launches
                     permissionScreenLauncher.launch(
                         PermissionsActivity.getIntent(this, response.requiredPermissions),
                     )
+                }
 
                 is StartupResponse.Success -> {
                     showStartupScreensAndDialogs(sharedPrefs(), 0)
@@ -2405,7 +2407,7 @@ open class DeckPicker :
                 withCol {
                     Timber.d("rebuildFiltered: doInBackground - RebuildCram")
                     decks.select(did)
-                    sched.rebuildDyn(decks.selected())
+                    sched.rebuildFilteredDeck(decks.selected())
                 }
             }
             updateDeckList()
