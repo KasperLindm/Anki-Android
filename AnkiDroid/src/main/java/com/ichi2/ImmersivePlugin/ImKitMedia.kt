@@ -20,8 +20,11 @@
 
 package com.ichi2.immersivePlugin
 
+import com.ichi2.immersivePlugin.ImKitApi.makeHttpRequest
 import com.ichi2.libanki.Collection
 import com.ichi2.libanki.Note
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import org.json.JSONObject
 import timber.log.Timber
 import java.io.File
@@ -42,6 +45,7 @@ object ImKitMedia {
         return try {
             val url = URL(urlString)
             val connection = url.openConnection() as HttpURLConnection
+
             connection.requestMethod = "GET"
             connection.instanceFollowRedirects = false // we handle redirects manually
             connection.setRequestProperty("User-Agent", "Mozilla/5.0") // some servers require it
@@ -182,5 +186,36 @@ object ImKitMedia {
         val c = col.updateNote(note)
 
         return true
+    }
+
+    fun handleMediaDownloadAndUpdate(
+        fieldNames: Array<String>,
+        fieldValues: MutableList<String>,
+        note: Note,
+        col: Collection,
+        fieldName: String,
+        keyword: String,
+        mediaUrl: String,
+        folder: File,
+        extension: String,
+        tagBuilder: (String) -> String
+    ): Boolean {
+        val index = fieldNames.indexOf(fieldName).takeIf { it >= 0 } ?: return false
+        val result = downloadFile(keyword, mediaUrl, folder, extension)
+        if (result != null) {
+                val fileName = File(result).name
+                val content = tagBuilder(fileName)
+
+                note.setField(index, content)
+                fieldValues[index] = content
+                Timber.i("${extension.uppercase()} added successfully: $content")
+            } else {
+                note.setField(index, "")
+                fieldValues[index] = ""
+                Timber.i("Failed to find $extension")
+            }
+            note.fields = fieldValues
+            val new_col = col.updateNote(note)
+        return result != null
     }
 }

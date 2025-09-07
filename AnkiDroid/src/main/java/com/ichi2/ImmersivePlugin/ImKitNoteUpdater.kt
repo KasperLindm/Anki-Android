@@ -30,6 +30,7 @@ import com.ichi2.anki.previewer.CardViewerActivity
 import com.ichi2.anki.previewer.PreviewerViewModel
 import com.ichi2.anki.showThemedToast
 import com.ichi2.immersivePlugin.ImKitApi.getContext
+import com.ichi2.immersivePlugin.ImKitApi.getMeta
 import com.ichi2.libanki.Card
 import com.ichi2.libanki.Note
 import kotlinx.coroutines.CoroutineScope
@@ -45,7 +46,7 @@ import kotlin.collections.indexOf
 import com.ichi2.immersivePlugin.ImKitUtils.removeExampleBySentence
 import com.ichi2.immersivePlugin.ImKitUtils.styleKeyword
 import com.ichi2.immersivePlugin.ImKitUtils.highlightMatchedWords
-import com.ichi2.immersivePlugin.ImKitMedia.handleCardDownloadAndUpdate
+import com.ichi2.immersivePlugin.ImKitMedia.handleMediaDownloadAndUpdate
 
 object ImKitNoteUpdater {
     suspend fun processAndDisplayExample(
@@ -108,6 +109,7 @@ object ImKitNoteUpdater {
                     Pair(keyword ?: "", keywordFurigana ?: ""),
                     settings.highlighting,
                 )
+
             val newSentenceWithFurigana =
                 highlightMatchedWords(
                     example.optString("sentence_with_furigana", ""),
@@ -115,6 +117,7 @@ object ImKitNoteUpdater {
                     matchedIndexes,
                     settings.highlighting,
                 )
+
             val translation = example.optString("translation", "")
             val source = example.optString("title", "")
             val sourceType = example?.optString("id")?.split("_")?.firstOrNull()
@@ -126,6 +129,16 @@ object ImKitNoteUpdater {
                     return@withContext
                 }
 
+                val meta = getMeta(example["title"].toString())
+                val title = meta?.first
+                val category = meta?.second
+
+                val audio_filepath = example.optString("sound", "")
+                val pic_filepath = example.optString("image", "")
+
+                val audio_url = "https://us-southeast-1.linodeobjects.com/immersionkit/media/${category}/${title}/media/$audio_filepath"
+                val pic_url = "https://us-southeast-1.linodeobjects.com/immersionkit/media/${category}/${title}/media/$pic_filepath"
+
                 if (note.fields[sentenceFieldIdx] != sentenceWithFurigana) {
                     updateNoteFields(
                         context,
@@ -133,6 +146,8 @@ object ImKitNoteUpdater {
                         sentenceWithFurigana,
                         translation,
                         "http://apiv2.immersionkit.com/download_sentence?id=$ikId&modelType=$sourceType",
+                        audio_url,
+                        pic_url,
                         source,
                         prevAndNext?.first ?: "",
                         prevAndNext?.second ?: "",
@@ -191,6 +206,8 @@ object ImKitNoteUpdater {
         sentenceWithFurigana: String,
         translation: String,
         immersionCardUrl: String,
+        audioUrl: String,
+        picUrl: String,
         source: String,
         prevSentence: String,
         nextSentence: String,
@@ -240,7 +257,33 @@ object ImKitNoteUpdater {
         // Download audio and pictures
         val folderPath = col.media.dir
         CoroutineScope(Dispatchers.IO).launch {
-            val cardDeferred =
+            val mediaDeferred = async {
+                handleMediaDownloadAndUpdate(
+                    fieldNames,
+                    fieldValues,
+                    note,
+                    col,
+                    settings.audioField,
+                    keyword!!,
+                    audioUrl,
+                    folderPath,
+                    "mp3"
+                ) { fileName -> "[sound:$fileName]" }
+
+                handleMediaDownloadAndUpdate(
+                    fieldNames,
+                    fieldValues,
+                    note,
+                    col,
+                    settings.pictureField,
+                    keyword!!,
+                    picUrl,
+                    folderPath,
+                    "jpg"
+                ) { fileName -> """<img src="$fileName">""" }
+            }
+
+            /*val cardDeferred =
                 async {
                     handleCardDownloadAndUpdate(
                         fieldNames,
@@ -254,10 +297,10 @@ object ImKitNoteUpdater {
                     ) { fileName ->
                         fileName
                     }
-                }
+                }*/
             refreshCard(context, startToast)
 
-            val cardSuccess = cardDeferred.await()
+            val cardSuccess = mediaDeferred.await()
 
             withContext(Dispatchers.Main) {
                 if (cardSuccess) {

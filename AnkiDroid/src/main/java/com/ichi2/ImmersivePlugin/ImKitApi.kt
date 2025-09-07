@@ -181,23 +181,45 @@ object ImKitApi {
         }
     }
 
-    private fun makeHttpRequest(urlString: String): String? =
-        try {
+    // fix
+    fun makeHttpRequest(urlString: String, redirectCount: Int = 0): String? {
+        // Prevent infinite loops
+        if (redirectCount > 5) {
+            Timber.e("Too many redirects for $urlString")
+            return null
+        }
+
+        return try {
             val url = URL(urlString)
             val connection = url.openConnection() as HttpURLConnection
+            connection.instanceFollowRedirects = false // handle manually
             connection.requestMethod = "GET"
             connection.connectTimeout = 10000
             connection.readTimeout = 10000
+            Timber.d("DEBUG URL: ${url}")
 
-            if (connection.responseCode == HttpURLConnection.HTTP_OK) {
-                connection.inputStream.bufferedReader().use { it.readText() }
-            } else {
-                null
+            connection.connect()
+
+            when (connection.responseCode) {
+                HttpURLConnection.HTTP_OK -> {
+                    connection.inputStream.bufferedReader().use { it.readText() }
+                }
+                HttpURLConnection.HTTP_MOVED_PERM,
+                HttpURLConnection.HTTP_MOVED_TEMP -> {
+                    val newUrl = connection.getHeaderField("Location")
+                    if (newUrl != null) {
+                        makeHttpRequest(newUrl, redirectCount + 1) // retry with new URL
+                    } else {
+                        null
+                    }
+                }
+                else -> null
             }
         } catch (e: Exception) {
             Timber.e(e, "HTTP request failed")
             null
         }
+    }
 
     fun generateCacheKey(
         keyword: String?,
@@ -231,4 +253,29 @@ object ImKitApi {
         val cachePrefs = context.getSharedPreferences("immersive_kit_api_cache", Context.MODE_PRIVATE)
         return cachePrefs.getString(key, null)
     }
+
+    suspend fun getMeta(titleKey: String): Pair<String, String>? =
+        withContext(Dispatchers.IO) {
+            val url = "$apiUrlV2/index_meta"
+            Timber.d("getMeta1: $url")
+
+            val response = makeHttpRequest(url)
+            if (response != null) {
+                try {
+                    val json = JSONObject(response)
+                        .getJSONObject("data")
+                        .getJSONObject(titleKey)
+
+                    val title = json.optString("title", "")
+                    val category = json.optString("category", "")
+
+                    Pair(title, category)
+                } catch (e: Exception) {
+                    Timber.e(e, "Failed to parse JSON for key=$titleKey")
+                    null
+                }
+            } else {
+                null
+            }
+        }
 }
