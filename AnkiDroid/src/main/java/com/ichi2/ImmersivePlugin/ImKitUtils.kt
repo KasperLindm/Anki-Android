@@ -48,70 +48,44 @@ object ImKitUtils {
     ): String {
         if (!highlighting) return sentence
 
-        val highlightingSymbol = "u"
+        val highlightTag = "u"
         val plain = keywordPair.first.split(",")[0]
         val plainKanji = plain.replace(Regex("[^\\p{InCJKUnifiedIdeographs}]"), "")
         val furigana = keywordPair.second.split(",")[0]
-        var stylized: String
 
-        // 1. Try to bold kanji[furigana] pattern in sentence (e.g. 噴水[ふんすい])
-        val furiganaPattern = Regex("${Regex.escape(plainKanji)}\\[[^]]+]")
-        stylized =
-            furiganaPattern.replace(sentence) { matchResult ->
-                "<$highlightingSymbol>${matchResult.value}</$highlightingSymbol>"
-            }
-        if (stylized != sentence) {
-            return stylized
+        // Helper: wrap matched text in <u> tag
+        fun highlight(match: MatchResult) = "<$highlightTag>${match.value}</$highlightTag>"
+
+        var stylized = sentence
+
+        // 1. Kanji + [furigana] pattern (only if kanji exists)
+        if (plainKanji.isNotBlank()) {
+            val kanjiWithFuriganaPattern = Regex("${Regex.escape(plainKanji)}\\[[^]]+]")
+            val temp = kanjiWithFuriganaPattern.replace(stylized, ::highlight)
+            if (temp != stylized) return temp
         }
 
-        // 2. Try to bold exact furigana string (from field)
+        // 2. Exact furigana string (only if furigana differs from plain)
         if (furigana.isNotBlank() && furigana != plain) {
             val furiganaPattern = Regex(Regex.escape(furigana))
-            stylized =
-                furiganaPattern.replace(sentence) { matchResult ->
-                    "<$highlightingSymbol>${matchResult.value}</$highlightingSymbol>"
-                }
-            if (stylized != sentence) {
-                return stylized
-            }
+            val temp = furiganaPattern.replace(stylized, ::highlight)
+            if (temp != stylized) return temp
         }
 
-        // 3. Try to bold just the plain kanji
+        // 3. Kana-only or mixed keywords: match outside brackets
         if (plain.isNotBlank()) {
-            val plainPattern = Regex(Regex.escape(plain))
-            stylized =
-                plainPattern.replace(sentence) { matchResult ->
-                    "<$highlightingSymbol>${matchResult.value}</$highlightingSymbol>"
-                }
-            if (stylized != sentence) {
-                return stylized
-            }
+            // Negative lookbehind/lookahead to avoid brackets
+            val plainOutsideBrackets = Regex("(?<!\\[)${Regex.escape(plain)}(?![^\\[]*\\])")
+            val temp = plainOutsideBrackets.replace(stylized, ::highlight)
+            if (temp != stylized) return temp
         }
 
-        // 4. Try to bold just the plain kanji, but if it has furigana attached, bold that whole block
+        // 4. Kanji-only fallback: highlight just the kanji anywhere
         if (plainKanji.isNotBlank()) {
-            // Try to match kanji + [furigana] in one go
-            val kanjiWithFuriganaPattern = Regex("${Regex.escape(plainKanji)}\\[[^]]+]")
-            stylized =
-                kanjiWithFuriganaPattern.replace(sentence) { matchResult ->
-                    "<$highlightingSymbol>${matchResult.value}</$highlightingSymbol>"
-                }
-            if (stylized != sentence) {
-                return stylized
-            }
-
-            // If no match, just bold the kanji
-            val plainPattern = Regex(Regex.escape(plainKanji))
-            stylized =
-                plainPattern.replace(sentence) { matchResult ->
-                    "<$highlightingSymbol>${matchResult.value}</$highlightingSymbol>"
-                }
-            if (stylized != sentence) {
-                return stylized
-            }
+            val plainKanjiPattern = Regex(Regex.escape(plainKanji))
+            val temp = plainKanjiPattern.replace(stylized, ::highlight)
+            if (temp != stylized) return temp
         }
-
-        // No match, return sentence as is
 
         return stylized
     }
