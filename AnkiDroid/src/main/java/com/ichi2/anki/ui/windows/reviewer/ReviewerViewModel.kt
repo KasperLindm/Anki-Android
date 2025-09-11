@@ -27,6 +27,7 @@ import com.ichi2.anki.Flag
 import com.ichi2.anki.Reviewer
 import com.ichi2.anki.asyncIO
 import com.ichi2.anki.browser.BrowserDestination
+import com.ichi2.anki.cardviewer.SingleCardSide
 import com.ichi2.anki.common.time.TimeManager
 import com.ichi2.anki.launchCatchingIO
 import com.ichi2.anki.libanki.Card
@@ -95,13 +96,14 @@ class ReviewerViewModel :
     val redoLabelFlow = MutableStateFlow<String?>(null)
     val countsFlow = MutableStateFlow(Counts() to Counts.Queue.NEW)
     val typeAnswerFlow = MutableStateFlow<TypeAnswer?>(null)
-    val onShowQuestionFlow = MutableSharedFlow<Unit>()
+    val onCardUpdatedFlow = MutableSharedFlow<Unit>()
     val destinationFlow = MutableSharedFlow<Destination>()
     val editNoteTagsFlow = MutableSharedFlow<NoteId>()
     val setDueDateFlow = MutableSharedFlow<CardId>()
     val answerTimerStatusFlow = MutableStateFlow<AnswerTimerStatus?>(null)
     val answerFeedbackFlow = MutableSharedFlow<Rating>()
     val voiceRecorderEnabledFlow = MutableStateFlow(false)
+    val whiteboardEnabledFlow = MutableStateFlow(false)
     val replayVoiceFlow = MutableSharedFlow<Unit>()
     val timeBoxReachedFlow = MutableSharedFlow<Collection.TimeboxReached>()
 
@@ -524,7 +526,7 @@ class ReviewerViewModel :
         currentCard = CompletableDeferred(card)
         setupAnswerTimer(card)
         autoAdvance.onCardChange(card)
-        onShowQuestionFlow.emit(Unit) // must be before showQuestion()
+        onCardUpdatedFlow.emit(Unit) // must be before showQuestion()
         showQuestion()
         loadAndPlayMedia(CardSide.QUESTION)
         canBuryNoteFlow.emit(isBuryNoteAvailable(card))
@@ -626,6 +628,11 @@ class ReviewerViewModel :
         answerTimerStatusFlow.emit(AnswerTimerStatus.Running(limitInMillis))
     }
 
+    private suspend fun replayMedia() {
+        val side = if (showingAnswer.value) SingleCardSide.BACK else SingleCardSide.FRONT
+        cardMediaPlayer.replayAll(side)
+    }
+
     fun executeAction(action: ViewerAction) {
         Timber.v("ReviewerViewModel::executeAction %s", action.name)
         launchCatchingIO {
@@ -667,6 +674,7 @@ class ReviewerViewModel :
                 ViewerAction.FLIP_OR_ANSWER_EASE4 -> flipOrAnswer(Rating.EASY)
                 ViewerAction.SHOW_HINT -> eval.emit("ankidroid.showHint()")
                 ViewerAction.SHOW_ALL_HINTS -> eval.emit("ankidroid.showAllHints()")
+                ViewerAction.TOGGLE_WHITEBOARD -> whiteboardEnabledFlow.emit(!whiteboardEnabledFlow.value)
                 ViewerAction.RECORD_VOICE -> voiceRecorderEnabledFlow.emit(!voiceRecorderEnabledFlow.value)
                 ViewerAction.REPLAY_VOICE -> replayVoiceFlow.emit(Unit)
                 ViewerAction.EXIT -> finishResultFlow.emit(AbstractFlashcardViewer.RESULT_DEFAULT)
@@ -683,6 +691,7 @@ class ReviewerViewModel :
                 ViewerAction.BURY_MENU -> buryCard()
                 ViewerAction.STATISTICS -> destinationFlow.emit(StatisticsDestination())
                 ViewerAction.BROWSE -> emitBrowseDestination()
+                ViewerAction.PLAY_MEDIA -> replayMedia()
                 ViewerAction.FLAG_MENU -> {}
             }
         }
