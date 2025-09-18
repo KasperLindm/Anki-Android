@@ -172,10 +172,6 @@ object ImKitNoteUpdater {
         context: Context,
         startToast: Toast,
     ) {
-        withContext(Dispatchers.Main) {
-            startToast.cancel()
-            showThemedToast(context, "Fields updated!", true)
-        }
         when (context) {
             is CardViewerActivity -> {
                 val fragment = context.fragment
@@ -292,7 +288,10 @@ object ImKitNoteUpdater {
             val cardSuccess = mediaDeferred.await()
 
             refreshCard(context, startToast)
-
+            withContext(Dispatchers.Main) {
+                startToast.cancel()
+                showThemedToast(context, "Fields updated!", true)
+            }
             withContext(Dispatchers.Main) {
                 if (cardSuccess) {
                     refreshCard(context, startToast)
