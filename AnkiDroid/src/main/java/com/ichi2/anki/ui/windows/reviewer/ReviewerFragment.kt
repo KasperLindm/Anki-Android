@@ -310,7 +310,6 @@ class ReviewerFragment :
             }
 
         lifecycleScope.launch {
-            if (Prefs.isHtmlTypeAnswerEnabled) return@launch
             val autoFocusTypeAnswer = Prefs.autoFocusTypeAnswer
             lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 viewModel.typeAnswerFlow.collect { typeInAnswer ->
@@ -318,6 +317,13 @@ class ReviewerFragment :
                         typeAnswerContainer.isVisible = false
                         return@collect
                     }
+
+                    if (Prefs.isHtmlTypeAnswerEnabled) {
+                        webView.requestFocus()
+                        webView.evaluateJavascript("document.getElementById('typeans').focus();", null)
+                        return@collect
+                    }
+
                     typeAnswerContainer.isVisible = true
                     typeAnswerEditText.apply {
                         if (imeHintLocales != typeInAnswer.imeHintLocales) {
@@ -728,7 +734,7 @@ class ReviewerFragment :
             Prefs.cardZoom.let {
                 if (it == 100) return@let
                 val scale = it / 100.0
-                val script = """document.getElementById("qa").style.transform = `scale($scale)`;"""
+                val script = """document.body.style.zoom = `$scale`;"""
                 view?.evaluateJavascript(script, null)
             }
         }
