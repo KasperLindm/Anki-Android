@@ -217,6 +217,14 @@ object ImKitNoteUpdater {
         val fieldNames = note.keys()
         val fieldValues = note.fields.toMutableList()
 
+        // Replace "NULL" with empty strings, for cards made through KanjiStudy
+        for (i in fieldValues.indices) {
+            val v = fieldValues[i]
+            if (v.equals("NULL", ignoreCase = true)) {
+                fieldValues[i] = ""
+            }
+        }
+
         val entryIndex = fieldNames.indexOf("Entry")
         val keyword =
             if (entryIndex >= 0 && fieldValues[entryIndex] != "Ignore") {
