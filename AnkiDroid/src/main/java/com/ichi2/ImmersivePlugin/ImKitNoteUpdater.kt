@@ -258,49 +258,40 @@ object ImKitNoteUpdater {
         val folderPath = col.media.dir
         CoroutineScope(Dispatchers.IO).launch {
             val mediaDeferred = async {
-                handleMediaDownloadAndUpdate(
-                    fieldNames,
-                    fieldValues,
-                    note,
-                    col,
-                    settings.audioField,
-                    keyword!!,
-                    audioUrl,
-                    folderPath,
-                    "mp3"
-                ) { fileName -> "[sound:$fileName]" }
-
-                handleMediaDownloadAndUpdate(
-                    fieldNames,
-                    fieldValues,
-                    note,
-                    col,
-                    settings.pictureField,
-                    keyword!!,
-                    picUrl,
-                    folderPath,
-                    "jpg"
-                ) { fileName -> """<img src="$fileName">""" }
-            }
-
-            /*val cardDeferred =
-                async {
-                    handleCardDownloadAndUpdate(
+                var audioResult = true
+                var pictureResult = true
+                if (settings.audioField != "Ignore") {
+                    pictureResult = handleMediaDownloadAndUpdate(
                         fieldNames,
+                        fieldValues,
+                        note,
+                        col,
+                        settings.audioField,
+                        keyword!!,
+                        audioUrl,
+                        folderPath,
+                        "mp3"
+                    ) { fileName -> "[sound:$fileName]" }
+                }
+                if (settings.pictureField != "Ignore") {
+                    audioResult = handleMediaDownloadAndUpdate(
+                        fieldNames,
+                        fieldValues,
                         note,
                         col,
                         settings.pictureField,
-                        settings.audioField,
                         keyword!!,
-                        immersionCardUrl,
+                        picUrl,
                         folderPath,
-                    ) { fileName ->
-                        fileName
-                    }
-                }*/
-            refreshCard(context, startToast)
+                        "jpg"
+                    ) { fileName -> """<img src="$fileName">""" }
+                }
+                audioResult && pictureResult
+            }
 
             val cardSuccess = mediaDeferred.await()
+
+            refreshCard(context, startToast)
 
             withContext(Dispatchers.Main) {
                 if (cardSuccess) {
