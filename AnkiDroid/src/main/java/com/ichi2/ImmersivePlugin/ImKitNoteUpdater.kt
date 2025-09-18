@@ -45,7 +45,6 @@ import kotlin.collections.contains
 import kotlin.collections.indexOf
 import com.ichi2.immersivePlugin.ImKitUtils.removeExampleBySentence
 import com.ichi2.immersivePlugin.ImKitUtils.styleKeyword
-import com.ichi2.immersivePlugin.ImKitUtils.highlightMatchedWords
 import com.ichi2.immersivePlugin.ImKitMedia.handleMediaDownloadAndUpdate
 
 object ImKitNoteUpdater {
@@ -89,17 +88,6 @@ object ImKitNoteUpdater {
                 } else {
                     examples.getJSONObject((0 until examples.length()).random())
                 }
-            val wordList =
-                example.optJSONArray("word_list")?.let { arr ->
-                    List(arr.length()) { arr.optString(it) }
-                } ?: emptyList()
-            val matchedIndexes =
-                example.optJSONArray("matched_indexes")?.let { arr ->
-                    List(arr.length()) {
-                        val obj = arr.optJSONObject(it)
-                        Pair(obj.optInt("index"), obj.optInt("length"))
-                    }
-                } ?: emptyList()
 
             val prevAndNext = getContext(example.optString("id", ""))
 
@@ -107,14 +95,6 @@ object ImKitNoteUpdater {
                 styleKeyword(
                     example.optString("sentence_with_furigana", ""),
                     Pair(keyword ?: "", keywordFurigana ?: ""),
-                    settings.highlighting,
-                )
-
-            val newSentenceWithFurigana =
-                highlightMatchedWords(
-                    example.optString("sentence_with_furigana", ""),
-                    wordList,
-                    matchedIndexes,
                     settings.highlighting,
                 )
 
@@ -169,8 +149,7 @@ object ImKitNoteUpdater {
     }
 
     private suspend fun refreshCard(
-        context: Context,
-        startToast: Toast,
+        context: Context
     ) {
         when (context) {
             is CardViewerActivity -> {
@@ -295,14 +274,14 @@ object ImKitNoteUpdater {
 
             val cardSuccess = mediaDeferred.await()
 
-            refreshCard(context, startToast)
+            refreshCard(context)
             withContext(Dispatchers.Main) {
                 startToast.cancel()
                 showThemedToast(context, "Fields updated!", true)
             }
             withContext(Dispatchers.Main) {
                 if (cardSuccess) {
-                    refreshCard(context, startToast)
+                    refreshCard(context)
                 }
             }
         }
