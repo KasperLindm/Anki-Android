@@ -50,13 +50,10 @@ object ImKitApi {
         val toast = Toast.makeText(context, "Fetching sentence...", Toast.LENGTH_SHORT)
         toast.show()
 
-        // Use coroutines for async API call
         CoroutineScope(Dispatchers.IO).launch {
             try {
-                // Example keyword - you can get this from the current note
                 val card = selectedCard
-                val note = card.note // Pass collection to note()
-
+                val note = card.note
                 val fieldNames = note?.keys()
                 val fieldValues = note?.fields?.toMutableList()
 
@@ -69,7 +66,27 @@ object ImKitApi {
                         fieldValues?.get(index)?.split(",")[0]
                     }
 
-                // Build API URL
+                val cacheKey = generateCacheKey(keyword, settings)
+                val cachedJson = getFromCache(context, cacheKey)
+
+                // 1. Check cache first and use it if available
+                if (cachedJson != null) {
+                    val examples = JSONArray(cachedJson)
+                    processAndDisplayExample(
+                        context,
+                        selectedCard,
+                        examples,
+                        note!!,
+                        fieldNames!!,
+                        settings,
+                        keyword,
+                        keywordFurigana,
+                        toast,
+                    )
+                    return@launch // no need to hit API
+                }
+
+                // 2. If not cached, call API and cache the result
                 val searchUrl =
                     if (settings.exactSearch) {
                         "$apiUrlV2/search?q=$keyword&exactMatch=true"
@@ -77,11 +94,7 @@ object ImKitApi {
                         "$apiUrlV2/search?q=$keyword"
                     }
 
-                // Make API call
                 val response = makeHttpRequest(searchUrl)
-                val cacheKey = generateCacheKey(keyword, settings)
-                val cachedJson = getFromCache(context, cacheKey)
-
                 if (response != null) {
                     val data = JSONObject(response)
                     val examples = data.optJSONArray("examples")
@@ -98,38 +111,11 @@ object ImKitApi {
                             keywordFurigana,
                             toast,
                         )
-                    } else if (cachedJson != null) {
-                        val examples = JSONArray(cachedJson)
-                        processAndDisplayExample(
-                            context,
-                            selectedCard,
-                            examples,
-                            note!!,
-                            fieldNames!!,
-                            settings,
-                            keyword,
-                            keywordFurigana,
-                            toast,
-                        )
                     } else {
-                        // Show toast here if no examples and no cached data
                         withContext(Dispatchers.Main) {
                             showThemedToast(context, "No examples found in api or cache", true)
                         }
                     }
-                } else if (cachedJson != null) {
-                    val examples = JSONArray(cachedJson)
-                    processAndDisplayExample(
-                        context,
-                        selectedCard,
-                        examples,
-                        note!!,
-                        fieldNames!!,
-                        settings,
-                        keyword,
-                        keywordFurigana,
-                        toast,
-                    )
                 } else {
                     withContext(Dispatchers.Main) {
                         showThemedToast(context, "No examples found in api or cache", true)
@@ -146,43 +132,35 @@ object ImKitApi {
 
     fun getContext(id: String): Pair<String, String>? {
         val urlString = apiUrlV2 + "/sentence_with_context?sentenceId=$id"
-        val url = URL(urlString)
 
-        with(url.openConnection() as HttpURLConnection) {
-            requestMethod = "GET"
-            setRequestProperty("User-Agent", "Mozilla/5.0")
+        val response = makeHttpRequest(urlString)
+        val json = JSONObject(response!!)
 
-            if (responseCode == HttpURLConnection.HTTP_OK) {
-                val response = inputStream.bufferedReader().use { it.readText() }
-                val json = JSONObject(response)
+        val pretext = json.optJSONArray("pretext_sentences")
+        val posttext = json.optJSONArray("posttext_sentences")
 
-                val pretext = json.optJSONArray("pretext_sentences")
-                val posttext = json.optJSONArray("posttext_sentences")
-
-                val prev =
-                    if (pretext != null && pretext.length() > 0) {
-                        pretext.getJSONObject(pretext.length() - 1).optString("sentence_with_furigana", "")
-                    } else {
-                        ""
-                    }
-
-                val next =
-                    if (posttext != null && posttext.length() > 0) {
-                        posttext.getJSONObject(0).optString("sentence_with_furigana", "")
-                    } else {
-                        ""
-                    }
-
-                return Pair(prev, next)
+        val prev =
+            if (pretext != null && pretext.length() > 0) {
+                pretext.getJSONObject(pretext.length() - 1).optString("sentence_with_furigana", "")
             } else {
-                println("HTTP error: $responseCode")
-                return null
+                ""
             }
-        }
+
+        val next =
+            if (posttext != null && posttext.length() > 0) {
+                posttext.getJSONObject(0).optString("sentence_with_furigana", "")
+            } else {
+                ""
+            }
+
+        return Pair(prev, next)
     }
 
     // fix
-    fun makeHttpRequest(urlString: String, redirectCount: Int = 0): String? {
+    fun makeHttpRequest(
+        urlString: String,
+        redirectCount: Int = 0,
+    ): String? {
         // Prevent infinite loops
         if (redirectCount > 5) {
             Timber.e("Too many redirects for $urlString")
@@ -196,7 +174,7 @@ object ImKitApi {
             connection.requestMethod = "GET"
             connection.connectTimeout = 10000
             connection.readTimeout = 10000
-            Timber.d("DEBUG URL: ${url}")
+            Timber.d("DEBUG URL: $url")
 
             connection.connect()
 
@@ -205,7 +183,8 @@ object ImKitApi {
                     connection.inputStream.bufferedReader().use { it.readText() }
                 }
                 HttpURLConnection.HTTP_MOVED_PERM,
-                HttpURLConnection.HTTP_MOVED_TEMP -> {
+                HttpURLConnection.HTTP_MOVED_TEMP,
+                -> {
                     val newUrl = connection.getHeaderField("Location")
                     if (newUrl != null) {
                         makeHttpRequest(newUrl, redirectCount + 1) // retry with new URL
@@ -254,26 +233,31 @@ object ImKitApi {
         return cachePrefs.getString(key, null)
     }
 
+    private var metaCache: JSONObject? = null
+
     suspend fun getMeta(titleKey: String): Pair<String, String>? =
         withContext(Dispatchers.IO) {
-            val url = "$apiUrlV2/index_meta"
-            Timber.d("getMeta1: $url")
+            // Only fetch if cache is null
+            if (metaCache == null) {
+                val url = "$apiUrlV2/index_meta"
 
-            val response = makeHttpRequest(url)
-            if (response != null) {
-                try {
-                    val json = JSONObject(response)
-                        .getJSONObject("data")
-                        .getJSONObject(titleKey)
-
-                    val title = json.optString("title", "")
-                    val category = json.optString("category", "")
-
-                    Pair(title, category)
-                } catch (e: Exception) {
-                    Timber.e(e, "Failed to parse JSON for key=$titleKey")
-                    null
+                val response = makeHttpRequest(url)
+                if (response != null) {
+                    try {
+                        metaCache = JSONObject(response).getJSONObject("data")
+                    } catch (e: Exception) {
+                        Timber.e(e, "Failed to parse index_meta JSON")
+                        metaCache = null
+                    }
                 }
+            }
+
+            // Use cached value if possible
+            val meta = metaCache?.optJSONObject(titleKey)
+            if (meta != null) {
+                val title = meta.optString("title", "")
+                val category = meta.optString("category", "")
+                Pair(title, category)
             } else {
                 null
             }
