@@ -52,6 +52,7 @@ import androidx.fragment.app.Fragment
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
+import androidx.viewbinding.ViewBinding
 import com.google.android.material.color.MaterialColors
 import com.google.android.material.snackbar.Snackbar
 import com.ichi2.anim.ActivityTransitionAnimation
@@ -81,7 +82,6 @@ import com.ichi2.anki.settings.Prefs
 import com.ichi2.anki.snackbar.showSnackbar
 import com.ichi2.anki.utils.ext.showDialogFragment
 import com.ichi2.anki.workarounds.AppLoadedFromBackupWorkaround.showedActivityFailedScreen
-import com.ichi2.async.CollectionLoader
 import com.ichi2.compat.CompatHelper
 import com.ichi2.compat.CompatHelper.Companion.registerReceiverCompat
 import com.ichi2.compat.customtabs.CustomTabActivityHelper
@@ -201,6 +201,10 @@ open class AnkiActivity :
         )
         // Show any pending dialogs which were stored persistently
         dialogHandler.executeMessage()
+    }
+
+    open fun setViewBinding(binding: ViewBinding) {
+        setContentView(binding.root)
     }
 
     /**
@@ -428,14 +432,28 @@ open class AnkiActivity :
         }
         // Open collection asynchronously if it hasn't already been opened
         showProgressBar()
-        CollectionLoader.load(
-            this,
-        ) { col: Collection? ->
-            if (col != null) {
-                Timber.d("Asynchronously calling onCollectionLoaded")
-                onCollectionLoaded(col)
-            } else {
-                onCollectionLoadError()
+        lifecycleScope.launch {
+            val col =
+                withContext(Dispatchers.IO) {
+                    // load collection
+                    try {
+                        Timber.d("CollectionLoader accessing collection")
+                        val col = CollectionManager.getColUnsafe()
+                        Timber.i("CollectionLoader obtained collection")
+                        col
+                    } catch (e: RuntimeException) {
+                        Timber.e(e, "loadInBackground - RuntimeException on opening collection")
+                        CrashReportService.sendExceptionReport(e, "CollectionLoader.load")
+                        null
+                    }
+                }
+            if (lifecycle.currentState.isAtLeast(Lifecycle.State.CREATED)) {
+                if (col != null) {
+                    Timber.d("Asynchronously calling onCollectionLoaded")
+                    onCollectionLoaded(col)
+                } else {
+                    onCollectionLoadError()
+                }
             }
         }
     }

@@ -903,8 +903,8 @@ class NoteEditorFragment :
             )
         }
 
-        // don't open keyboard if not adding note
-        if (!addNote) {
+        // Don't open keyboard if not adding note or the note type is Image Occlusion
+        if (!addNote || currentNotetypeIsImageOcclusion()) {
             requireActivity().window.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_HIDDEN)
         }
 
@@ -1446,12 +1446,22 @@ class NoteEditorFragment :
                 }
             }
         }
-        menu.findItem(R.id.action_show_toolbar).isChecked =
-            !shouldHideToolbar()
-        menu.findItem(R.id.action_capitalize).isChecked =
-            sharedPrefs().getBoolean(PREF_NOTE_EDITOR_CAPITALIZE, true)
-        menu.findItem(R.id.action_scroll_toolbar).isChecked =
-            sharedPrefs().getBoolean(PREF_NOTE_EDITOR_SCROLL_TOOLBAR, true)
+        if (currentNotetypeIsImageOcclusion()) {
+            // Showing options related to editing text in fields is not needed
+            // for image occlusion notetypes as there are no fields for inputting
+            // text in the editor screen. (Text is handled by the backend page.)
+            menu.findItem(R.id.action_font_size).isVisible = false
+            menu.findItem(R.id.action_show_toolbar).isVisible = false
+            menu.findItem(R.id.action_scroll_toolbar).isVisible = false
+            menu.findItem(R.id.action_capitalize).isVisible = false
+        } else {
+            menu.findItem(R.id.action_show_toolbar).isChecked =
+                !shouldHideToolbar()
+            menu.findItem(R.id.action_capitalize).isChecked =
+                sharedPrefs().getBoolean(PREF_NOTE_EDITOR_CAPITALIZE, true)
+            menu.findItem(R.id.action_scroll_toolbar).isChecked =
+                sharedPrefs().getBoolean(PREF_NOTE_EDITOR_SCROLL_TOOLBAR, true)
+        }
     }
 
     /**
@@ -1630,7 +1640,10 @@ class NoteEditorFragment :
     }
 
     private fun showDiscardChangesDialog() {
-        DiscardChangesDialog.showDialog(requireContext()) {
+        DiscardChangesDialog.showDialog(
+            requireContext(),
+            message = if (addNote) TR.addingDiscardCurrentInput() else TR.cardTemplatesDiscardChanges(),
+        ) {
             Timber.i("NoteEditor:: OK button pressed to confirm discard changes")
             closeNoteEditor()
         }
@@ -1789,23 +1802,16 @@ class NoteEditorFragment :
         editNoteTypeMode: Boolean,
     ) {
         val editLines = fieldState.loadFieldEditLines(type)
+        // showing the fields is not needed for image occlusion notetypes as they are handled by the
+        // backend page
+        fieldsLayoutContainer?.isVisible = !currentNotetypeIsImageOcclusion()
         fieldsLayoutContainer!!.removeAllViews()
         customViewIds.clear()
         imageOcclusionButtonsContainer?.isVisible = currentNotetypeIsImageOcclusion()
 
-        val indicesToHide = mutableListOf<Int>()
-        if (currentNotetypeIsImageOcclusion()) {
-            val occlusionTag = "0"
-            val imageTag = "1"
-            val fields = currentlySelectedNotetype!!.fields
-            for ((i, field) in fields.withIndex()) {
-                val tag = field.imageOcclusionTag
-                if (tag == occlusionTag || tag == imageTag) {
-                    indicesToHide.add(i)
-                }
-            }
-        }
-
+        // Showing the bottom toolbar (for HTML format) is not needed for image occlusion notetypes
+        // as there are no fields for inputting text.
+        toolbar.isVisible = !currentNotetypeIsImageOcclusion()
         editFields = LinkedList()
 
         var previous: FieldEditLine? = null
@@ -1893,9 +1899,9 @@ class NoteEditorFragment :
             toggleStickyButton.contentDescription =
                 getString(R.string.note_editor_toggle_sticky, editLineView.name)
 
-            editLineView.isVisible = i !in indicesToHide
             fieldsLayoutContainer!!.addView(editLineView)
         }
+        requireActivity().invalidateOptionsMenu()
     }
 
     private fun getActionModeCallback(
@@ -2383,6 +2389,8 @@ class NoteEditorFragment :
         note: Note?,
         changeType: FieldChangeType,
     ) {
+        requireView().findViewById<TextView>(R.id.CardEditorDeckText).isVisible = !currentNotetypeIsImageOcclusion()
+        requireView().findViewById<View>(R.id.note_deck_spinner).isVisible = !currentNotetypeIsImageOcclusion()
         editorNote =
             if (note == null || addNote) {
                 getColUnsafe.run {
@@ -2644,6 +2652,9 @@ class NoteEditorFragment :
                     .trim()
                     .replace(" ", ", "),
             )
+        // showing the tags is not needed for image occlusion notetypes as they are handled by the
+        // backend page
+        tagsButton?.isVisible = !currentNotetypeIsImageOcclusion()
     }
 
     /** Update the list of card templates for current note type  */

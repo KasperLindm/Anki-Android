@@ -27,7 +27,6 @@ import android.view.MenuItem
 import android.view.SubMenu
 import android.view.View
 import android.view.WindowManager
-import android.view.inputmethod.InputMethodManager
 import android.widget.BaseAdapter
 import android.widget.LinearLayout
 import android.widget.Spinner
@@ -102,6 +101,7 @@ import com.ichi2.anki.ui.internationalization.toSentenceCase
 import com.ichi2.anki.utils.ext.showDialogFragment
 import com.ichi2.anki.widgets.DeckDropDownAdapter
 import com.ichi2.ui.CardBrowserSearchView
+import com.ichi2.utils.AndroidUiUtils.hideKeyboard
 import com.ichi2.utils.LanguageUtil
 import com.ichi2.utils.increaseHorizontalPaddingOfOverflowMenuIcons
 import com.ichi2.widget.WidgetStatus.updateInBackground
@@ -152,8 +152,6 @@ open class CardBrowser :
      * The frame containing the NoteEditor. Non null only in layout x-large.
      */
     private var noteEditorFrame: FragmentContainerView? = null
-
-    private var deckSpinnerSelection: DeckSpinnerSelection? = null
 
     private var actionBarTitle: TextView? = null
 
@@ -364,17 +362,9 @@ open class CardBrowser :
             // initialize the lateinit variables
             // Load reference to action bar title
             actionBarTitle = findViewById(R.id.toolbar_title)
-
-            deckSpinnerSelection =
-                DeckSpinnerSelection(
-                    this,
-                    findViewById(R.id.toolbar_spinner),
-                    showAllDecks = true,
-                    alwaysShowDefault = false,
-                    showFilteredDecks = true,
-                    subtitleProvider = this,
-                )
         }
+
+        findViewById<LinearLayout>(R.id.toolbar_content).setOnClickListener { startDeckSelection(all = true, filtered = true) }
 
         startLoadingCollection()
 
@@ -506,10 +496,10 @@ open class CardBrowser :
             searchView?.setQuery(filterQuery, submit = false)
         }
 
-        suspend fun onDeckIdChanged(deckId: DeckId?) {
+        fun onDeckIdChanged(deckId: DeckId?) {
             if (deckId == null) return
             // this handles ALL_DECKS_ID
-            deckSpinnerSelection?.selectDeckById(deckId, false)
+            updateAppBarInfo(deckId)
         }
 
         fun onCanSaveChanged(canSave: Boolean) {
@@ -522,12 +512,14 @@ open class CardBrowser :
                 Timber.d("load multiselect mode")
                 // show title and hide spinner
                 actionBarTitle?.visibility = View.VISIBLE
-                deckSpinnerSelection?.setSpinnerVisibility(View.GONE)
+                findViewById<TextView>(R.id.deck_name).isVisible = false
+                findViewById<TextView>(R.id.subtitle).isVisible = false
                 multiSelectOnBackPressedCallback.isEnabled = true
             } else {
                 Timber.d("end multiselect mode")
                 refreshSubtitle()
-                deckSpinnerSelection?.setSpinnerVisibility(View.VISIBLE)
+                findViewById<TextView>(R.id.deck_name).isVisible = true
+                findViewById<TextView>(R.id.subtitle).isVisible = true
                 actionBarTitle?.visibility = View.GONE
                 multiSelectOnBackPressedCallback.isEnabled = false
             }
@@ -592,8 +584,7 @@ open class CardBrowser :
         Timber.d("hideKeyboard()")
         searchView?.let { view ->
             view.clearFocus()
-            val imm = view.context.getSystemService(Context.INPUT_METHOD_SERVICE) as? InputMethodManager
-            imm?.hideSoftInputFromWindow(view.windowToken, 0)
+            view.hideKeyboard()
         }
     }
 
@@ -604,15 +595,7 @@ open class CardBrowser :
         registerReceiver()
 
         window.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_HIDDEN)
-        deckSpinnerSelection?.apply {
-            initializeActionBarDeckSpinner(col, supportActionBar!!)
-            launchCatchingTask {
-                selectDeckById(
-                    viewModel.deckId ?: DeckSpinnerSelection.ALL_DECKS_ID,
-                    false,
-                )
-            }
-        }
+        updateAppBarInfo(viewModel.deckId ?: DeckSpinnerSelection.ALL_DECKS_ID)
     }
 
     override fun onKeyUp(
@@ -1225,7 +1208,7 @@ open class CardBrowser :
     private fun updateList() {
         if (!colIsOpenUnsafe()) return
         Timber.d("updateList")
-        deckSpinnerSelection?.notifyDataSetChanged()
+        updateAppBarInfo(viewModel.deckId)
         onSelectionChanged()
         refreshMenuItems()
     }
@@ -1363,6 +1346,23 @@ open class CardBrowser :
 
     override val shortcuts
         get() = cardBrowserFragment.shortcuts
+
+    /**
+     * Sets the selected deck name and current selection count based on [deckDropDownSubtitle] in
+     * the topbar.
+     */
+    private fun updateAppBarInfo(deckId: DeckId?) {
+        if (deckId == null || useSearchView) return
+        findViewById<TextView>(R.id.subtitle)?.text = deckDropDownSubtitle
+        launchCatchingTask {
+            val deckName =
+                when (deckId) {
+                    DeckSpinnerSelection.ALL_DECKS_ID -> getString(R.string.card_browser_all_decks)
+                    else -> withCol { decks.getLegacy(deckId)?.name }
+                }
+            findViewById<TextView>(R.id.deck_name)?.text = deckName
+        }
+    }
 
     companion object {
         // Keys for saving pane weights in SharedPreferences
