@@ -21,10 +21,11 @@
 package com.ichi2.immersivePlugin
 
 import android.content.Context
+import com.ichi2.libanki.NoteTypeId
 
 object ImKitSetting {
     data class ImmersiveKitSettings(
-        val noteType: String = "default",
+        val noteType: NoteTypeId = -1,
         // Checkbox settings
         val exactSearch: Boolean = false,
         val highlighting: Boolean = true,
@@ -46,12 +47,12 @@ object ImKitSetting {
     // Helper functions for card type specific preferences
     fun getnoteTypeSpecificKey(
         baseKey: String,
-        noteType: String,
+        noteType: NoteTypeId,
     ): String = "${baseKey}_$noteType"
 
     fun saveNotetypeSettings(
         context: Context,
-        noteType: String,
+        noteType: NoteTypeId,
         settings: ImmersiveKitSettings,
     ) {
         val prefs = context.getSharedPreferences("immersive_kit_prefs", Context.MODE_PRIVATE)
@@ -78,9 +79,9 @@ object ImKitSetting {
         }
     }
 
-    fun loadnoteTypeSettings(
+    fun loadNotetypeSettings(
         context: Context,
-        noteType: String,
+        noteType: NoteTypeId,
     ): ImmersiveKitSettings {
         val prefs = context.getSharedPreferences("immersive_kit_prefs", Context.MODE_PRIVATE)
 

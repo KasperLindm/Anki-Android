@@ -25,7 +25,7 @@ import com.ichi2.anki.CollectionManager
 import com.ichi2.anki.showThemedToast
 import com.ichi2.immersivePlugin.ImKitApi.makeApiCall
 import com.ichi2.immersivePlugin.ImKitDialogUi.showImmersiveKitDialog
-import com.ichi2.immersivePlugin.ImKitSetting.loadnoteTypeSettings
+import com.ichi2.immersivePlugin.ImKitSetting.loadNotetypeSettings
 import com.ichi2.libanki.Card
 import timber.log.Timber
 
@@ -37,13 +37,13 @@ object ImmersiveKit {
         Timber.i("ImmersiveKit:: Showing immersive kit settings")
         val note = selectedCard?.note
         val col = CollectionManager.getColUnsafe()
-        val noteType = note?.notetype.toString()
+        val noteType = note?.notetype?.id?:-1
         val isLocked = note?.tags?.contains("Locked") == true
         if (isLocked) {
             showThemedToast(context, "Card is locked by tag - cannot update fields", true)
             return
         }
-        val currentSettings = loadnoteTypeSettings(context, noteType)
+        val currentSettings = loadNotetypeSettings(context, noteType)
         showImmersiveKitDialog(
             context,
             selectedCard,

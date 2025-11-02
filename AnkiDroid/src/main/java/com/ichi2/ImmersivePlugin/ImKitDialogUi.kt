@@ -31,13 +31,14 @@ import androidx.core.graphics.toColorInt
 import com.ichi2.immersivePlugin.ImKitSetting.ImmersiveKitSettings
 import com.ichi2.immersivePlugin.ImKitSetting.saveNotetypeSettings
 import com.ichi2.libanki.Card
+import com.ichi2.libanki.NoteTypeId
 
 object ImKitDialogUi {
     fun showImmersiveKitDialog(
         context: Context,
         selectedCard: Card?,
         currentSettings: ImmersiveKitSettings,
-        noteType: String,
+        noteType: NoteTypeId,
         onRun: (ImmersiveKitSettings) -> Unit
     ) {
         val scrollView = ScrollView(context).apply { setPadding(0, 0, 0, 0) }
