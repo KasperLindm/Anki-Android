@@ -58,9 +58,14 @@ object ImKitApi {
                 val fieldValues = note?.fields?.toMutableList()
 
                 val keyword =
-                    fieldNames?.indexOf(settings.keywordField)?.takeIf { it >= 0 }?.let { index ->
-                        fieldValues?.get(index)?.split(",")[0]
-                    }
+                    fieldNames?.indexOf(settings.keywordField)
+                        ?.takeIf { it >= 0 }
+                        ?.let { index ->
+                            fieldValues?.get(index)
+                                ?.split(",")?.getOrNull(0)
+                                ?.replace(Regex("[^\\p{L}\\p{N}\\p{InCJKUnifiedIdeographs}]"), "")
+                                ?.trim()
+                        }
                 val keywordFurigana =
                     fieldNames?.indexOf(settings.keywordFuriganaField)?.takeIf { it >= 0 }?.let { index ->
                         fieldValues?.get(index)?.split(",")[0]

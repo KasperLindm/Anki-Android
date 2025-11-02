@@ -50,13 +50,28 @@ object ImKitUtils {
 
         val highlightTag = "u"
         val plain = keywordPair.first.split(",")[0]
+            .replace(Regex("[^\\p{L}\\p{N}\\p{InCJKUnifiedIdeographs}]"), "")
+            .trim()
+
         val plainKanji = plain.replace(Regex("[^\\p{InCJKUnifiedIdeographs}]"), "")
+
         val furigana = keywordPair.second.split(",")[0]
 
         // Helper: wrap matched text in <u> tag
         fun highlight(match: MatchResult) = "<$highlightTag>${match.value}</$highlightTag>"
 
         var stylized = sentence
+
+        // 0. Extended compound + [furigana] + previous kanji if no [] before
+        val pattern = Regex(
+            "(?<!(\\]))" +  // not immediately after ]
+                    "([\\p{InCJKUnifiedIdeographs}]*" +
+                    Regex.escape(plain) +
+                    "[\\p{InCJKUnifiedIdeographs}]*)" +
+                    "(\\[[^\\]]*\\])?"
+        )
+        val temp = pattern.replace(stylized, ::highlight)
+        if (temp != stylized) return temp
 
         // 1. Kanji + [furigana] pattern (only if kanji exists)
         if (plainKanji.isNotBlank()) {
