@@ -37,7 +37,8 @@ object ImmersiveKit {
         Timber.i("ImmersiveKit:: Showing immersive kit settings")
         val note = selectedCard?.note
         val col = CollectionManager.getColUnsafe()
-        val noteType = note?.notetype?.id?:-1
+        val noteType = note?.notetype?.name?:"default"
+
         val isLocked = note?.tags?.contains("Locked") == true
         if (isLocked) {
             showThemedToast(context, "Card is locked by tag - cannot update fields", true)

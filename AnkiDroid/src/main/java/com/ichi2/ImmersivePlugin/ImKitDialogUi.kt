@@ -38,7 +38,7 @@ object ImKitDialogUi {
         context: Context,
         selectedCard: Card?,
         currentSettings: ImmersiveKitSettings,
-        noteType: NoteTypeId,
+        noteType: String,
         onRun: (ImmersiveKitSettings) -> Unit
     ) {
         val scrollView = ScrollView(context).apply { setPadding(0, 0, 0, 0) }

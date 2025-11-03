@@ -25,7 +25,7 @@ import com.ichi2.libanki.NoteTypeId
 
 object ImKitSetting {
     data class ImmersiveKitSettings(
-        val noteType: NoteTypeId = -1,
+        val noteType: String,
         // Checkbox settings
         val exactSearch: Boolean = false,
         val highlighting: Boolean = true,
@@ -47,12 +47,12 @@ object ImKitSetting {
     // Helper functions for card type specific preferences
     fun getnoteTypeSpecificKey(
         baseKey: String,
-        noteType: NoteTypeId,
+        noteType: String,
     ): String = "${baseKey}_$noteType"
 
     fun saveNotetypeSettings(
         context: Context,
-        noteType: NoteTypeId,
+        noteType: String,
         settings: ImmersiveKitSettings,
     ) {
         val prefs = context.getSharedPreferences("immersive_kit_prefs", Context.MODE_PRIVATE)
@@ -81,7 +81,7 @@ object ImKitSetting {
 
     fun loadNotetypeSettings(
         context: Context,
-        noteType: NoteTypeId,
+        noteType: String,
     ): ImmersiveKitSettings {
         val prefs = context.getSharedPreferences("immersive_kit_prefs", Context.MODE_PRIVATE)
 
