@@ -20,19 +20,13 @@
 
 package com.ichi2.immersivePlugin
 
-import com.ichi2.immersivePlugin.ImKitApi.makeHttpRequest
 import com.ichi2.libanki.Collection
 import com.ichi2.libanki.Note
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
-import org.json.JSONObject
 import timber.log.Timber
 import java.io.File
 import java.net.HttpURLConnection
 import java.net.URL
 import java.util.UUID
-import java.util.zip.ZipFile
-import kotlin.collections.iterator
 
 object ImKitMedia {
 
@@ -90,103 +84,45 @@ object ImKitMedia {
         fileExtension: String,
     ): String? =
         try {
-            val url = URL(urlString)
-            val connection = url.openConnection() as HttpURLConnection
-            connection.requestMethod = "GET"
-            connection.connect()
-            Timber.i("Response code for $urlString: ${connection.responseCode}")
-            if (connection.responseCode == HttpURLConnection.HTTP_OK) {
-                // Make sure folder exists
-                if (!folder.exists()) {
-                    folder.mkdirs()
-                }
+            if (!folder.exists()) folder.mkdirs()
 
-                // Create unique file name
-                val randomString = UUID.randomUUID().toString().take(8)
-                val fileName = name + "_" + "$randomString.$fileExtension"
+            val existing = folder.listFiles()?.firstOrNull {
+                it.name.startsWith(name) && it.extension == fileExtension
+            }
 
-                val file = File(folder, fileName)
+            if (existing != null) {
+                Timber.i("File already exists: ${existing.name}")
+                existing.name
+            }
+            else
+            {
+                val url = URL(urlString)
+                val connection = url.openConnection() as HttpURLConnection
+                connection.requestMethod = "GET"
+                connection.connect()
+                Timber.i("Response code for $urlString: ${connection.responseCode}")
+                if (connection.responseCode == HttpURLConnection.HTTP_OK) {
 
-                connection.inputStream.use { input ->
-                    file.outputStream().use { output ->
-                        input.copyTo(output)
+                    // Create unique file name
+                    val randomString = UUID.randomUUID().toString().take(8)
+                    val fileName = name + "_" + "$randomString.$fileExtension"
+
+                    val file = File(folder, fileName)
+
+                    connection.inputStream.use { input ->
+                        file.outputStream().use { output ->
+                            input.copyTo(output)
+                        }
                     }
+                    fileName
+                } else {
+                    null
                 }
-                fileName
-            } else {
-                null
             }
         } catch (e: Exception) {
             Timber.i("Error downloading file: $urlString - ${e.message}")
             null
         }
-
-    fun extractMediaFromApkg(
-        apkgFile: File,
-        folder: File,
-    ): Pair<File?, File?> {
-        val zip = ZipFile(apkgFile)
-        val mediaJson = zip.getInputStream(zip.getEntry("media")).bufferedReader().use { it.readText() }
-        val mediaMap = JSONObject(mediaJson)
-
-        var picFile: File? = null
-        var audioFile: File? = null
-
-        // Helper to check file extensions
-        fun String.isImage() = endsWith(".png", true) || endsWith(".jpg", true) || endsWith(".jpeg", true)
-
-        fun String.isAudio() = endsWith(".mp3", true) || endsWith(".wav", true)
-
-        // Extract media files from the zip using the integer keys
-        for (key in mediaMap.keys()) {
-            val filename = mediaMap.getString(key)
-            val entry = zip.getEntry(key) ?: continue
-            val outputFile = File(folder, filename)
-
-            outputFile.outputStream().use { output ->
-                zip.getInputStream(entry).use { input ->
-                    input.copyTo(output)
-                }
-            }
-
-            if (picFile == null && filename.isImage()) {
-                picFile = outputFile
-            }
-            if (audioFile == null && filename.isAudio()) {
-                audioFile = outputFile
-            }
-        }
-
-        return Pair(picFile, audioFile)
-    }
-
-    fun handleCardDownloadAndUpdate(
-        fieldNames: Array<String>,
-        note: Note,
-        col: Collection,
-        picFieldName: String,
-        audioFieldName: String,
-        keyword: String,
-        mediaUrl: String,
-        folder: File,
-        tagBuilder: (String) -> String,
-    ): Boolean {
-        val picIndex = fieldNames.indexOf(picFieldName).takeIf { it >= 0 } ?: return false
-        val audioIndex = fieldNames.indexOf(audioFieldName).takeIf { it >= 0 } ?: return false
-        val apkgFile = downloadCard(keyword, mediaUrl, folder, "apkg")
-        if (apkgFile == null) {
-            return false
-        }
-
-        val (pic, audio) = extractMediaFromApkg(apkgFile, folder)
-
-        // Only set fields if the files were actually extracted
-        pic?.let { note.setField(picIndex, "<img src=\"${it.name}\">") }
-        audio?.let { note.setField(audioIndex, tagBuilder("[sound:${it.name}]")) }
-        val c = col.updateNote(note)
-
-        return true
-    }
 
     fun handleMediaDownloadAndUpdate(
         fieldNames: Array<String>,

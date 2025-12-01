@@ -125,7 +125,6 @@ object ImKitNoteUpdater {
                         selectedCard,
                         sentenceWithFurigana,
                         translation,
-                        "http://apiv2.immersionkit.com/download_sentence?id=$ikId&modelType=$sourceType",
                         audio_url,
                         pic_url,
                         source,
@@ -180,7 +179,6 @@ object ImKitNoteUpdater {
         selectedCard: Card,
         sentenceWithFurigana: String,
         translation: String,
-        immersionCardUrl: String,
         audioUrl: String,
         picUrl: String,
         source: String,
@@ -250,7 +248,7 @@ object ImKitNoteUpdater {
                         note,
                         col,
                         settings.audioField,
-                        keyword!!,
+                        immersionKitId,
                         audioUrl,
                         folderPath,
                         "mp3"
@@ -263,7 +261,7 @@ object ImKitNoteUpdater {
                         note,
                         col,
                         settings.pictureField,
-                        keyword!!,
+                        immersionKitId,
                         picUrl,
                         folderPath,
                         "jpg"
