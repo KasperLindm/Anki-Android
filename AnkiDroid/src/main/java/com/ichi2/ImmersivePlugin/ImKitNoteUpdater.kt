@@ -73,17 +73,19 @@ object ImKitNoteUpdater {
             if (settings.games) allowedSources.add("games")
 
             val filteredExamples = mutableListOf<JSONObject>()
+            val nonGameExamples = mutableListOf<JSONObject>()
             for (i in 0 until examples.length()) {
-                val item = examples.optJSONObject(i)
-                val sourceType = item?.optString("id")?.split("_")?.firstOrNull()
+                val item = examples.optJSONObject(i) ?: continue
+                val sourceType = item.optString("id").split("_").firstOrNull()
                 if (sourceType in allowedSources) {
                     filteredExamples.add(item)
                 }
+
+                if (sourceType != "games") {
+                    item.let { nonGameExamples.add(it) }
+                }
             }
 
-            val nonGameExamples = filteredExamples.filterNot {
-                it.optString("id").startsWith("games")
-            }
 
             // Pick example: from filteredExamples if not empty, else from original examples
             val example =
