@@ -140,8 +140,10 @@ object ImKitNoteUpdater {
                         settings,
                         toast,
                     )
+                } else if (note.fields[sentenceFieldIdx] == sentenceWithFurigana) {
+                    showThemedToast(context, "Only example already set", true)
                 } else if (sentenceFieldIdx >= 0) {
-                    showThemedToast(context, "Invalid sentence", true)
+                    showThemedToast(context, "Invalid word", true)
                 } else {
                     showThemedToast(context, "Sentence field is set to Ignore — skipping update", false)
                 }
