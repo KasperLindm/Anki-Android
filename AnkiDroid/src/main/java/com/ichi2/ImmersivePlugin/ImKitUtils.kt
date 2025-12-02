@@ -60,15 +60,15 @@ object ImKitUtils {
         // Helper: wrap matched text in <u> tag
         fun highlight(match: MatchResult) = "<$highlightTag>${match.value}</$highlightTag>"
 
-        var stylized = sentence
+        val stylized = sentence
 
         // 0. Extended compound + [furigana] + previous kanji if no [] before
         val pattern = Regex(
-            "(?<!(\\]))" +  // not immediately after ]
-                    "([\\p{InCJKUnifiedIdeographs}]*" +
+            "(?<!(]))" +  // not immediately after ]
+                    "(\\p{InCJKUnifiedIdeographs}*" +
                     Regex.escape(plain) +
-                    "[\\p{InCJKUnifiedIdeographs}]*)" +
-                    "(\\[[^\\]]*\\])?"
+                    "\\p{InCJKUnifiedIdeographs}*)" +
+                    "(\\[[^]]*])?"
         )
         val temp = pattern.replace(stylized, ::highlight)
         if (temp != stylized) return temp
@@ -90,7 +90,7 @@ object ImKitUtils {
         // 3. Kana-only or mixed keywords: match outside brackets
         if (plain.isNotBlank()) {
             // Negative lookbehind/lookahead to avoid brackets
-            val plainOutsideBrackets = Regex("(?<!\\[)${Regex.escape(plain)}(?![^\\[]*\\])")
+            val plainOutsideBrackets = Regex("(?<!\\[)${Regex.escape(plain)}(?![^\\[]*])")
             val temp = plainOutsideBrackets.replace(stylized, ::highlight)
             if (temp != stylized) return temp
         }
@@ -103,34 +103,5 @@ object ImKitUtils {
         }
 
         return stylized
-    }
-
-    fun highlightMatchedWords(
-        sentence: String,
-        wordList: List<String>,
-        matchedIndexes: List<Pair<Int, Int>>,
-        highlighting: Boolean,
-        highlightingSymbol: String = "u",
-    ): String {
-        if (!highlighting) return sentence
-
-        // Step 1: Build a set of indexes to highlight
-        val highlightRange = mutableSetOf<Int>()
-        for ((start, len) in matchedIndexes) {
-            for (i in start until (start + len)) {
-                highlightRange.add(i)
-            }
-        }
-
-        // Step 2: Reconstruct sentence from wordList, emboldening matched indexes
-        val result = StringBuilder()
-        for ((i, word) in wordList.withIndex()) {
-            if (highlightRange.contains(i) && word.isNotEmpty()) {
-                result.append("<$highlightingSymbol>$word</$highlightingSymbol>")
-            } else {
-                result.append(word)
-            }
-        }
-        return result.toString()
     }
 }

@@ -21,7 +21,6 @@
 package com.ichi2.immersivePlugin
 
 import android.content.Context
-import com.ichi2.libanki.NoteTypeId
 
 object ImKitSetting {
     data class ImmersiveKitSettings(

@@ -31,7 +31,6 @@ import androidx.core.graphics.toColorInt
 import com.ichi2.immersivePlugin.ImKitSetting.ImmersiveKitSettings
 import com.ichi2.immersivePlugin.ImKitSetting.saveNotetypeSettings
 import com.ichi2.libanki.Card
-import com.ichi2.libanki.NoteTypeId
 
 object ImKitDialogUi {
     fun showImmersiveKitDialog(

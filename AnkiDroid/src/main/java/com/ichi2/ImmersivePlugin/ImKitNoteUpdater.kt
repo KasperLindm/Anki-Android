@@ -81,12 +81,16 @@ object ImKitNoteUpdater {
                 }
             }
 
+            val nonGameExamples = filteredExamples.filterNot {
+                it.optString("id").startsWith("games")
+            }
+
             // Pick example: from filteredExamples if not empty, else from original examples
             val example =
-                if (filteredExamples.isNotEmpty()) {
-                    filteredExamples.random()
-                } else {
-                    examples.getJSONObject((0 until examples.length()).random())
+                when {
+                    filteredExamples.isNotEmpty() -> filteredExamples.random()
+                    nonGameExamples.isNotEmpty() -> nonGameExamples.random()
+                    else -> examples.getJSONObject((0 until examples.length()).random())
                 }
 
             val prevAndNext = getContext(example.optString("id", ""))
@@ -100,7 +104,6 @@ object ImKitNoteUpdater {
 
             val translation = example.optString("translation", "")
             val source = example.optString("title", "")
-            val sourceType = example?.optString("id")?.split("_")?.firstOrNull()
             val ikId = example.optString("id", "")
 
             withContext(Dispatchers.Main) {
@@ -113,11 +116,14 @@ object ImKitNoteUpdater {
                 val title = meta?.first
                 val category = meta?.second
 
-                val audio_filepath = example.optString("sound", "")
-                val pic_filepath = example.optString("image", "")
+                val audioFilepath = example.optString("sound", "")
+                val picFilepath = example.optString("image", "")
 
-                val audio_url = "https://us-southeast-1.linodeobjects.com/immersionkit/media/${category}/${title}/media/$audio_filepath"
-                val pic_url = "https://us-southeast-1.linodeobjects.com/immersionkit/media/${category}/${title}/media/$pic_filepath"
+
+                val audioUrl = "https://us-southeast-1.linodeobjects.com/immersionkit/media/${category}/${title}/media/$audioFilepath"
+                val picUrl =
+                    if (category == "games") ""
+                    else "https://us-southeast-1.linodeobjects.com/immersionkit/media/${category}/${title}/media/$picFilepath"
 
                 if (note.fields[sentenceFieldIdx] != sentenceWithFurigana) {
                     updateNoteFields(
@@ -125,8 +131,8 @@ object ImKitNoteUpdater {
                         selectedCard,
                         sentenceWithFurigana,
                         translation,
-                        audio_url,
-                        pic_url,
+                        audioUrl,
+                        picUrl,
                         source,
                         prevAndNext?.first ?: "",
                         prevAndNext?.second ?: "",
@@ -202,14 +208,6 @@ object ImKitNoteUpdater {
             }
         }
 
-        val entryIndex = fieldNames.indexOf("Entry")
-        val keyword =
-            if (entryIndex >= 0 && fieldValues[entryIndex] != "Ignore") {
-                fieldValues[entryIndex].split(",")[0]
-            } else {
-                null // or return here if inside a function
-            }
-
         fun updateField(
             fieldName: String,
             newValue: String,
@@ -241,7 +239,7 @@ object ImKitNoteUpdater {
             val mediaDeferred = async {
                 var audioResult = true
                 var pictureResult = true
-                if (settings.audioField != "Ignore") {
+                if (settings.audioField != "Ignore" && audioUrl.isNotBlank()) {
                     pictureResult = handleMediaDownloadAndUpdate(
                         fieldNames,
                         fieldValues,
@@ -254,7 +252,7 @@ object ImKitNoteUpdater {
                         "mp3"
                     ) { fileName -> "[sound:$fileName]" }
                 }
-                if (settings.pictureField != "Ignore") {
+                if (settings.pictureField != "Ignore" && picUrl.isNotBlank()) {
                     audioResult = handleMediaDownloadAndUpdate(
                         fieldNames,
                         fieldValues,
