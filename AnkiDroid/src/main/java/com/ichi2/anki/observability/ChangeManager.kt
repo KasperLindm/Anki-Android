@@ -14,7 +14,7 @@
  * this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-/**
+/*
  * With the Rust backend, operations that modify the collection return a description of changes (OpChanges).
  * The UI can subscribe to these changes, so it can update itself when actions have been performed
  * (eg, the deck list can check if studyQueues has been updated, and if so, it will redraw the list).
@@ -28,6 +28,9 @@
 package com.ichi2.anki.observability
 
 import androidx.annotation.VisibleForTesting
+import androidx.lifecycle.DefaultLifecycleObserver
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleOwner
 import anki.collection.OpChanges
 import anki.collection.OpChangesAfterUndo
 import anki.collection.OpChangesOnly
@@ -35,8 +38,11 @@ import anki.collection.OpChangesWithCount
 import anki.collection.OpChangesWithId
 import anki.collection.opChanges
 import anki.import_export.ImportResponse
-import com.ichi2.anki.CrashReportService
-import com.ichi2.anki.utils.ext.ifNotZero
+import com.ichi2.anki.common.crashreporting.CrashReportService
+import com.ichi2.anki.common.utils.ext.ifNotZero
+import com.ichi2.anki.observability.ChangeManager.publish
+import com.ichi2.anki.observability.ChangeManager.toOpChanges
+import org.jetbrains.annotations.Contract
 import timber.log.Timber
 import java.lang.ref.WeakReference
 import java.util.concurrent.CopyOnWriteArrayList
@@ -49,6 +55,10 @@ object ChangeManager {
          * Called after a backend method invoked via col.op() or col.opWithProgress()
          * has modified the collection. Subscriber should inspect the changes, and update
          * the UI if necessary.
+         *
+         * @param changes see [OpChanges].
+         * @param handler the initiator of the change. A subscriber may compare this against itself
+         * to detect changes it caused, and skip its default handling in favour of more specific updates.
          */
         fun opExecuted(
             changes: OpChanges,
@@ -61,8 +71,72 @@ object ChangeManager {
 
     val subscriberCount get() = subscribers.size
 
-    fun subscribe(subscriber: Subscriber) {
-        subscribers.add(WeakReference(subscriber))
+    /**
+     * Delivers changes to [subscribers][ChangeManager.subscribers] off the caller's thread.
+     *
+     * @see publish
+     */
+    private val publisher = OpChangesPublisher { changes, handler -> notifySubscribers(changes, handler) }
+
+    /**
+     * Notifies `subscribers` of `changes` without blocking the caller.
+     *
+     * Unlike `notifySubscribers`, the caller **does not** wait for subscribers to complete.
+     *
+     * This may be called from any thread.
+     *
+     * @param changes a raw/wrapped backend [OpChanges] response (see [ChangeManager.toOpChanges])
+     * @param handler the initiator of the change, or `null`. See [Subscriber.opExecuted]
+     */
+    fun <T : Any> publish(
+        changes: T,
+        handler: Any? = null,
+    ) {
+        publisher.publish(changes.toOpChanges(), handler)
+    }
+
+    /**
+     * Subscribes to changes.
+     *
+     * @param subscriber The object listening for changes.
+     * @param owner The lifecycle owner controlling this subscription.
+     * Defaults to [subscriber] if it implements [LifecycleOwner] (e.g. Activities/Fragments).
+     * If provided, subscription waits for [Lifecycle.State.CREATED] and auto-unsubscribes on destroy.
+     */
+    @Contract("subscriber -> call")
+    fun subscribe(
+        subscriber: Subscriber,
+        owner: LifecycleOwner? = subscriber as? LifecycleOwner,
+    ) {
+        val weakRef = WeakReference(subscriber)
+
+        if (owner == null) {
+            subscribers.add(weakRef)
+            return
+        }
+
+        if (owner.lifecycle.currentState.isAtLeast(Lifecycle.State.CREATED)) {
+            subscribers.add(weakRef)
+        }
+
+        owner.lifecycle.addObserver(
+            object : DefaultLifecycleObserver {
+                override fun onCreate(owner: LifecycleOwner) {
+                    if (subscribers.none { it.get() === subscriber }) {
+                        subscribers.add(weakRef)
+                    }
+                }
+
+                override fun onDestroy(owner: LifecycleOwner) {
+                    unsubscribe(subscriber)
+                    owner.lifecycle.removeObserver(this)
+                }
+            },
+        )
+    }
+
+    fun unsubscribe(subscriber: Subscriber) {
+        subscribers.removeWeakReferences { it == null || it === subscriber }
     }
 
     private fun notifySubscribers(
@@ -81,7 +155,11 @@ object ChangeManager {
             if (ref == null) {
                 expired.add(subscriber)
             } else {
-                ref.opExecuted(changes, handler)
+                try {
+                    ref.opExecuted(changes, handler)
+                } catch (e: Exception) {
+                    CrashReportService.sendExceptionReport(e, "notifySubscribers", "opExecuted failed")
+                }
             }
         }
         expired.size.ifNotZero { size -> Timber.v("removing %d expired subscribers", size) }
@@ -91,7 +169,9 @@ object ChangeManager {
     }
 
     @VisibleForTesting(otherwise = VisibleForTesting.NONE)
-    fun clearSubscribers() {
+    @Synchronized
+    fun resetForTesting() {
+        publisher.reset()
         subscribers.size.ifNotZero { size -> Timber.d("clearing %d subscribers", size) }
         subscribers.clear()
     }
@@ -100,21 +180,32 @@ object ChangeManager {
         changes: T,
         initiator: Any?,
     ) {
-        val opChanges =
-            when (changes) {
-                is OpChanges -> changes
-                is OpChangesWithCount -> changes.changes
-                is OpChangesWithId -> changes.changes
-                is OpChangesAfterUndo -> changes.changes
-                is OpChangesOnly -> changes.changes
-                is ImportResponse -> changes.changes
-                else -> TODO("unhandled change type of class '${changes::class}'")
-            }
-        notifySubscribers(opChanges, initiator)
+        notifySubscribers(changes.toOpChanges(), initiator)
     }
+
+    /**
+     * Extracts an [OpChanges] from a backend response.
+     *
+     * @throws NotImplementedError if the receiver is not a backend OpChanges type.
+     */
+    // TODO: See if we can add a marker interface
+    private fun <T : Any> T.toOpChanges(): OpChanges =
+        when (this) {
+            is OpChanges -> this
+            is OpChangesWithCount -> changes
+            is OpChangesWithId -> changes
+            is OpChangesAfterUndo -> changes
+            is OpChangesOnly -> changes
+            is ImportResponse -> changes
+            else -> TODO("unhandled change type of class '${this::class}'")
+        }
 
     fun notifySubscribersAllValuesChanged(handler: Any? = null) {
         notifySubscribers(ALL, handler)
+    }
+
+    fun publishAllValuesChanged(handler: Any? = null) {
+        publish(ALL, handler)
     }
 
     /**
@@ -136,4 +227,8 @@ object ChangeManager {
             noteText = true
             studyQueues = true
         }
+}
+
+private fun <T> MutableList<WeakReference<T>>.removeWeakReferences(block: (T?) -> Boolean) {
+    this.removeAll { block(it.get()) }
 }

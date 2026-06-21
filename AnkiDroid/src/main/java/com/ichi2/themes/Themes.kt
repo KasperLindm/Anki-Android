@@ -18,22 +18,23 @@
 
 package com.ichi2.themes
 
+import android.app.Activity
 import android.content.Context
-import android.content.SharedPreferences
-import android.content.res.Configuration
 import android.graphics.Color
-import androidx.annotation.ColorInt
+import android.util.TypedValue
 import androidx.appcompat.app.AppCompatDelegate
-import androidx.core.content.withStyledAttributes
+import androidx.appcompat.content.res.AppCompatResources
 import androidx.core.graphics.drawable.toDrawable
 import androidx.core.view.WindowInsetsControllerCompat
 import androidx.fragment.app.FragmentActivity
-import com.google.android.material.color.MaterialColors
-import com.ichi2.anki.AnkiDroidApp
 import com.ichi2.anki.R
-import com.ichi2.anki.preferences.sharedPrefs
-import com.ichi2.ui.AppCompatPreferenceActivity
-import timber.log.Timber
+import com.ichi2.anki.common.utils.android.systemIsInNightMode
+import com.ichi2.anki.settings.PrefsRepository
+import com.ichi2.anki.settings.enums.AppTheme
+import com.ichi2.anki.settings.enums.DayTheme
+import com.ichi2.anki.settings.enums.NightTheme
+import com.ichi2.anki.settings.enums.Theme
+import com.ichi2.themes.Themes.currentTheme
 
 /**
  * Helper methods to configure things related to AnkiDroid's themes
@@ -42,17 +43,31 @@ object Themes {
     const val ALPHA_ICON_ENABLED_LIGHT = 255 // 100%
     const val ALPHA_ICON_DISABLED_LIGHT = 76 // 31%
 
-    const val FOLLOW_SYSTEM_MODE = "0"
-    private const val APP_THEME_KEY = "appTheme"
-    private const val DAY_THEME_KEY = "dayTheme"
-    private const val NIGHT_THEME_KEY = "nightTheme"
-
-    var currentTheme: Theme = Theme.fallback
+    var currentTheme: Theme = DayTheme.LIGHT
+    val isNightTheme: Boolean get() = currentTheme is NightTheme
 
     fun setTheme(context: Context) {
         updateCurrentTheme(context)
-        Timber.i("Setting theme to %s", currentTheme.name)
-        context.setTheme(currentTheme.resId)
+        context.setTheme(currentTheme.styleResId)
+    }
+
+    fun setTheme(activity: Activity) {
+        val tv = TypedValue()
+        activity.theme.resolveAttribute(android.R.attr.windowBackground, tv, true)
+        val hadLauncherSplash = tv.resourceId == R.drawable.launch_screen
+
+        setTheme(activity as Context)
+
+        if (hadLauncherSplash) {
+            activity.theme.resolveAttribute(android.R.attr.windowBackground, tv, true)
+            val replacement =
+                if (tv.type in TypedValue.TYPE_FIRST_COLOR_INT..TypedValue.TYPE_LAST_COLOR_INT) {
+                    tv.data.toDrawable()
+                } else {
+                    AppCompatResources.getDrawable(activity, tv.resourceId)
+                }
+            activity.window.setBackgroundDrawable(replacement)
+        }
     }
 
     fun setLegacyActionBar(context: Context) {
@@ -66,94 +81,30 @@ object Themes {
      * Otherwise, updates to the selected theme.
      */
     fun updateCurrentTheme(context: Context) {
-        // AppCompatPreferenceActivity's sharedPreferences is initialized
-        // after the time when the theme should be set
-        // TODO (#5019): always use the context as the parameter for getSharedPrefs
-        val prefs =
-            if (context is AppCompatPreferenceActivity<*>) {
-                AnkiDroidApp.instance.sharedPrefs()
-            } else {
-                context.sharedPrefs()
-            }
+        val prefs = PrefsRepository(context)
+        val appTheme = prefs.appTheme
 
+        val themeIsDark = (appTheme == AppTheme.FOLLOW_SYSTEM && systemIsInNightMode(context)) || appTheme == AppTheme.NIGHT
         currentTheme =
-            if (themeFollowsSystem(prefs)) {
-                AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM)
-                if (systemIsInNightMode(context)) {
-                    Theme.ofId(prefs.getString(NIGHT_THEME_KEY, Theme.BLACK.id)!!)
-                } else {
-                    Theme.ofId(prefs.getString(DAY_THEME_KEY, Theme.LIGHT.id)!!)
-                }
+            if (themeIsDark) {
+                prefs.nightTheme
             } else {
-                Theme.ofId(prefs.getString(APP_THEME_KEY, Theme.fallback.id)!!).also {
-                    val mode = if (it.isNightMode) AppCompatDelegate.MODE_NIGHT_YES else AppCompatDelegate.MODE_NIGHT_NO
-                    AppCompatDelegate.setDefaultNightMode(mode)
-                }
+                prefs.dayTheme
             }
-    }
-
-    /**
-     * #8150: Fix icons not appearing in Note Editor due to MIUI 12's "force dark" mode
-     */
-    fun disableXiaomiForceDarkMode(context: Context) {
-        // Setting a theme is an additive operation, so this adds a single property.
-        context.setTheme(R.style.ThemeOverlay_Xiaomi)
-    }
-
-    fun getResFromAttr(
-        context: Context,
-        resAttr: Int,
-    ): Int {
-        val attrs = intArrayOf(resAttr)
-        return getResFromAttr(context, attrs)[0]
-    }
-
-    /**
-     * NOTE: dangerous function, it mutates the input array and returns it!
-     */
-    fun getResFromAttr(
-        context: Context,
-        attrs: IntArray,
-    ): IntArray {
-        context.withStyledAttributes(attrs = attrs) {
-            for (i in attrs.indices) {
-                attrs[i] = getResourceId(i, 0)
+        val defaultNightMode =
+            when (appTheme) {
+                AppTheme.FOLLOW_SYSTEM -> AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM
+                AppTheme.DAY -> AppCompatDelegate.MODE_NIGHT_NO
+                AppTheme.NIGHT -> AppCompatDelegate.MODE_NIGHT_YES
             }
-        }
-        return attrs
+        AppCompatDelegate.setDefaultNightMode(defaultNightMode)
     }
-
-    @JvmStatic // tests failed when removing, maybe try later
-    @ColorInt
-    fun getColorFromAttr(context: Context, attr: Int): Int = MaterialColors.getColor(context, attr, 0)
-
-    /**
-     * NOTE: dangerous function, it mutates the input array and returns it!
-     */
-    @JvmStatic // tests failed when removing, maybe try later
-    @ColorInt
-    fun getColorsFromAttrs(context: Context, attrs: IntArray): IntArray {
-        for (i in attrs.indices) {
-            attrs[i] = getColorFromAttr(context, attrs[i])
-        }
-        return attrs
-    }
-
-    /**
-     * @return if current selected theme is `Follow system`
-     */
-    private fun themeFollowsSystem(sharedPreferences: SharedPreferences): Boolean =
-        sharedPreferences.getString(APP_THEME_KEY, FOLLOW_SYSTEM_MODE) == FOLLOW_SYSTEM_MODE
-
-    fun systemIsInNightMode(context: Context): Boolean =
-        context.resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK ==
-            Configuration.UI_MODE_NIGHT_YES
 }
 
 @Suppress("deprecation", "API35 properly handle edge-to-edge")
 fun FragmentActivity.setTransparentStatusBar() {
     WindowInsetsControllerCompat(window, window.decorView).isAppearanceLightStatusBars =
-        !Themes.currentTheme.isNightMode
+        Themes.currentTheme !is NightTheme
     window.statusBarColor = Color.TRANSPARENT
 }
 

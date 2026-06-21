@@ -18,17 +18,29 @@ package com.ichi2.anki.pages
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
+import android.view.View
 import android.webkit.WebView
 import androidx.activity.OnBackPressedCallback
+import com.google.android.material.appbar.MaterialToolbar
 import com.ichi2.anki.CollectionManager
 import com.ichi2.anki.R
 import com.ichi2.anki.SingleFragmentActivity
+import com.ichi2.anki.common.destinations.CsvImporterDestination
 import com.ichi2.anki.hideShowButtonCss
+import com.ichi2.utils.OLDEST_WORKING_WEBVIEW_VERSION
+import com.ichi2.utils.WebViewVersion
 
 /**
  * Anki page used to import text/csv files
  */
 class CsvImporter : PageFragment() {
+    override val pagePath: String by lazy {
+        val filePath = requireArguments().getString(KEY_FILE_PATH)
+        "import-csv$filePath"
+    }
+
+    override val minimumWebViewVersion: WebViewVersion = OLDEST_WORKING_WEBVIEW_VERSION
+
     override fun onCreateWebViewClient(savedInstanceState: Bundle?): PageWebViewClient {
         // the back callback is only enabled when import is running and showing progress
         val backCallback =
@@ -42,6 +54,14 @@ class CsvImporter : PageFragment() {
         super.onCreate(savedInstanceState)
         requireActivity().onBackPressedDispatcher.addCallback(this, backCallback)
         return CsvImporterWebViewClient(backCallback)
+    }
+
+    override fun onViewCreated(
+        view: View,
+        savedInstanceState: Bundle?,
+    ) {
+        super.onViewCreated(view, savedInstanceState)
+        view.findViewById<MaterialToolbar>(R.id.toolbar)?.setTitle(R.string.menu_import)
     }
 
     inner class CsvImporterWebViewClient(
@@ -82,6 +102,8 @@ class CsvImporter : PageFragment() {
     }
 
     companion object {
+        private const val KEY_FILE_PATH = "filePath"
+
         /**
          * @param filePath path of the csv file that will be imported, which should be accessible by AnkiDroid
          * @return an intent to open the [CsvImporter] page on [SingleFragmentActivity]
@@ -90,8 +112,11 @@ class CsvImporter : PageFragment() {
             context: Context,
             filePath: String,
         ): Intent {
-            val title = context.getString(R.string.menu_import)
-            return getIntent(context, "import-csv$filePath", title, CsvImporter::class)
+            val arguments = Bundle().apply { putString(KEY_FILE_PATH, filePath) }
+            return SingleFragmentActivity.getIntent(context, fragmentClass = CsvImporter::class, arguments)
         }
     }
 }
+
+/** Builds the [Intent] that opens the CSV importer for this destination. */
+fun CsvImporterDestination.toIntent(context: Context): Intent = CsvImporter.getIntent(context, filePath)

@@ -1,19 +1,5 @@
-/****************************************************************************************
- * Copyright (c) 2015 Timothy Rae <perceptualchaos2@gmail.com>                          *
- * Copyright (c) 2024 David Allison <davidallisongithub@gmail.com>                      *
- *                                                                                      *
- * This program is free software; you can redistribute it and/or modify it under        *
- * the terms of the GNU General Public License as published by the Free Software        *
- * Foundation; either version 3 of the License, or (at your option) any later           *
- * version.                                                                             *
- *                                                                                      *
- * This program is distributed in the hope that it will be useful, but WITHOUT ANY      *
- * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A      *
- * PARTICULAR PURPOSE. See the GNU General Public License for more details.             *
- *                                                                                      *
- * You should have received a copy of the GNU General Public License along with         *
- * this program.  If not, see <http://www.gnu.org/licenses/>.                           *
- ****************************************************************************************/
+// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-FileCopyrightText: Copyright (c) 2015 Timothy Rae <perceptualchaos2@gmail.com>
 
 package com.ichi2.anki.dialogs.customstudy
 
@@ -27,20 +13,19 @@ import android.view.WindowManager
 import android.view.inputmethod.EditorInfo
 import android.widget.AdapterView
 import android.widget.ArrayAdapter
-import android.widget.EditText
 import android.widget.FrameLayout
 import android.widget.LinearLayout
 import android.widget.ScrollView
-import android.widget.Spinner
 import android.widget.TextView
 import androidx.annotation.VisibleForTesting
+import androidx.annotation.VisibleForTesting.Companion.PRIVATE
 import androidx.appcompat.app.AlertDialog
 import androidx.core.content.edit
-import androidx.core.os.bundleOf
 import androidx.core.view.isVisible
 import androidx.core.view.updatePadding
 import androidx.core.widget.doAfterTextChanged
 import androidx.fragment.app.setFragmentResult
+import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
 import anki.scheduler.CustomStudyDefaultsResponse
 import anki.scheduler.CustomStudyRequest.Cram.CramKind
@@ -53,7 +38,10 @@ import com.ichi2.anki.R
 import com.ichi2.anki.analytics.AnalyticsDialogFragment
 import com.ichi2.anki.asyncIO
 import com.ichi2.anki.common.annotations.NeedsTest
+import com.ichi2.anki.common.preferences.sharedPrefs
 import com.ichi2.anki.common.utils.annotation.KotlinCleanup
+import com.ichi2.anki.databinding.FragmentCustomStudyBinding
+import com.ichi2.anki.dialogs.customstudy.CustomStudyDialog.Companion.deferredDefaults
 import com.ichi2.anki.dialogs.customstudy.CustomStudyDialog.ContextMenuOption.EXTEND_NEW
 import com.ichi2.anki.dialogs.customstudy.CustomStudyDialog.ContextMenuOption.EXTEND_REV
 import com.ichi2.anki.dialogs.customstudy.CustomStudyDialog.ContextMenuOption.STUDY_AHEAD
@@ -65,18 +53,15 @@ import com.ichi2.anki.dialogs.tags.TagsDialog
 import com.ichi2.anki.dialogs.tags.TagsDialogListener.Companion.ON_SELECTED_TAGS_KEY
 import com.ichi2.anki.dialogs.tags.TagsDialogListener.Companion.ON_SELECTED_TAGS__SELECTED_TAGS
 import com.ichi2.anki.launchCatchingTask
-import com.ichi2.anki.libanki.Deck
 import com.ichi2.anki.libanki.DeckId
 import com.ichi2.anki.observability.undoableOp
-import com.ichi2.anki.preferences.sharedPrefs
 import com.ichi2.anki.snackbar.showSnackbar
-import com.ichi2.anki.ui.internationalization.toSentenceCase
+import com.ichi2.anki.ui.internationalization.sentenceCase
 import com.ichi2.anki.utils.ext.dismissAllDialogFragments
+import com.ichi2.anki.utils.ext.getIntOrNull
 import com.ichi2.anki.utils.ext.sharedPrefs
 import com.ichi2.anki.utils.ext.showDialogFragment
 import com.ichi2.anki.withProgress
-import com.ichi2.utils.BundleUtils.getNullableInt
-import com.ichi2.utils.bundleOfNotNull
 import com.ichi2.utils.cancelable
 import com.ichi2.utils.coMeasureTime
 import com.ichi2.utils.customView
@@ -123,37 +108,31 @@ import timber.log.Timber
  * @see TagLimitFragment
  */
 @KotlinCleanup("remove 'runBlocking' call'")
-@NeedsTest("deferredDefaults")
 class CustomStudyDialog : AnalyticsDialogFragment() {
-    /** ID of the [Deck] which this dialog was created for */
-    private val dialogDeckId: DeckId
-        get() = requireArguments().getLong(ARG_DID)
+    @VisibleForTesting(otherwise = PRIVATE)
+    lateinit var binding: FragmentCustomStudyBinding
+
+    @VisibleForTesting(otherwise = PRIVATE)
+    val viewModel by viewModels<CustomStudyViewModel>()
 
     /**
      * `null` initially when the main view is shown
      * otherwise, the [ContextMenuOption] representing the current sub-dialog
      */
     private val selectedSubDialog: ContextMenuOption?
-        get() = requireArguments().getNullableInt(ARG_SUB_DIALOG_ID)?.let { ContextMenuOption.entries[it] }
+        get() = requireArguments().getIntOrNull(ARG_SUB_DIALOG_ID)?.let { ContextMenuOption.entries[it] }
 
-    private val selectedStatePosition: Int
-        get() =
-            dialog
-                ?.findViewById<Spinner>(R.id.cards_state_selector)
-                ?.selectedItemPosition ?: AdapterView.INVALID_POSITION
     private val userInputValue: Int?
-        get() =
-            dialog
-                ?.findViewById<EditText>(R.id.custom_study_details_edittext2)
-                ?.textAsIntOrNull()
+        get() = binding.detailsEditText2.textAsIntOrNull()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         parentFragmentManager.setFragmentResultListener(ON_SELECTED_TAGS_KEY, this) { _, bundle ->
             val tagsToInclude = bundle.getStringArrayList(ON_SELECTED_TAGS__SELECTED_TAGS) ?: emptyList<String>()
             val option = selectedSubDialog ?: return@setFragmentResultListener
-            if (selectedStatePosition == AdapterView.INVALID_POSITION) return@setFragmentResultListener
-            val kind = CustomStudyCardState.entries[selectedStatePosition].kind
+            val selectedCardStateIndex = viewModel.selectedCardStateIndex
+            if (selectedCardStateIndex == AdapterView.INVALID_POSITION) return@setFragmentResultListener
+            val kind = viewModel.selectedKind
             val cardsAmount = userInputValue ?: 100 // the default value
             launchCustomStudy(option, cardsAmount, kind, tagsToInclude, emptyList())
         }
@@ -183,13 +162,12 @@ class CustomStudyDialog : AnalyticsDialogFragment() {
     }
 
     override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
-        super.onCreate(savedInstanceState)
         val option = selectedSubDialog
-        return if (option == null) {
+        return if (option == null || !defaultsAreInitialized()) {
             Timber.i("Showing Custom Study main menu")
             deferredDefaults = loadCustomStudyDefaults()
             // Select the specified deck
-            runBlocking { withCol { decks.select(dialogDeckId) } }
+            runBlocking { withCol { decks.select(viewModel.deckId) } }
             buildContextMenu()
         } else {
             Timber.i("Showing Custom Study dialog: $option")
@@ -212,7 +190,7 @@ class CustomStudyDialog : AnalyticsDialogFragment() {
             }
         }
 
-        val dialog: CustomStudyDialog = createSubDialog(dialogDeckId, item)
+        val dialog: CustomStudyDialog = createSubDialog(viewModel.deckId, item)
         requireActivity().showDialogFragment(dialog)
     }
 
@@ -278,7 +256,7 @@ class CustomStudyDialog : AnalyticsDialogFragment() {
 
         return AlertDialog
             .Builder(requireActivity())
-            .title(text = TR.actionsCustomStudy().toSentenceCase(this, R.string.sentence_custom_study))
+            .title(text = TR.sentenceCase.customStudy)
             .cancelable(true)
             .customView(customMenuView)
             .create()
@@ -298,38 +276,52 @@ class CustomStudyDialog : AnalyticsDialogFragment() {
         // Input dialogs
         // Show input dialog for an individual custom study dialog
         @SuppressLint("InflateParams")
-        val v = requireActivity().layoutInflater.inflate(R.layout.styled_custom_study_details_dialog, null)
-        v.findViewById<TextView>(R.id.custom_study_details_text1).apply {
-            text = text1
-        }
-        v.findViewById<TextView>(R.id.custom_study_details_text2).apply {
-            text = text2
-        }
-        v.findViewById<Spinner>(R.id.cards_state_selector).apply {
-            isVisible = contextMenuOption == STUDY_TAGS
-            adapter =
-                ArrayAdapter(
-                    requireContext(),
-                    android.R.layout.simple_spinner_item,
-                    CustomStudyCardState.entries.map { it.labelProducer() },
-                ).apply {
-                    setDropDownViewResource(R.layout.multiline_spinner_item)
-                }
-        }
-        val editText =
-            v.findViewById<EditText>(R.id.custom_study_details_edittext2).apply {
-                setText(defaultValue)
-                // Give EditText focus and show keyboard
-                setSelectAllOnFocus(true)
-                requestFocus()
-                // a user may enter a negative value when extending limits
-                if (contextMenuOption == EXTEND_NEW || contextMenuOption == EXTEND_REV) {
-                    inputType = EditorInfo.TYPE_CLASS_NUMBER or EditorInfo.TYPE_NUMBER_FLAG_SIGNED
-                }
+        binding = FragmentCustomStudyBinding.inflate(requireActivity().layoutInflater)
+
+        binding.detailsText1.text = text1
+        binding.detailsText2.text = text2
+
+        binding.cardsStateSelectorLayout.isVisible = contextMenuOption == STUDY_TAGS
+        binding.cardsStateSelector.apply {
+            fun setAdapterAndSelection(
+                entries: List<String>,
+                selectedIndex: Int,
+            ) {
+                setAdapter(
+                    ArrayAdapter(
+                        requireActivity(),
+                        R.layout.item_multiline_spinner,
+                        entries,
+                    ).apply { setDropDownViewResource(R.layout.item_multiline_spinner) },
+                )
+                setText(entries[selectedIndex], false)
             }
+            val cardStates = CustomStudyCardState.entries.map { it.labelProducer() }
+            onItemClickListener =
+                AdapterView.OnItemClickListener { _, _, position, _ ->
+                    viewModel.selectedCardStateIndex = position
+                    setAdapterAndSelection(cardStates, viewModel.selectedCardStateIndex)
+                }
+            // set the first item as automatically selected if we don't already have a valid
+            // position stored in the ViewModel
+            if (viewModel.selectedCardStateIndex == AdapterView.INVALID_POSITION) {
+                viewModel.selectedCardStateIndex = 0
+            }
+            setAdapterAndSelection(cardStates, viewModel.selectedCardStateIndex)
+        }
+        binding.detailsEditText2.apply {
+            setText(defaultValue)
+            // Give EditText focus and show keyboard
+            setSelectAllOnFocus(true)
+            requestFocus()
+            // a user may enter a negative value when extending limits
+            if (contextMenuOption == EXTEND_NEW || contextMenuOption == EXTEND_REV) {
+                inputType = EditorInfo.TYPE_CLASS_NUMBER or EditorInfo.TYPE_NUMBER_FLAG_SIGNED
+            }
+        }
         val positiveBtnLabel =
             if (contextMenuOption == STUDY_TAGS) {
-                TR.customStudyChooseTags().toSentenceCase(requireContext(), R.string.sentence_choose_tags)
+                TR.sentenceCase.chooseTags
             } else {
                 getString(R.string.dialog_ok)
             }
@@ -342,7 +334,7 @@ class CustomStudyDialog : AnalyticsDialogFragment() {
             AlertDialog
                 .Builder(requireActivity())
                 .customView(
-                    view = v,
+                    view = binding.root,
                     paddingStart = horizontalPadding,
                     paddingEnd = horizontalPadding,
                     paddingTop = verticalPadding,
@@ -364,9 +356,9 @@ class CustomStudyDialog : AnalyticsDialogFragment() {
 
                 // Get the value selected by user
                 val n =
-                    editText.textAsIntOrNull() ?: run {
+                    userInputValue ?: run {
                         Timber.w("Non-numeric user input was provided")
-                        Timber.d("value: %s", editText.text.toString())
+                        Timber.d("value: %s", binding.detailsEditText2.text.toString())
                         allowSubmit = true
                         return@setOnClickListener
                     }
@@ -377,19 +369,33 @@ class CustomStudyDialog : AnalyticsDialogFragment() {
                     launchCatchingTask {
                         val nids =
                             withCol {
-                                val currentDeckname = decks.name(dialogDeckId)
-                                val search = SearchNode.newBuilder().setDeck(currentDeckname).build()
-                                val query = buildSearchString(search)
-                                findNotes(query)
+                                val currentDeckName = decks.name(viewModel.deckId)
+                                // this allows us to skip the tag selection dialog entirely
+                                // if there are no tags available to choose from in this deck
+                                val searchNodes =
+                                    buildList {
+                                        add(SearchNode.newBuilder().setDeck(currentDeckName).build())
+                                        add(
+                                            SearchNode
+                                                .newBuilder()
+                                                .setNegated(SearchNode.newBuilder().setTag("none").build())
+                                                .build(),
+                                        )
+                                    }
+                                findNotes(buildSearchString(searchNodes))
                             }
+                        // skip tag selection if there's no tags to select
+                        if (nids.isEmpty()) {
+                            launchCustomStudy(contextMenuOption, n, viewModel.selectedKind)
+                            return@launchCatchingTask
+                        }
                         if (isAdded) {
-                            val tagsDialog =
-                                TagsDialog().withArguments(
+                            TagsDialog()
+                                .withArguments(
                                     requireContext(),
                                     TagsDialog.DialogType.CUSTOM_STUDY,
                                     nids,
-                                )
-                            tagsDialog.show(parentFragmentManager, "TagsDialog")
+                                ).show(parentFragmentManager, "TagsDialog")
                         }
                     }
                     return@setOnClickListener
@@ -398,9 +404,8 @@ class CustomStudyDialog : AnalyticsDialogFragment() {
             }
         }
 
-        editText.doAfterTextChanged {
-            val num = editText.textAsIntOrNull()
-            dialog.positiveButton.isEnabled = num != null && num != 0
+        binding.detailsEditText2.doAfterTextChanged {
+            dialog.positiveButton.isEnabled = userInputValue != null && userInputValue != 0
         }
 
         // Show soft keyboard
@@ -421,7 +426,7 @@ class CustomStudyDialog : AnalyticsDialogFragment() {
 
         val request =
             customStudyRequest {
-                deckId = dialogDeckId
+                deckId = viewModel.deckId
                 when (contextMenuOption) {
                     EXTEND_NEW -> newLimitDelta = userEntry
                     EXTEND_REV -> reviewLimitDelta = userEntry
@@ -448,7 +453,7 @@ class CustomStudyDialog : AnalyticsDialogFragment() {
                 STUDY_FORGOT, STUDY_AHEAD, STUDY_PREVIEW, STUDY_TAGS -> CustomStudyAction.CUSTOM_STUDY_SESSION
             }
 
-        setFragmentResult(CustomStudyAction.REQUEST_KEY, bundleOf(CustomStudyAction.BUNDLE_KEY to action.ordinal))
+        setFragmentResult(CustomStudyAction.REQUEST_KEY, Bundle().apply { putInt(CustomStudyAction.BUNDLE_KEY, action.ordinal) })
 
         // save the default values (not in upstream)
         when (contextMenuOption) {
@@ -470,7 +475,7 @@ class CustomStudyDialog : AnalyticsDialogFragment() {
     private fun loadCustomStudyDefaults() =
         lifecycleScope.asyncIO {
             coMeasureTime("loadCustomStudyDefaults") {
-                withCol { sched.customStudyDefaults(dialogDeckId).toDomainModel() }
+                withCol { sched.customStudyDefaults(viewModel.deckId).toDomainModel() }
             }
         }
 
@@ -564,7 +569,7 @@ class CustomStudyDialog : AnalyticsDialogFragment() {
      *
      * @param checkAvailability Whether the menu option is available
      */
-    @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
+    @VisibleForTesting(otherwise = PRIVATE)
     enum class ContextMenuOption(
         val getTitle: Resources.() -> String,
         val checkAvailability: ((CustomStudyDefaults) -> Boolean)? = null,
@@ -716,14 +721,21 @@ class CustomStudyDialog : AnalyticsDialogFragment() {
         private lateinit var deferredDefaults: Deferred<CustomStudyDefaults>
 
         /**
+         * Whether [deferredDefaults] is initialized; false on restoring the dialog from process
+         * death
+         */
+        // This exists as `isInitialized` can't be checked in an instance of CustomStudyDialog
+        private fun defaultsAreInitialized(): Boolean = ::deferredDefaults.isInitialized
+
+        /**
          * Creates an instance of the Custom Study Dialog: a user can select a custom study type
          */
         fun createInstance(deckId: DeckId): CustomStudyDialog =
             CustomStudyDialog().apply {
                 arguments =
-                    bundleOfNotNull(
-                        ARG_DID to deckId,
-                    )
+                    Bundle().apply {
+                        putLong(CustomStudyViewModel.KEY_DID, deckId)
+                    }
             }
 
         /**
@@ -738,17 +750,11 @@ class CustomStudyDialog : AnalyticsDialogFragment() {
         ): CustomStudyDialog =
             CustomStudyDialog().apply {
                 arguments =
-                    bundleOfNotNull(
-                        ARG_DID to deckId,
-                        ARG_SUB_DIALOG_ID to contextMenuAttribute.ordinal,
-                    )
+                    Bundle().apply {
+                        putLong(CustomStudyViewModel.KEY_DID, deckId)
+                        putInt(ARG_SUB_DIALOG_ID, contextMenuAttribute.ordinal)
+                    }
             }
-
-        /**
-         * (required) Key for the [DeckId] this dialog deals with.
-         * @see CustomStudyDialog.dialogDeckId
-         */
-        private const val ARG_DID = "did"
 
         /**
          * (optional) Key for the ordinal of the [ContextMenuOption] to display.

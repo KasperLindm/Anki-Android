@@ -21,13 +21,16 @@ import android.widget.TextView
 import androidx.annotation.RequiresApi
 import androidx.annotation.StringRes
 import androidx.coordinatorlayout.widget.CoordinatorLayout
+import androidx.core.view.isVisible
 import androidx.fragment.app.DialogFragment
 import androidx.fragment.app.Fragment
 import com.google.android.material.snackbar.Snackbar
 import com.google.android.material.snackbar.onAttachedToWindow2
 import com.ichi2.anki.BuildConfig
 import com.ichi2.anki.R
-import com.ichi2.anki.showThemedToast
+import com.ichi2.anki.common.crashreporting.CrashReportService
+import com.ichi2.anki.common.exception.ManuallyReportedException
+import com.ichi2.anki.common.utils.android.showThemedToast
 import timber.log.Timber
 
 typealias SnackbarBuilder = Snackbar.() -> Unit
@@ -106,12 +109,12 @@ fun Activity.showSnackbar(
     text: CharSequence,
     duration: Int = Snackbar.LENGTH_LONG,
     snackbarBuilder: SnackbarBuilder? = null,
-) {
+): Snackbar? {
     val view: View? = findViewById(R.id.root_layout) as? CoordinatorLayout
 
     if (view != null) {
         val baseSnackbarBuilder = (this as? BaseSnackbarBuilderProvider)?.baseSnackbarBuilder
-        view.showSnackbar(text, duration) {
+        return view.showSnackbar(text, duration) {
             baseSnackbarBuilder?.invoke(this)
             snackbarBuilder?.invoke(this)
             Timber.d("displayed snackbar: '%s'", text)
@@ -126,6 +129,7 @@ fun Activity.showSnackbar(
         } else {
             Timber.e(errorMessage)
             showThemedToast(this, text, false)
+            return null
         }
     }
 }
@@ -195,7 +199,7 @@ fun View.showSnackbar(
     text: CharSequence,
     duration: Int = Snackbar.LENGTH_LONG,
     snackbarBuilder: SnackbarBuilder? = null,
-) {
+): Snackbar {
     val snackbar = Snackbar.make(this, text, duration)
     snackbar.setMaxLines(4)
     snackbar.behavior = SwipeDismissBehaviorFix()
@@ -208,7 +212,23 @@ fun View.showSnackbar(
         snackbar.snackbarBuilder()
     }
 
+    if (snackbar.anchorView?.isVisible == false) {
+        val errorMessage = "While trying to show a snackbar, anchorView was not visible"
+        if (BuildConfig.DEBUG) {
+            throw IllegalArgumentException(errorMessage)
+        }
+        Timber.w(errorMessage)
+        CrashReportService.sendExceptionReport(
+            ManuallyReportedException(errorMessage),
+            "View.showSnackbar",
+            onlyIfSilent = true,
+        )
+
+        snackbar.anchorView = null
+    }
+
     snackbar.show()
+    return snackbar
 }
 
 /**
@@ -241,9 +261,9 @@ fun Fragment.showSnackbar(
     text: CharSequence,
     duration: Int = Snackbar.LENGTH_LONG,
     snackbarBuilder: SnackbarBuilder? = null,
-) {
+): Snackbar? {
     val baseSnackbarBuilder = (this as? BaseSnackbarBuilderProvider)?.baseSnackbarBuilder
-    requireActivity().showSnackbar(text, duration) {
+    return requireActivity().showSnackbar(text, duration) {
         baseSnackbarBuilder?.invoke(this)
         snackbarBuilder?.invoke(this)
         Timber.d("displayed snackbar: '%s'", text)

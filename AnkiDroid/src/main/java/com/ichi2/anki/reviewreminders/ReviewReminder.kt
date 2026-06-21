@@ -22,6 +22,7 @@ import android.text.format.DateFormat
 import com.ichi2.anki.CollectionManager.withCol
 import com.ichi2.anki.common.time.TimeManager
 import com.ichi2.anki.libanki.DeckId
+import com.ichi2.anki.libanki.EpochMilliseconds
 import com.ichi2.anki.settings.Prefs
 import kotlinx.parcelize.IgnoredOnParcel
 import kotlinx.parcelize.Parcelize
@@ -35,7 +36,7 @@ import kotlin.time.Duration.Companion.minutes
 @Serializable
 @Parcelize
 value class ReviewReminderId(
-    val id: Int,
+    val value: Int,
 ) : Parcelable {
     companion object {
         /**
@@ -110,11 +111,11 @@ value class ReviewReminderCardTriggerThreshold(
 
 /**
  * An indicator of whether a review reminders feature is associated with every deck in the user's
- * collection or if it is associated with a single deck. For example, the [ScheduleReminders] fragment
+ * collection or if it is associated with a single deck. For example, the [ScheduleRemindersFragment] fragment
  * can be triggered in either global or deck-specific editing mode. A [ReviewReminder] can be associated
  * with either all decks or a specific deck.
  *
- * This class is marked with @Parcelize so that it can be passed into [ScheduleReminders.getIntent].
+ * This class is marked with @Parcelize so that it can be passed into [ScheduleRemindersFragment.getIntent].
  * This class is marked with @Serializable so that it can be a field of [ReviewReminder]s, which are stored as JSON strings.
  */
 @Serializable
@@ -178,8 +179,6 @@ sealed class ReviewReminderScope : Parcelable {
  * Preferably, also add some unit tests to ensure your migration works properly on all user devices once your update is rolled out.
  * See ReviewRemindersDatabaseTest for examples on how to do this.
  *
- * TODO: add remaining fields planned for GSoC 2025.
- *
  * @param id Unique, auto-incremented ID of the review reminder.
  * @param time See [ReviewReminderTime].
  * @param cardTriggerThreshold See [ReviewReminderCardTriggerThreshold].
@@ -187,6 +186,10 @@ sealed class ReviewReminderScope : Parcelable {
  * @param enabled Whether the review reminder's notifications are active or disabled.
  * @param profileID ID representing the profile which created this review reminder, as review reminders for
  * multiple profiles might be active simultaneously.
+ * @param latestNotifTime The time at which this review reminder last attempted to fire a routine daily (non-snooze)
+ * notification, in epoch milliseconds, or the time at which it was created if no notification has ever been fired.
+ * See [shouldImmediatelyFire].
+ * @param onlyNotifyIfNoReviews If true, only notify the user if this scope has not been reviewed today yet.
  */
 @Serializable
 @Parcelize
@@ -197,7 +200,9 @@ data class ReviewReminder private constructor(
     val cardTriggerThreshold: ReviewReminderCardTriggerThreshold,
     val scope: ReviewReminderScope,
     var enabled: Boolean,
+    var latestNotifTime: EpochMilliseconds,
     val profileID: String,
+    val onlyNotifyIfNoReviews: Boolean,
 ) : Parcelable,
     ReviewReminderSchema {
     companion object {
@@ -208,18 +213,51 @@ data class ReviewReminder private constructor(
          */
         fun createReviewReminder(
             time: ReviewReminderTime,
-            cardTriggerThreshold: ReviewReminderCardTriggerThreshold,
+            cardTriggerThreshold: ReviewReminderCardTriggerThreshold = ReviewReminderCardTriggerThreshold(0),
             scope: ReviewReminderScope = ReviewReminderScope.Global,
             enabled: Boolean = true,
             profileID: String = "",
+            onlyNotifyIfNoReviews: Boolean = false,
         ) = ReviewReminder(
             id = ReviewReminderId.getAndIncrementNextFreeReminderId(),
             time,
             cardTriggerThreshold,
             scope,
             enabled,
+            latestNotifTime = TimeManager.time.calendar().timeInMillis,
             profileID,
+            onlyNotifyIfNoReviews,
         )
+    }
+
+    /**
+     * Updates [latestNotifTime] to the current time.
+     * This should be called whenever this review reminder attempts to fire a routine daily (non-snooze) notification.
+     */
+    fun updateLatestNotifTime() {
+        latestNotifTime = TimeManager.time.calendar().timeInMillis
+    }
+
+    /**
+     * Checks if this review reminder has tried to fire a routine daily (non-snooze) notification in the time between
+     * its latest scheduled firing time and now. If not, this method returns true, indicating that a notification
+     * should be immediately fired for this review reminder.
+     */
+    fun shouldImmediatelyFire(): Boolean {
+        val (hour, minute) = this.time
+
+        val currentTimestamp = TimeManager.time.calendar()
+        val latestScheduledTimestamp = currentTimestamp.clone() as Calendar
+        latestScheduledTimestamp.apply {
+            set(Calendar.HOUR_OF_DAY, hour)
+            set(Calendar.MINUTE, minute)
+            set(Calendar.SECOND, 0)
+            if (after(currentTimestamp)) {
+                add(Calendar.DAY_OF_YEAR, -1)
+            }
+        }
+
+        return latestNotifTime < latestScheduledTimestamp.timeInMillis
     }
 
     /**

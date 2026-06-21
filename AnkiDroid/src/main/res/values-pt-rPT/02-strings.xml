@@ -6,55 +6,35 @@
  ~    Instructions for this are available here: https://github.com/ankidroid/Anki-Android/wiki/Translating-AnkiDroid. 
  ~    You may also find the documentation on contributing to Anki useful: https://github.com/ankidroid/Anki-Android/wiki/Contributing   
  ~ 
- ~ Copyright (c) 2009 Andrew <andrewdubya@gmail> 
- ~ Copyright (c) 2009 Edu Zamora <edu.zasu@gmail.com> 
- ~ Copyright (c) 2009 Daniel Svaerd <daniel.svard@gmail.com> 
- ~ Copyright (c) 2009 Nicolas Raoul <nicolas.raoul@gmail.com> 
- ~ Copyright (c) 2010 Norbert Nagold <norbert.nagold@gmail.com> 
- ~ This program is free software; you can redistribute it and/or modify it under 
- ~ the terms of the GNU General Public License as published by the Free Software 
- ~ Foundation; either version 3 of the License, or (at your option) any later 
- ~ version. 
- ~ 
- ~ This program is distributed in the hope that it will be useful, but WITHOUT ANY 
- ~ WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A 
- ~ PARTICULAR PURPOSE. See the GNU General Public License for more details. 
- ~ 
- ~ You should have received a copy of the GNU General Public License along with 
- ~ this program.  If not, see <http://www.gnu.org/licenses/>. 
+ ~ SPDX-License-Identifier: GPL-3.0-or-later
+ ~ SPDX-FileCopyrightText: Copyright (c) 2009 Andrew <andrewdubya@gmail>
+ ~ SPDX-FileCopyrightText: Copyright (c) 2009 Edu Zamora <edu.zasu@gmail.com>
+ ~ SPDX-FileCopyrightText: Copyright (c) 2009 Daniel Svaerd <daniel.svard@gmail.com>
+ ~ SPDX-FileCopyrightText: Copyright (c) 2009 Nicolas Raoul <nicolas.raoul@gmail.com>
+ ~ SPDX-FileCopyrightText: Copyright (c) 2010 Norbert Nagold <norbert.nagold@gmail.com>
  -->
  
 <!--
-~ Copyright (c) 2009 Andrew <andrewdubya@gmail>
-~ Copyright (c) 2009 Edu Zamora <edu.zasu@gmail.com>
-~ Copyright (c) 2009 Daniel Svärd <daniel.svard@gmail.com>
-~ Copyright (c) 2009 Nicolas Raoul <nicolas.raoul@gmail.com>
-~ Copyright (c) 2010 Norbert Nagold <norbert.nagold@gmail.com>
-~
-~ This program is free software; you can redistribute it and/or modify it under
-~ the terms of the GNU General Public License as published by the Free Software
-~ Foundation; either version 3 of the License, or (at your option) any later
-~ version.
-~
-~ This program is distributed in the hope that it will be useful, but WITHOUT ANY
-~ WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
-~ PARTICULAR PURPOSE. See the GNU General Public License for more details.
-~
-~ You should have received a copy of the GNU General Public License along with
-~ this program.  If not, see <http://www.gnu.org/licenses/>.
--->
+  ~ SPDX-License-Identifier: GPL-3.0-or-later
+  ~ SPDX-FileCopyrightText: Copyright (c) 2009 Andrew <andrewdubya@gmail>
+  ~ SPDX-FileCopyrightText: Copyright (c) 2009 Edu Zamora <edu.zasu@gmail.com>
+  ~ SPDX-FileCopyrightText: Copyright (c) 2009 Daniel Svärd <daniel.svard@gmail.com>
+  ~ SPDX-FileCopyrightText: Copyright (c) 2009 Nicolas Raoul <nicolas.raoul@gmail.com>
+  ~ SPDX-FileCopyrightText: Copyright (c) 2010 Norbert Nagold <norbert.nagold@gmail.com>
+  -->
 <resources xmlns:tools="http://schemas.android.com/tools">
     <!-- Navigation drawer strings -->
     <string name="drawer_open">Abrir painel</string>
     <string name="drawer_close">Fechar painel</string>
     <string name="note_message">Note saved</string>
+    <!-- Note editor screen -->
     <string name="CardEditorCardDeck">Baralho de fichas:</string>
     <string name="CardEditorNoteDeck">Baralho:</string>
     <string name="CardEditorModel">Tipo:</string>
     <string name="CardEditorTags">Etiquetas: %1$s</string>
     <string name="CardEditorCards">Fichas: %1$s</string>
-    <string name="edit_occlusions">Editar Oclusões</string>
-    <string name="tag_name">Nome da etiqueta</string>
+    <string name="edit_occlusions">Edit occlusions</string>
+    <string name="paste_from_clipboard" maxLength="28">Paste from clipboard</string>
     <string name="add_new_filter_tags">Adicionar/filtrar etiquetas</string>
     <string name="add_tag" maxLength="28">Adicionar etiqueta</string>
     <string name="check_all_tags" maxLength="28">Marcar/desmarcar todas as etiquetas</string>
@@ -70,7 +50,6 @@
     <string name="whiteboard_align_left" comment="Option to align the whiteboard toolbar on the left" maxLength="28">Left</string>
     <string name="whiteboard_align_bottom" comment="Option to align the whiteboard toolbar on the bottom" maxLength="28">Bottom</string>
     <string name="whiteboard_align_right" comment="Option to align the whiteboard toolbar on the right" maxLength="28">Right</string>
-    <string name="whiteboard_clear" comment="Button text to clear the whiteboard" maxLength="28">Clear</string>
     <string name="whiteboard_more_options" comment="Tooltip of the whiteboard \'More\' button" maxLength="28">More options</string>
     <string name="whiteboard_remove_brush_message">Are you sure you want to remove this brush from your palette?</string>
     <string name="whiteboard_ink_eraser" comment="Title of the whiteboard Ink eraser">Ink</string>
@@ -84,6 +63,7 @@
     <string name="disable_eraser" maxLength="28">Disable eraser</string>
     <string name="hide_whiteboard" maxLength="28">Esconder quadro</string>
     <string name="clear_whiteboard" maxLength="28">Limpar quadro</string>
+    <string name="hide_toolbar" maxLength="28">Hide toolbar</string>
     <string name="replay_media" maxLength="28">Reproduzir multimédia</string>
     <string name="leech_suspend_notification">Ficha marcada como sanguessuga e suspensa</string>
     <string name="leech_notification">Ficha marcada como sanguessuga</string>
@@ -97,6 +77,10 @@
     <string name="webview_crash_loop_dialog_content">O \"WebView\" de sistema falhou no processamento da ficha \'%1$s\'.\n %2$s</string>
     <string name="slide_to_cancel" comment="Message shown when pressing the record button">Slide to cancel</string>
     <string name="filter_by_flags" maxLength="41">Bandeiras</string>
+    <!-- filtered deck options -->
+    <string name="filtered_option_delay_again">Delay for again</string>
+    <string name="filtered_option_delay_hard">Delay for hard</string>
+    <string name="filtered_option_delay_good">Delay for good</string>
     <!-- Custom study options -->
     <string name="custom_study_loading_tags">A construir lista de etiquetas&#8230;</string>
     <!-- Study options -->
@@ -118,7 +102,6 @@
     <string name="close">Fechar</string>
     <string name="select">Selecionar</string>
     <string name="field_remapping">%1$s (de \"%2$s\")</string>
-    <string name="confirm_map_cards_to_nothing">Serão eliminadas quaisquer fichas mapeadas para nada. Se uma nota não tiver fichas restantes, esta estará perdida. Tem certeza que deseja continuar?</string>
     <string name="missing_note_type">Tipo de nota não encontrado</string>
     <string name="card_previewer_empty_front_indicator" comment="Extra text appended onto a tab title in the card previewer so that the user can see at a glance whether a card has no front.">%1$s (vazio)</string>
     <!-- Image cropper -->
@@ -147,9 +130,6 @@
     <string name="preview_progress_bar_text" comment="What card we are on out of how many in card previewer progress bar">%1$d de %2$d</string>
     <string name="rename" comment="Confirm that the renaming action should be processed." maxLength="28">Renomear</string>
     <string name="checks_action" maxLength="28">Verificar</string>
-    <string name="check_db" maxLength="28">Verificar base de dados</string>
-    <string name="check_media" maxLength="28">Verificar multimédia</string>
-    <string name="empty_cards" maxLength="28">Fichas vazias</string>
     <string name="unknown_type_field_warning">Escrever resposta: campo desconhecido %s</string>
     <string name="delete_deck" comment="Message on a progress bar starting a deck is being deleted.">A eliminar o baralho&#8230;</string>
     <string name="info_rate">Classificar AnkiDroid</string>
@@ -164,7 +144,8 @@
     <string name="import_error_not_apkg_extension">Ficheiro \"%s\" não tem nenhuma das extensões .apkg, nem .colpkg</string>
     <string name="import_error_load_imported_database">Substitutos para a Base de Dados Anki (.anki2) ainda não são suportados. Por favor, consulte o manual para seguir as instruções relativas à substituição.</string>
     <string name="import_error_content_provider">Não foi possível importar automaticamente o ficheiro selecionado com AnkiDroid. Por favor, consulte o manual do utilizador para saber como importar manualmente os ficheiros Anki: \n%s</string>
-    <string name="import_error_copy_to_cache">Falhou ao armazenar um ficheiro de \"cache\" (possivelmente está sem espaço)</string>
+    <string name="import_error_copy_to_cache_title">Falhou ao armazenar um ficheiro de \"cache\"</string>
+    <string name="import_error_copy_to_cache_explanation" comment="The substitution is a list of suggested fixes in bullet point form">This is often caused by a bug in the app you used to select the file. Please try the following fixes:\n\n%s</string>
     <string name="import_interrupted">Importação interrompida: o AnkiDroid foi fechado</string>
     <string name="export_ready_title">Exportação pronta</string>
     <string name="export_send_no_handlers">Não tem nenhuma aplicação para lidar com ficheiros .apkg. A guardar&#8230;</string>
@@ -183,15 +164,14 @@
     <string name="export_choice_save_to">Guardar em</string>
     <string name="export_saving_exported_collection">A guardar o ficheiro exportado&#8230;</string>
     <string name="study_options" comment="Name for a preference category in Filtered deck (aka Cram deck, aka Custom study) options" maxLength="28">Opções</string>
-    <string name="menu__deck_options" maxLength="28">Opções de baralho</string>
     <string name="menu__study_options" comment="Menu item that opens options for a Filtered deck (aka Cram deck, aka Custom study)">Opções de estudo</string>
     <string name="select_tts" maxLength="28">Definir língua do sistema de Texto para Fala</string>
-    <string name="custom_study" maxLength="28">Estudo personalizado</string>
     <string name="dyn_deck_desc">Este é um baralho especial para estudar fora do horário normal. As fichas serão automaticamente devolvidas aos seus baralhos originais depois das rever. Ao eliminar este baralho da lista de baralhos irá devolver todas as fichas restantes ao seu baralho original.</string>
-    <string name="steps_error">Número de passos deve ser maior que 0</string>
-    <string name="steps_min_error">É necessário pelo menos um passo</string>
     <string name="tag_editor_add_feedback">Toque em \"%2$s\" para confirmar a adição de \"%1$s\"</string>
     <string name="tag_editor_add_feedback_existing">Etiqueta \"%1$s\" selecionada</string>
+    <string name="tag_already_exists">Tag already exists</string>
+    <string name="error_name_exists">Name already exists</string>
+    <string name="warning_find_and_replace">Consider backing up your collection from DeckPicker before using this option!</string>
     <!-- Time spans -->
     <!-- Currently only used if exporting APKG fails -->
     <string name="apk_share_error">Erro ao partilhar ficheiro apkg</string>
@@ -203,15 +183,17 @@
     <!-- The name of the deck which corrupt cards will be moved to -->
     <!-- Deckpicker Background -->
     <string name="background_image_title" maxLength="41">Fundo</string>
-    <string name="choose_an_image" maxLength="41">Selecionar imagem</string>
     <string name="remove_wallpaper_image" maxLength="41">Remover imagem de fundo</string>
-    <string name="remove_background_image">Remover imagem de fundo?</string>
+    <string name="remove_background_image">Are you sure you wish to remove the background?</string>
     <!-- Card Template Browser Appearance -->
-    <string name="restore_default" maxLength="28">Restaurar predefinições</string>
-    <string name="reviewer_tts_cloze_spoken_replacement">Em branco</string>
+    <string name="restore_default" maxLength="28">Restore default</string>
     <!-- Whiteboard eraser mode toggle message in Reviewer -->
     <string name="white_board_eraser_enabled">Eraser mode activated</string>
     <string name="white_board_eraser_disabled">Eraser mode deactivated</string>
+    <string comment="Progress amount e.g. \'28 MB/141 MB\'. %1$s is the current amount, %2$s is the max." name="progress_amount_bytes">%1$s/%2$s</string>
+    <string name="media_file_size_warning_title">Media too large</string>
+    <string name="media_file_size_warning_message" comment="1$s: File name, 2$s: File size, 3$s: The size limit (e.g. 100MB)">The file \"%1$s\" (%2$s) exceeds the AnkiWeb limit of %3$s and cannot be synced. Add anyway?</string>
+    <string name="media_file_size_add_anyway">Add anyway</string>
     <!-- Whiteboard save image message in the Study Screen -->
     <string name="white_board_image_save_failed">Falha ao guardar a imagem do quadro de escrita. %s</string>
     <string name="white_board_image_saved">Imagem do quadro de escrita guardado em %s</string>
@@ -233,39 +215,47 @@
     <string name="search_decks" maxLength="28">Procurar baralhos</string>
     <string name="ankidroid_init_failed_webview_title">Erro fatal</string>
     <string name="ankidroid_init_failed_webview">O AnkiDroid depende da \"WebView\" de sistema, e esta encontra-se indisponível. Isto pode ocorrer durante a instalação de actualizações. Por favor, volte a tentar dentro de alguns minutos.\n\n%s</string>
+    <string name="ankidroid_init_failed_storage">AnkiDroid cannot access storage due to an Android error.\n\n%s</string>
     <!-- A Menu item to change the Font Size (currently in the Note Editor) -->
     <string name="menu_font_size" maxLength="28">Tamanho da letra</string>
     <string name="menu_show_toolbar" comment="Checkable item stating whether the note editor toolbar should be shown" maxLength="28">Mostrar Barra de Ferramentas</string>
-    <string name="format_insert_bold">Colocar em Negrito</string>
-    <string name="format_insert_italic">Colocar em Itálico</string>
-    <string name="format_insert_underline">Colocar como Sublinhado</string>
-    <string name="insert_horizontal_line">Inserir linha horizontal</string>
-    <string name="insert_heading">Inserir Cabeçalho</string>
-    <string name="format_font_size">Alterar o tamanho de letra</string>
-    <string name="insert_mathjax">Inserir equações MathJax</string>
+    <string name="format_insert_bold">Format as bold</string>
+    <string name="format_insert_italic">Format as italic</string>
+    <string name="format_insert_underline">Format as underline</string>
+    <string name="insert_horizontal_line">Insert horizontal line</string>
+    <string name="insert_heading">Insert heading</string>
+    <string name="format_font_size">Change font size</string>
+    <string name="insert_mathjax">Insert MathJax equation</string>
     <string name="note_editor_toolbar_icon">Texto do botão</string>
-    <string name="before_text">O HTML antes da selecção</string>
-    <string name="after_text">O HTML depois da selecção</string>
-    <string name="add_toolbar_item">Criar uma entrada para a Barra de Ferramentas</string>
-    <string name="edit_toolbar_item">Editar entrada para a Barra de Ferramentas</string>
+    <string name="before_text">HTML before selection</string>
+    <string name="after_text">HTML after selection</string>
+    <string name="add_toolbar_item">Create toolbar item</string>
+    <string name="edit_toolbar_item">Edit toolbar item</string>
     <string name="toolbar_item_explain_edit_or_remove">Introduza o HTML a ser inserido antes e depois do texto seleccionado.\n\nPressione durante algum tempo sobre uma das entradas na Barra de Ferramentas para a editar ou remover.</string>
-    <string name="remove_toolbar_item">Remover entrada da Barra de Ferramentas?</string>
+    <string name="remove_toolbar_item">Remove toolbar item?</string>
     <string name="note_editor_image_too_large">A imagem é demasiado grande, por favor insira-a manualmente.</string>
     <string name="note_editor_video_too_large">O vídeo é demasiado grande, por favor insira-o manualmente.</string>
     <string name="note_editor_audio_too_large">O ficheiro de áudio é demasiado grande, por favor insira-o manualmente.</string>
     <string name="ankidroid_cannot_open_after_backup_try_again" comment="After an Android backup is restored, AnkiDroid opens and shows this message.         Opening AnkiDroid again will work correctly">Cópia de segurança em progresso. Por favor, tente de novo.</string>
     <string name="create_shortcut_error_vivo" comment="iManager is an app on Vivo phones">Pode precisar de utilizar o iManager para permitir que o AnkiDroid adicione atalhos.</string>
+    <string name="create_shortcut_error_miui" comment="Keep the message as short, as this is shown in a toast. %s is the app name: \'AnkiDroid\'">Allow ‘Home screen shortcuts’ in system settings for %s to add shortcuts</string>
     <string name="create_shortcut_failed" comment="home screen == launcher">O seu ecrã de início não permite que o AnkiDroid adicione atalhos.</string>
     <string name="create_shortcut_error">Erro ao adicionar atalho: %s</string>
     <string name="note_editor_capitalize" comment="This is for a switch with a checkbox - on: enabled" maxLength="28">Frases começam por maiúscula</string>
     <string name="menu_scroll_toolbar" comment="Checkbox stating whether note editor toolbar is scrollable or stacked. Checked: Scroll" maxLength="28">Barra Ferramentas deslizável</string>
-    <!-- Symbols used as Button text in IncrementNumberRangePreference -->
+    <!-- Dialog hints -->
+    <string name="dialog_hint_url">URL</string>
+    <string name="dialog_hint_certificate">Certificate</string>
+    <!-- IncrementNumberRangePreference -->
     <string name="plus_sign" comment="Label for increment button in IncrementerNumberRangePreference">+</string>
     <string name="minus_sign" comment="Label for decrement button in IncrementerNumberRangePreference">-</string>
+    <string name="invalid_value" comment="Error message in IncrementerNumberRangePreference when input is not a valid number">Invalid value</string>
+    <string name="maximum_value_is" comment="Error message in IncrementerNumberRangePreference. %d is the maximum allowed value">Maximum value is %d</string>
+    <string name="minimum_value_is" comment="Error message in IncrementerNumberRangePreference. %d is the minimum allowed value">Minimum value is %d</string>
     <!-- Used for credential empty warning message -->
     <string name="invalid_email">Insira um email válido</string>
     <string name="password_empty">A palavra-passe é obrigatória</string>
-    <string name="back_pressed_once">Pressione novamente em voltar, para sair</string>
+    <string name="back_pressed_once">Go back again to exit</string>
     <!-- %% is required to display % symbol. Reference: https://stackoverflow.com/a/16834358 -->
     <string name="percentage">%s%%</string>
     <string name="download_deck">Transferir baralho</string>
@@ -303,6 +293,10 @@
     <!-- Manage note types -->
     <string name="field_editor_model_not_available">Não foi possível aceder à colecção. Por favor, tente de novo!</string>
     <string name="cd_manage_notetypes_add">Adicionar um novo tipo de nota</string>
+    <plurals name="note_types_selected">
+        <item quantity="one">%d note type selected</item>
+        <item quantity="other">%d note types selected</item>
+    </plurals>
     <!-- App Intro -->
     <string name="intro_ankidroid_tagline_one">Estudar menos</string>
     <string name="intro_ankidroid_tagline_two">Lembrar mais</string>
@@ -311,7 +305,6 @@
     <string name="intro_sync_from_ankiweb">Sincronizar a partir do AnkiWeb</string>
     <!-- IntentHandler -->
     <string name="app_not_initialized_new">O AnkiDroid ainda não foi inicializado. Por favor, abra o AnkiDroid de novo</string>
-    <string name="already_logged_in">Já está ligado</string>
     <!-- Deck Creation -->
     <string name="deck_created">Baralho criado</string>
     <string name="deck_renamed">Baralho renomeado</string>
@@ -320,9 +313,7 @@
     <!-- Browser Options Dialog -->
     <string name="show_cards" comment="Label for toggle cards button in BrowserOptionsDialog">Fichas</string>
     <string name="show_notes" comment="Label for toggle notes button in BrowserOptionsDialog">Notas</string>
-    <string name="toggle_cards_notes">Alternar entre Fichas e Notas</string>
     <string name="truncate_content_help">Fixar a altura máxima de cada item do Explorador para mostrar apenas as 3 primeiras linhas de conteúdo</string>
-    <string name="browser_options_dialog_heading">Opções de Explorador</string>
     <string name="audio_saved">Gravação guardada</string>
     <string name="deleting_selected_notes">Apagar as notas selecionadas</string>
     <string name="tts_voices_default_text" comment="The default text to speak when selecting     Text to speech voices">Toque numa voz para a ouvir.</string>
@@ -339,7 +330,6 @@
     <string name="format_deck_description_as_markdown">Format as Markdown</string>
     <string name="help_button_content_description">Open help for ‘%s’</string>
     <string name="failed_to_copy">Falha ao copiar</string>
-    <string name="card_browser_unavailable_when_notes_mode">Indisponível no modo \"Notas\"</string>
     <plurals name="unbury_cards_feedback">
         <item quantity="one">%d ficha com adiamento cancelado</item>
         <item quantity="other">%d fichas com adiamento cancelado</item>
@@ -352,14 +342,13 @@
     <string name="play_recording">Reproduzir</string>
     <string name="next_recording" comment="Description of a button to go to the next recording">Próxima</string>
     <!--  AlertDialog in the deleteCardTemplate  -->
-    <string name="orphan_note_title">Não é possível apagar este tipo de ficha</string>
+    <string name="orphan_note_title">Cannot delete card type</string>
     <string name="orphan_note_message">Apagar este tipo de ficha implica deixar algumas notas sem fichas.</string>
     <string name="voice_not_supported">Voz não suportada. Tente outra ou instale um motor de voz.</string>
     <!--Keyboard shortcuts dialog-->
     <string name="deck_picker_group" comment="Label for the group of shortcuts related to the deck picker">Ecrã de Selecção de Baralhos</string>
     <string name="delete_deck_without_confirmation" comment="Description of the shortcut that deletes the deck without asking for confirmation">Eliminar baralho sem confirmação</string>
     <string name="note_editor_group" comment="Label for the group of shortcuts related to the note editor">Editor de Notas</string>
-    <string name="select_deck" comment="Description of the shortcut that opens the deck selection dialog">Seleccionar Baralho</string>
     <string name="select_note_type" comment="Description of the shortcut that shows the note selection spinner">Seleccionar Tipo de Nota</string>
     <string name="tag_editor" comment="Description of the shortcut that opens the tags dialog">Editor de Etiquetas</string>
     <string name="card_template_editor_group" comment="Label for the group of shortcuts related to the card template editor">Editor de modelos de fichas</string>
@@ -369,7 +358,14 @@
     <string name="copy_the_template" comment="Description of the shortcut that copy the template as markdown">Copiar modelo no formato markdown</string>
     <string name="edit_browser_appearance" comment="Description of the shortcut that edits the browser appearance of card template">Editar a aparência do explorador</string>
     <string name="missing_user_action_dialog_message" comment="%s is the user action number">A acção %s não foi definida para este tipo de nota. Por favor configure-o.</string>
+    <string name="feature_not_supported_by_study_screen">This card has features that are not yet supported by the new study screen.</string>
     <string name="directory_inaccessible_info">Descubra mais sobre como restaurar o acesso aqui %s, ou vá às definições para actualizar a pasta das colecções.</string>
     <!-- Scheduler Upgrade Required Dialog title-->
     <string name="scheduler_upgrade_required_dialog_title" comment="Shown in a dialog when user has imported a collection using a very old version of the Anki spaced repetition scheduler">Atualização do agendador necessária</string>
+    <!-- Whitespace is OK -->
+    <string name="list_separator" comment="The character and spacing to display between elements of a list, for example \', \' in \'Apple, Banana, Cherry" tools:ignore="TranslationTypo">, </string>
+    <!--Set up date-->
+    <string name="set_due_date_day" comment="Used for setting due date">Day</string>
+    <string name="set_due_date_date_range">Date range</string>
+    <string comment="Shown when retrying a running action" name="already_in_progress">Already in progress</string>
 </resources>

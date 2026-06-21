@@ -1,19 +1,19 @@
-/****************************************************************************************
- * Copyright (c) 2013 Houssam Salem <houssam.salem.au@gmail.com>                        *
- * Copyright (c) 2021 David Allison <davidallisongithub@gmail.com>                      *
- *                                                                                      *
- * This program is free software; you can redistribute it and/or modify it under        *
- * the terms of the GNU General Public License as published by the Free Software        *
- * Foundation; either version 3 of the License, or (at your option) any later           *
- * version.                                                                             *
- *                                                                                      *
- * This program is distributed in the hope that it will be useful, but WITHOUT ANY      *
- * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A      *
- * PARTICULAR PURPOSE. See the GNU General Public License for more details.             *
- *                                                                                      *
- * You should have received a copy of the GNU General Public License along with         *
- * this program.  If not, see <http://www.gnu.org/licenses/>.                           *
- ****************************************************************************************/
+/*
+ * Copyright (c) 2013 Houssam Salem <houssam.salem.au@gmail.com>
+ * Copyright (c) 2021 David Allison <davidallisongithub@gmail.com>
+ *
+ * This program is free software; you can redistribute it and/or modify it under
+ * the terms of the GNU General Public License as published by the Free Software
+ * Foundation; either version 3 of the License, or (at your option) any later
+ * version.
+ *
+ * This program is distributed in the hope that it will be useful, but WITHOUT ANY
+ * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
+ * PARTICULAR PURPOSE. See the GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along with
+ * this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
 
 package com.ichi2.preferences
 
@@ -21,16 +21,20 @@ import android.content.Context
 import android.text.InputFilter
 import android.text.InputType
 import android.util.AttributeSet
+import android.util.TypedValue
 import android.view.View
 import android.widget.EditText
 import androidx.core.content.withStyledAttributes
+import androidx.core.widget.TextViewCompat
 import androidx.preference.EditTextPreference
 import androidx.preference.EditTextPreferenceDialogFragmentCompat
-import com.ichi2.anki.AnkiDroidApp
+import com.google.android.material.textview.MaterialTextView
 import com.ichi2.anki.R
-import com.ichi2.anki.common.annotations.NeedsTest
 import com.ichi2.anki.utils.getFormattedStringOrPlurals
+import com.ichi2.utils.dp
+import com.ichi2.utils.setPaddingRelative
 import timber.log.Timber
+import com.google.android.material.R as MaterialR
 
 open class NumberRangePreferenceCompat
     @JvmOverloads // fixes: Error inflating class com.ichi2.preferences.NumberRangePreferenceCompat
@@ -49,8 +53,10 @@ open class NumberRangePreferenceCompat
             private set
 
         init {
-            min = attrs?.getAttributeIntValue(AnkiDroidApp.XML_CUSTOM_NAMESPACE, "min", 0) ?: 0
-            max = attrs?.getAttributeIntValue(AnkiDroidApp.XML_CUSTOM_NAMESPACE, "max", Int.MAX_VALUE) ?: Int.MAX_VALUE
+            context.withStyledAttributes(attrs, R.styleable.NumberRangePreferenceCompat) {
+                min = getInt(R.styleable.NumberRangePreferenceCompat_min, 0)
+                max = getInt(R.styleable.NumberRangePreferenceCompat_max, Int.MAX_VALUE)
+            }
             defaultValue = attrs?.getAttributeValue("http://schemas.android.com/apk/res/android", "defaultValue")
 
             context.withStyledAttributes(attrs, R.styleable.CustomPreference) {
@@ -124,7 +130,7 @@ open class NumberRangePreferenceCompat
         private fun getDefaultValue(): Int {
             return try {
                 return defaultValue?.toInt() ?: min
-            } catch (e: Exception) {
+            } catch (_: Exception) {
                 min
             }
         }
@@ -170,6 +176,35 @@ open class NumberRangePreferenceCompat
 
             lateinit var editText: EditText
 
+            override fun onPrepareDialogBuilder(builder: androidx.appcompat.app.AlertDialog.Builder) {
+                super.onPrepareDialogBuilder(builder)
+
+                val titleText = preference.dialogTitle ?: preference.title
+                if (titleText.isNullOrEmpty()) {
+                    return
+                }
+                // Use a custom MaterialTextView to match the title text appearance and padding,
+                // as seen in other dialogs (e.g. "Create deck"). The default TextView renders
+                // the title too small and inconsistent with Material dialog standards.
+                val tv =
+                    MaterialTextView(requireContext()).apply {
+                        text = titleText
+                        setPaddingRelative(start = 24.dp, top = 20.dp, end = 24.dp, bottom = 8.dp)
+
+                        val outValue = TypedValue()
+                        val hasStyle =
+                            context.theme.resolveAttribute(MaterialR.attr.materialAlertDialogTitleTextStyle, outValue, true)
+                        val styleRes = if (hasStyle) outValue.resourceId else 0
+                        if (styleRes != 0) {
+                            TextViewCompat.setTextAppearance(this, styleRes)
+                        } else {
+                            TextViewCompat.setTextAppearance(this, MaterialR.style.TextAppearance_Material3_HeadlineSmall)
+                        }
+                    }
+
+                builder.setCustomTitle(tv)
+            }
+
             /**
              * Update settings to only allow integer input and set the maximum number of digits allowed in the text field based
              * on the current value of the [.mMax] field.
@@ -186,7 +221,6 @@ open class NumberRangePreferenceCompat
                 super.onBindDialogView(view)
             }
 
-            @NeedsTest("value is set to preference previous value if text is blank")
             override fun onDialogClosed(positiveResult: Boolean) {
                 // don't change the value if the dialog was cancelled or closed without any text
                 if (!positiveResult || editText.text.isEmpty()) {

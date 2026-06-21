@@ -20,21 +20,21 @@ package com.ichi2.anki.multimedia
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
-import androidx.core.os.bundleOf
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.commit
-import com.google.android.material.appbar.MaterialToolbar
 import com.google.android.material.button.MaterialButton
 import com.ichi2.anki.AnkiActivity
 import com.ichi2.anki.R
+import com.ichi2.anki.compat.CompatHelper.Companion.getSerializableCompat
+import com.ichi2.anki.compat.CompatHelper.Companion.getSerializableExtraCompat
+import com.ichi2.anki.databinding.ActivityMultimediaBinding
 import com.ichi2.anki.multimediacard.IMultimediaEditableNote
 import com.ichi2.anki.multimediacard.fields.IField
 import com.ichi2.anki.snackbar.BaseSnackbarBuilderProvider
 import com.ichi2.anki.snackbar.SnackbarBuilder
-import com.ichi2.compat.CompatHelper.Companion.getSerializableCompat
-import com.ichi2.compat.CompatHelper.Companion.getSerializableExtraCompat
 import com.ichi2.themes.setTransparentStatusBar
 import com.ichi2.utils.FragmentFactoryUtils
+import dev.androidbroadcast.vbpd.viewBinding
 import timber.log.Timber
 import java.io.Serializable
 import kotlin.reflect.KClass
@@ -60,8 +60,10 @@ data class MultimediaActivityExtra(
  * Multimedia activity that allows users to attach media files to an input field in NoteEditor.
  */
 class MultimediaActivity :
-    AnkiActivity(),
+    AnkiActivity(R.layout.activity_multimedia),
     BaseSnackbarBuilderProvider {
+    private val binding by viewBinding(ActivityMultimediaBinding::bind)
+
     private val Intent.multimediaArgsExtra: MultimediaActivityExtra?
         get() = extras?.getSerializableCompat(MULTIMEDIA_ARGS_EXTRA)
 
@@ -73,11 +75,8 @@ class MultimediaActivity :
             return
         }
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_multimedia)
         setTransparentStatusBar()
-
-        val toolbar: MaterialToolbar = findViewById(R.id.toolbar)
-        setSupportActionBar(toolbar)
+        setSupportActionBar(binding.toolbar)
 
         // avoid recreating the fragment on configuration changes
         if (savedInstanceState != null) {
@@ -92,17 +91,17 @@ class MultimediaActivity :
         val fragment =
             FragmentFactoryUtils.instantiate<Fragment>(this, fragmentClassName).apply {
                 arguments =
-                    bundleOf(
-                        MULTIMEDIA_ARGS_EXTRA to intent.multimediaArgsExtra,
-                        EXTRA_MEDIA_OPTIONS to intent.mediaOptionsExtra,
-                    )
+                    Bundle().apply {
+                        putSerializable(MULTIMEDIA_ARGS_EXTRA, intent.multimediaArgsExtra)
+                        putSerializable(EXTRA_MEDIA_OPTIONS, intent.mediaOptionsExtra)
+                    }
             }
 
         supportFragmentManager.commit {
             replace(R.id.fragment_container, fragment)
         }
 
-        toolbar.setNavigationOnClickListener {
+        binding.toolbar.setNavigationOnClickListener {
             Timber.d("MultimediaActivity:: Back pressed")
             onBackPressedDispatcher.onBackPressed()
         }
@@ -122,9 +121,6 @@ class MultimediaActivity :
     companion object {
         const val MULTIMEDIA_ARGS_EXTRA = "fragmentArgs"
         const val MULTIMEDIA_FRAGMENT_NAME_EXTRA = "fragmentName"
-
-        const val MULTIMEDIA_RESULT = "multimedia_result"
-        const val MULTIMEDIA_RESULT_FIELD_INDEX = "multimedia_result_index"
 
         /** used in case a fragment supports more than media operations **/
         const val EXTRA_MEDIA_OPTIONS = "extra_media_options"

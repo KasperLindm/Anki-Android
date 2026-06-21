@@ -18,27 +18,29 @@
 package com.ichi2.widget.cardanalysis
 
 import android.appwidget.AppWidgetManager
-import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.os.Bundle
-import android.widget.TextView
 import androidx.core.os.BundleCompat
-import com.google.android.material.button.MaterialButton
 import com.ichi2.anki.AnkiActivity
+import com.ichi2.anki.CollectionManager.TR
 import com.ichi2.anki.R
-import com.ichi2.anki.dialogs.DeckSelectionDialog
-import com.ichi2.anki.dialogs.DeckSelectionDialog.DeckSelectionListener
+import com.ichi2.anki.common.android.AnkiBroadcastReceiver
+import com.ichi2.anki.common.utils.android.showThemedToast
+import com.ichi2.anki.common.utils.ext.unregisterReceiverSilently
+import com.ichi2.anki.databinding.ActivityCardAnalysisWidgetConfigBinding
+import com.ichi2.anki.dialogs.registerDeckSelectedHandler
+import com.ichi2.anki.dialogs.startDeckSelection
 import com.ichi2.anki.isCollectionEmpty
 import com.ichi2.anki.launchCatchingTask
 import com.ichi2.anki.model.SelectableDeck
-import com.ichi2.anki.showThemedToast
-import com.ichi2.anki.utils.ext.unregisterReceiverSilently
+import com.ichi2.anki.ui.internationalization.sentenceCase
 import com.ichi2.anki.withProgress
 import com.ichi2.widget.AppWidgetId.Companion.INVALID_APPWIDGET_ID
 import com.ichi2.widget.AppWidgetId.Companion.getAppWidgetId
 import com.ichi2.widget.cardanalysis.CardAnalysisWidget.Companion.EXTRA_SELECTED_DECK_ID
+import dev.androidbroadcast.vbpd.viewBinding
 import timber.log.Timber
 
 /**
@@ -58,13 +60,12 @@ import timber.log.Timber
  * @see CardAnalysisWidget
  * @see CardAnalysisWidgetPreferences
  */
-class CardAnalysisWidgetConfig :
-    AnkiActivity(),
-    DeckSelectionListener {
+class CardAnalysisWidgetConfig : AnkiActivity(R.layout.activity_card_analysis_widget_config) {
+    private val binding by viewBinding(ActivityCardAnalysisWidgetConfigBinding::bind)
+
     private var appWidgetId = INVALID_APPWIDGET_ID
     private var deck: SelectableDeck.Deck? = null
     private lateinit var preferences: CardAnalysisWidgetPreferences
-    private lateinit var deckName: TextView
 
     override fun onCreate(savedInstanceState: Bundle?) {
         if (showedActivityFailedScreen(savedInstanceState)) {
@@ -76,7 +77,6 @@ class CardAnalysisWidgetConfig :
             return
         }
 
-        setContentView(R.layout.activity_card_analysis_widget_config)
         preferences = CardAnalysisWidgetPreferences(this)
         appWidgetId = intent.getAppWidgetId()
         if (appWidgetId == INVALID_APPWIDGET_ID) {
@@ -84,7 +84,6 @@ class CardAnalysisWidgetConfig :
             finish()
             return
         }
-        deckName = findViewById(R.id.deck_name)
         if (savedInstanceState != null) {
             deck =
                 BundleCompat.getParcelable(
@@ -92,20 +91,18 @@ class CardAnalysisWidgetConfig :
                     KEY_DECK,
                     SelectableDeck.Deck::class.java,
                 )
-            deckName.text = deck?.name
+            binding.deckName.text = deck?.name
         } else {
             loadContent()
         }
-        findViewById<MaterialButton>(R.id.change_btn).setOnClickListener {
-            launchCatchingTask {
-                withProgress { showDeckSelectionDialog() }
-            }
-        }
-        findViewById<MaterialButton>(R.id.done_btn).setOnClickListener { close() }
+        binding.changeBtn.text = TR.sentenceCase.selectDeck
+        binding.changeBtn.setOnClickListener { showDeckSelectionDialog() }
+        binding.doneBtn.setOnClickListener { close() }
         registerReceiver(
             widgetRemovedReceiver,
             IntentFilter(AppWidgetManager.ACTION_APPWIDGET_DELETED),
         )
+        registerDeckSelectedHandler(action = ::onDeckSelected)
     }
 
     override fun onSaveInstanceState(outState: Bundle) {
@@ -118,7 +115,7 @@ class CardAnalysisWidgetConfig :
         unregisterReceiverSilently(widgetRemovedReceiver)
     }
 
-    override fun onDeckSelected(deck: SelectableDeck?) {
+    private fun onDeckSelected(deck: SelectableDeck?) {
         if (deck == null || deck !is SelectableDeck.Deck?) {
             showThemedToast(this, R.string.something_wrong, false)
             setResult(RESULT_CANCELED)
@@ -129,7 +126,7 @@ class CardAnalysisWidgetConfig :
         // widget and finish
         val shouldClose = this.deck == null
         this.deck = deck
-        deckName.text = deck.name
+        binding.deckName.text = deck.name
         preferences.saveSelectedDeck(appWidgetId, deck.deckId)
         updateWidget()
         if (shouldClose) {
@@ -155,24 +152,18 @@ class CardAnalysisWidgetConfig :
                     showDeckSelectionDialog()
                 } else {
                     deck = SelectableDeck.Deck.fromId(selectedDeckId)
-                    deckName.text = deck?.name ?: getString(R.string.select_deck)
+                    binding.deckName.text = deck?.name ?: TR.sentenceCase.selectDeck
                 }
             }
         }
     }
 
-    private suspend fun showDeckSelectionDialog() {
-        val decks = SelectableDeck.fromCollection(includeFiltered = true)
-        val dialog =
-            DeckSelectionDialog.newInstance(
-                title = getString(R.string.select_deck_title),
-                summaryMessage = null,
-                keepRestoreDefaultButton = false,
-                decks = decks,
-            )
-        if (!supportFragmentManager.isStateSaved) {
-            dialog.show(supportFragmentManager, "DeckSelectionDialog")
-        }
+    private fun showDeckSelectionDialog() {
+        startDeckSelection(
+            title = getString(R.string.select_deck_title),
+            allowAll = false,
+            skipEmptyDefault = true,
+        )
     }
 
     private fun updateWidget() {
@@ -197,12 +188,12 @@ class CardAnalysisWidgetConfig :
 
     /** BroadcastReceiver to handle widget removal. */
     private val widgetRemovedReceiver =
-        object : BroadcastReceiver() {
-            override fun onReceive(
-                context: Context?,
-                intent: Intent?,
+        object : AnkiBroadcastReceiver() {
+            override fun onReceiveBroadcast(
+                context: Context,
+                intent: Intent,
             ) {
-                if (intent?.action != AppWidgetManager.ACTION_APPWIDGET_DELETED) {
+                if (intent.action != AppWidgetManager.ACTION_APPWIDGET_DELETED) {
                     return
                 }
 

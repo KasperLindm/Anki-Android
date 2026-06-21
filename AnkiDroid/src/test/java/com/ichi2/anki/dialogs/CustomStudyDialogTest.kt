@@ -16,6 +16,7 @@
 package com.ichi2.anki.dialogs
 
 import android.os.Bundle
+import android.widget.ListView
 import androidx.appcompat.app.AlertDialog
 import androidx.test.espresso.Espresso.onView
 import androidx.test.espresso.action.ViewActions.replaceText
@@ -31,32 +32,47 @@ import com.ichi2.anki.CollectionManager
 import com.ichi2.anki.CollectionManager.TR
 import com.ichi2.anki.R
 import com.ichi2.anki.RobolectricTest
-import com.ichi2.anki.common.annotations.NeedsTest
 import com.ichi2.anki.dialogs.customstudy.CustomStudyDialog
 import com.ichi2.anki.dialogs.customstudy.CustomStudyDialog.ContextMenuOption
 import com.ichi2.anki.dialogs.customstudy.CustomStudyDialog.CustomStudyDefaults.Companion.toDomainModel
+import com.ichi2.anki.dialogs.tags.TagsDialogListener.Companion.ON_SELECTED_TAGS_KEY
+import com.ichi2.anki.dialogs.tags.TagsDialogListener.Companion.ON_SELECTED_TAGS__SELECTED_TAGS
 import com.ichi2.anki.dialogs.utils.performPositiveClick
+import com.ichi2.anki.libanki.CardType
 import com.ichi2.anki.libanki.Collection
 import com.ichi2.anki.libanki.Consts
 import com.ichi2.anki.libanki.DeckId
+import com.ichi2.anki.libanki.Note
+import com.ichi2.anki.libanki.QueueType
 import com.ichi2.anki.libanki.sched.Scheduler
 import com.ichi2.testutils.AnkiFragmentScenario
 import com.ichi2.testutils.isJsonEqual
+import com.ichi2.testutils.uninitializeField
 import io.mockk.every
 import io.mockk.mockk
+import org.hamcrest.CoreMatchers.allOf
 import org.hamcrest.CoreMatchers.equalTo
 import org.hamcrest.CoreMatchers.not
 import org.hamcrest.MatcherAssert.assertThat
+import org.hamcrest.Matchers.greaterThanOrEqualTo
+import org.hamcrest.Matchers.lessThan
 import org.intellij.lang.annotations.Language
-import org.json.JSONObject
+import org.junit.Before
 import org.junit.Ignore
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
 import kotlin.test.assertNotNull
+import kotlin.test.assertNull
 
 @RunWith(AndroidJUnit4::class)
 class CustomStudyDialogTest : RobolectricTest() {
+    @Before
+    override fun setUp() {
+        super.setUp()
+        uninitializeField<CustomStudyDialog>("deferredDefaults")
+    }
+
     @Test
     fun `new custom study decks have expected structure - issue 6289`() =
         runTest {
@@ -104,11 +120,10 @@ class CustomStudyDialogTest : RobolectricTest() {
                     "usn": -1
                 }
                 """.trimIndent()
-            assertThat(customStudy, isJsonEqual(JSONObject(expected)))
+            assertThat(customStudy, isJsonEqual(expected))
         }
 
     @Test
-    @NeedsTest("previous value for 'increase review card limit' is suggested")
     fun `previous value for 'increase new card limit' is suggested`() {
         // add cards to be sure we can extend successfully. Needs to be > 20
         repeat(23) {
@@ -144,6 +159,93 @@ class CustomStudyDialogTest : RobolectricTest() {
                 .check(matches(withText(newExtendByValue.toString())))
         }
     }
+
+    @Test
+    fun `previous value for 'increase review card limit' is suggested`() {
+        // Reduce review limit to 0, so we can successfully extend with just 1 review card.
+        updateDeckConfig(Consts.DEFAULT_DECK_ID) { rev.perDay = 0 }
+        addRevBasicNoteDueToday("Review", "Today")
+
+        val reviewExtendByValue = 1
+        assertThat("'review' default value", defaultsOfDefaultDeck.extendReview.initialValue, equalTo(0))
+
+        // Extend reviews by 'reviewExtendByValue'.
+        withCustomStudyFragment(
+            args = argumentsDisplayingSubscreen(ContextMenuOption.EXTEND_REV),
+        ) { dialogFragment: CustomStudyDialog ->
+            onSubscreenEditText()
+                .perform(replaceText(reviewExtendByValue.toString()))
+            dialogFragment.submitSubscreenData()
+        }
+
+        // Ensure backend is updated.
+        assertThat(
+            "'review' updated value",
+            defaultsOfDefaultDeck.extendReview.initialValue,
+            equalTo(reviewExtendByValue),
+        )
+
+        // Ensure 'reviewExtendByValue' is used in our UI.
+        withCustomStudyFragment(
+            args = argumentsDisplayingSubscreen(ContextMenuOption.EXTEND_REV),
+        ) {
+            onSubscreenEditText()
+                .check(matches(withText(reviewExtendByValue.toString())))
+        }
+    }
+
+    @Test
+    fun `creating a tags custom session uses selected card state`() =
+        runTest {
+            val testDeckId = addDeck("A")
+            val n1 = addNoteToDeckA { addTag("testTag") }
+            val n2 = addNoteToDeckA { addTag("anotherTag") }
+            val n3 = addNoteToDeckA { addTag("testTag") }
+            // target this specific card for custom studying
+            // TODO use Card.moveToReviewQueue when it's refactored
+            n3.firstCard().update {
+                due = col.sched.today
+                queue = QueueType.Rev
+                type = CardType.Rev
+            }
+            col.updateCard(n3.firstCard())
+            val dueNow = col.findCards("is:due")
+            assertThat(dueNow.size, equalTo(1))
+            assertThat(dueNow[0], equalTo(n3.firstCard().id))
+            // make sure there isn't a 'Custom Study Session' already present
+            assertNull(col.decks.customStudySession)
+            val args = argumentsDisplayingSubscreen(ContextMenuOption.STUDY_TAGS, deckId = testDeckId)
+            withCustomStudyFragment(args = args) { studyDialog ->
+                val d = studyDialog.dialog
+                assertNotNull(d)
+                // the first item is automatically selected at start
+                assertThat(studyDialog.viewModel.selectedCardStateIndex, equalTo(0))
+
+                studyDialog.setCardStateSelectionTo(CustomStudyDialog.CustomStudyCardState.DueCardsOnly)
+
+                // create list of selected tags
+                // Note: using an ArrayList because that is how it's stored in the passed Bundle
+                val selectedTags = ArrayList<String>(1).apply { add("testTag") }
+                // simulate tag selection
+                studyDialog.parentFragmentManager.setFragmentResult(
+                    ON_SELECTED_TAGS_KEY,
+                    Bundle().apply { putStringArrayList(ON_SELECTED_TAGS__SELECTED_TAGS, selectedTags) },
+                )
+                val customStudyDeck = col.decks.customStudySession
+                assertNotNull(customStudyDeck)
+                assertThat(col.decks.cardCount(customStudyDeck.id), equalTo(1))
+                assertThat(n1.firstCard().did, equalTo(testDeckId))
+                assertThat(n2.firstCard().did, equalTo(testDeckId))
+                assertThat(n3.firstCard().did, equalTo(customStudyDeck.id))
+                assertThat(n3.firstCard().oDid, equalTo(testDeckId))
+            }
+        }
+
+    private fun addNoteToDeckA(setup: Note.() -> Unit): Note =
+        addBasicNote().update {
+            moveToDeck("A", false)
+            setup()
+        }
 
     @Test
     @Ignore("disabled while we confirm/diagnose issues")
@@ -201,6 +303,16 @@ class CustomStudyDialogTest : RobolectricTest() {
         }
     }
 
+    @Test
+    fun `subscreens are ignored when restoring from process death`() {
+        withCustomStudyFragment(args = argumentsDisplayingSubscreen(ContextMenuOption.EXTEND_REV, restoreFromProcessDeath = true)) {
+            // ensure we're on the main screen
+            onView(withText(TR.customStudyIncreaseTodaysReviewCardLimit()))
+                .inRoot(isDialog())
+                .check(matches(isEnabled()))
+        }
+    }
+
     /**
      * Runs [block] on a [CustomStudyDialog]
      */
@@ -223,18 +335,24 @@ class CustomStudyDialogTest : RobolectricTest() {
                 }
         }
 
-    private fun argumentsDisplayingSubscreen(subscreen: ContextMenuOption): Bundle {
+    private fun argumentsDisplayingSubscreen(
+        subscreen: ContextMenuOption,
+        deckId: DeckId = Consts.DEFAULT_DECK_ID,
+        restoreFromProcessDeath: Boolean = false,
+    ): Bundle {
         @Suppress("RedundantValueArgument")
         fun setupDefaultValuesSingleton() {
-            withCustomStudyFragment(argumentsDisplayingMainScreen(deckId = Consts.DEFAULT_DECK_ID)) { }
+            withCustomStudyFragment(argumentsDisplayingMainScreen(deckId = deckId)) { }
         }
 
-        setupDefaultValuesSingleton()
+        if (!restoreFromProcessDeath) {
+            setupDefaultValuesSingleton()
+        }
 
         return requireNotNull(
             CustomStudyDialog
                 .createSubDialog(
-                    deckId = Consts.DEFAULT_DECK_ID,
+                    deckId = deckId,
                     contextMenuAttribute = subscreen,
                 ).arguments,
         )
@@ -249,13 +367,31 @@ class CustomStudyDialogTest : RobolectricTest() {
         )
 
     private fun onSubscreenEditText() =
-        onView(withId(R.id.custom_study_details_edittext2))
+        onView(withId(R.id.details_edit_text_2))
             .inRoot(isDialog())
 
     private fun CustomStudyDialog.submitSubscreenData() =
         assertNotNull(dialog as? AlertDialog?, "dialog").also { dialog ->
             dialog.performPositiveClick()
         }
+
+    /** Set the card state to [state] and also verify the selection in the fragment's ViewModel */
+    private fun CustomStudyDialog.setCardStateSelectionTo(state: CustomStudyDialog.CustomStudyCardState) {
+        assertThat(
+            state.ordinal,
+            allOf(
+                greaterThanOrEqualTo(0),
+                lessThan(CustomStudyDialog.CustomStudyCardState.entries.size),
+            ),
+        )
+        // can't use MaterialAutoCompleteTextView.listSelection as the popup is closed and updates
+        // to 'listSelection' are ignored so we trigger the listener directly with dummy data but a
+        // correct position(what we actually use in the listener)
+        val adapterView = ListView(targetContext) // dummy view, fills AdapterView first param requirement
+        binding.cardsStateSelector.onItemClickListener
+            .onItemClick(adapterView, adapterView, state.ordinal, 1)
+        assertThat(viewModel.selectedCardStateIndex, equalTo(state.ordinal))
+    }
 
     /**
      * The current backend value of [CustomStudyDialog.CustomStudyDefaults] for the default deck

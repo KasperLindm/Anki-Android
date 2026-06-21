@@ -17,59 +17,60 @@ package com.ichi2.anki.previewer
 
 import android.content.Context
 import android.content.Intent
+import android.graphics.Rect
 import android.os.Bundle
 import android.view.KeyEvent
 import android.view.Menu
 import android.view.MenuItem
 import android.view.View
-import android.webkit.WebView
 import androidx.appcompat.widget.Toolbar
-import androidx.coordinatorlayout.widget.CoordinatorLayout
-import androidx.core.os.bundleOf
+import androidx.core.view.ViewCompat
+import androidx.core.view.doOnLayout
 import androidx.core.view.isVisible
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.flowWithLifecycle
 import androidx.lifecycle.lifecycleScope
-import com.google.android.material.appbar.MaterialToolbar
-import com.google.android.material.button.MaterialButton
-import com.google.android.material.card.MaterialCardView
 import com.google.android.material.slider.Slider
-import com.google.android.material.textview.MaterialTextView
+import com.ichi2.anki.CollectionManager.TR
 import com.ichi2.anki.DispatchKeyEventListener
 import com.ichi2.anki.Flag
 import com.ichi2.anki.R
 import com.ichi2.anki.browser.IdsFile
 import com.ichi2.anki.common.annotations.NeedsTest
+import com.ichi2.anki.databinding.FragmentPreviewerBinding
 import com.ichi2.anki.previewer.PreviewerFragment.Companion.CARD_IDS_FILE_ARG
 import com.ichi2.anki.reviewer.BindingMap
 import com.ichi2.anki.reviewer.BindingProcessor
 import com.ichi2.anki.reviewer.MappableBinding
 import com.ichi2.anki.snackbar.BaseSnackbarBuilderProvider
 import com.ichi2.anki.snackbar.SnackbarBuilder
+import com.ichi2.anki.ui.internationalization.sentenceCase
 import com.ichi2.anki.utils.ext.collectIn
+import com.ichi2.anki.utils.ext.setIconRes
 import com.ichi2.anki.utils.ext.sharedPrefs
+import com.ichi2.anki.workarounds.SafeWebViewLayout
 import com.ichi2.utils.performClickIfEnabled
+import dev.androidbroadcast.vbpd.viewBinding
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 
 class PreviewerFragment :
-    CardViewerFragment(R.layout.previewer),
+    CardViewerFragment(R.layout.fragment_previewer),
     Toolbar.OnMenuItemClickListener,
     BaseSnackbarBuilderProvider,
     DispatchKeyEventListener,
     BindingProcessor<MappableBinding, PreviewerAction> {
     override val viewModel: PreviewerViewModel by viewModels()
-    override val webView: WebView
-        get() = requireView().findViewById(R.id.webview)
+    private val binding by viewBinding(FragmentPreviewerBinding::bind)
+    override val webViewLayout: SafeWebViewLayout get() = binding.webViewLayout
 
     override val baseSnackbarBuilder: SnackbarBuilder
         get() = {
-            val slider = this@PreviewerFragment.view?.findViewById<Slider>(R.id.slider)
             anchorView =
-                if (slider?.isVisible == true) {
-                    slider
+                if (binding.slider.isVisible) {
+                    binding.slider
                 } else {
-                    this@PreviewerFragment.view?.findViewById<MaterialButton>(R.id.show_next)
+                    binding.nextButton
                 }
         }
 
@@ -80,10 +81,6 @@ class PreviewerFragment :
         savedInstanceState: Bundle?,
     ) {
         super.onViewCreated(view, savedInstanceState)
-        val slider = view.findViewById<Slider>(R.id.slider)
-        val nextButton = view.findViewById<MaterialButton>(R.id.show_next)
-        val previousButton = view.findViewById<MaterialButton>(R.id.show_previous)
-        val progressIndicator = view.findViewById<MaterialTextView>(R.id.progress_indicator)
         val cardsCount = viewModel.cardsCount()
 
         lifecycleScope.launch {
@@ -91,13 +88,13 @@ class PreviewerFragment :
                 .flowWithLifecycle(lifecycle)
                 .collectLatest { currentIndex ->
                     val displayIndex = currentIndex + 1
-                    slider.value = displayIndex.toFloat()
-                    progressIndicator.text =
+                    binding.slider.value = displayIndex.toFloat()
+                    binding.progressIndicator.text =
                         getString(R.string.preview_progress_bar_text, displayIndex, cardsCount)
                 }
         }
         // ************************************* Menu items *************************************
-        val menu = view.findViewById<Toolbar>(R.id.toolbar).menu
+        val menu = binding.toolbar.menu
         setupFlagMenu(menu)
 
         lifecycleScope.launch {
@@ -118,7 +115,7 @@ class PreviewerFragment :
                             setTitle(R.string.menu_unmark_note)
                         } else {
                             setIcon(R.drawable.ic_star_border_white)
-                            setTitle(R.string.menu_mark_note)
+                            title = TR.sentenceCase.markNote
                         }
                     }
                 }
@@ -135,15 +132,21 @@ class PreviewerFragment :
 
         @NeedsTest("webview don't vanish when only one card is in the list")
         if (cardsCount == 1) {
-            slider.visibility = View.GONE
-            progressIndicator.visibility = View.GONE
+            binding.slider.visibility = View.GONE
+            binding.progressIndicator.visibility = View.GONE
         }
 
-        slider.apply {
+        binding.slider.apply {
             valueTo = cardsCount.toFloat()
+            doOnLayout {
+                updateSliderGestureExclusion(this)
+            }
+            addOnLayoutChangeListener { _, _, _, _, _, _, _, _, _ ->
+                updateSliderGestureExclusion(this)
+            }
             addOnSliderTouchListener(
                 object : Slider.OnSliderTouchListener {
-                    override fun onStartTrackingTouch(slider: Slider) {}
+                    override fun onStartTrackingTouch(slider: Slider) = Unit
 
                     override fun onStopTrackingTouch(slider: Slider) {
                         viewModel.onSliderChange(slider.value.toInt())
@@ -154,21 +157,21 @@ class PreviewerFragment :
 
         lifecycleScope.launch {
             viewModel.isNextButtonEnabled.collectLatest {
-                nextButton.isEnabled = it
+                binding.nextButton.isEnabled = it
             }
         }
 
-        nextButton.setOnClickListener {
+        binding.nextButton.setOnClickListener {
             viewModel.onNextButtonClick()
         }
 
         lifecycleScope.launch {
             viewModel.isBackButtonEnabled.collectLatest {
-                previousButton.isEnabled = it
+                binding.previousButton.isEnabled = it
             }
         }
 
-        previousButton.setOnClickListener {
+        binding.previousButton.setOnClickListener {
             viewModel.onPreviousButtonClick()
         }
 
@@ -179,22 +182,28 @@ class PreviewerFragment :
         viewModel.showingAnswer.collectIn(lifecycleScope) {
             // focus on the whole layout so motion controllers can be captured
             // without navigating the other View elements
-            view.findViewById<CoordinatorLayout>(R.id.root_layout).requestFocus()
+            binding.root.requestFocus()
         }
 
-        view.findViewById<MaterialToolbar>(R.id.toolbar).apply {
+        binding.toolbar.apply {
             setOnMenuItemClickListener(this@PreviewerFragment)
             setNavigationOnClickListener { requireActivity().onBackPressedDispatcher.onBackPressed() }
         }
 
-        if (sharedPrefs().getBoolean("safeDisplay", false)) {
-            view.findViewById<MaterialCardView>(R.id.webview_container).elevation = 0F
-        }
+        binding.webviewContainer.setFrameStyle()
 
         bindingMap = BindingMap(sharedPrefs(), PreviewerAction.entries, this)
     }
 
+    private fun updateSliderGestureExclusion(slider: Slider) {
+        ViewCompat.setSystemGestureExclusionRects(
+            slider,
+            listOf(Rect(0, 0, slider.width, slider.height)),
+        )
+    }
+
     private fun setupFlagMenu(menu: Menu) {
+        menu.findItem(R.id.action_flag).title = TR.sentenceCase.flagCard
         val submenu = menu.findItem(R.id.action_flag).subMenu
         lifecycleScope.launch {
             for ((flag, name) in Flag.queryDisplayNames()) {
@@ -239,12 +248,8 @@ class PreviewerFragment :
             PreviewerAction.TOGGLE_FLAG_TURQUOISE -> viewModel.toggleFlag(Flag.TURQUOISE)
             PreviewerAction.TOGGLE_FLAG_PURPLE -> viewModel.toggleFlag(Flag.PURPLE)
             PreviewerAction.UNSET_FLAG -> viewModel.setFlag(Flag.NONE)
-            PreviewerAction.BACK -> {
-                requireView().findViewById<MaterialButton>(R.id.show_previous).performClickIfEnabled()
-            }
-            PreviewerAction.NEXT -> {
-                requireView().findViewById<MaterialButton>(R.id.show_next).performClickIfEnabled()
-            }
+            PreviewerAction.BACK -> this.binding.previousButton.performClickIfEnabled()
+            PreviewerAction.NEXT -> this.binding.nextButton.performClickIfEnabled()
         }
         return true
     }
@@ -258,7 +263,7 @@ class PreviewerFragment :
                 setIcon(R.drawable.ic_card_answer)
                 setTitle(R.string.card_side_answer)
             } else {
-                setIcon(R.drawable.ic_card_question)
+                setIconRes(requireContext(), R.drawable.ic_card_question)
                 setTitle(R.string.card_side_both)
             }
         }
@@ -289,10 +294,10 @@ class PreviewerFragment :
             currentIndex: Int,
         ): Intent {
             val arguments =
-                bundleOf(
-                    CURRENT_INDEX_ARG to currentIndex,
-                    CARD_IDS_FILE_ARG to idsFile,
-                )
+                Bundle().apply {
+                    putInt(CURRENT_INDEX_ARG, currentIndex)
+                    putParcelable(CARD_IDS_FILE_ARG, idsFile)
+                }
             return CardViewerActivity.getIntent(context, PreviewerFragment::class, arguments)
         }
     }

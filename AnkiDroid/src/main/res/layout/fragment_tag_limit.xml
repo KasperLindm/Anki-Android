@@ -1,17 +1,7 @@
-<?xml version="1.0" encoding="utf-8"?><!--
-  ~  Copyright (c) 2025 lukstbit <52494258+lukstbit@users.noreply.github.com>
-  ~
-  ~  This program is free software; you can redistribute it and/or modify it under
-  ~  the terms of the GNU General Public License as published by the Free Software
-  ~  Foundation; either version 3 of the License, or (at your option) any later
-  ~  version.
-  ~
-  ~  This program is distributed in the hope that it will be useful, but WITHOUT ANY
-  ~  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
-  ~  PARTICULAR PURPOSE. See the GNU General Public License for more details.
-  ~
-  ~  You should have received a copy of the GNU General Public License along with
-  ~  this program.  If not, see <http://www.gnu.org/licenses/>.
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  ~ SPDX-License-Identifier: GPL-3.0-or-later
+  ~ SPDX-FileCopyrightText: Copyright (c) 2025 lukstbit <52494258+lukstbit@users.noreply.github.com>
   -->
 <androidx.constraintlayout.widget.ConstraintLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
@@ -28,7 +18,7 @@
         android:orientation="vertical">
 
         <CheckBox
-            android:id="@+id/tag_selection_require_check"
+            android:id="@+id/require_one_or_more_check_box"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:checked="false"
@@ -48,7 +38,7 @@
             tools:listitem="@layout/item_require_exclude_tag"/>
 
         <TextView
-            android:id="@+id/tag_selection_exclude_label"
+            android:id="@+id/exclude_label"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:minHeight="48dp"
@@ -96,7 +86,7 @@
         android:text="@string/custom_study_loading_tags"/>
 
     <androidx.constraintlayout.widget.Group
-        android:id="@+id/loading_views_group"
+        android:id="@+id/loading_views"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         app:constraint_referenced_ids="loading_indicator,loading_label"/>

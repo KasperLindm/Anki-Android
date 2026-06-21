@@ -31,7 +31,7 @@ class ControlsTabPreference
         defStyleRes: Int = androidx.preference.R.style.Preference,
     ) : Preference(context, attrs, defStyleAttr, defStyleRes) {
         init {
-            layoutResource = R.layout.controls_tab_layout
+            layoutResource = R.layout.preference_controls_tab
         }
 
         private var tabLayout: TabLayout? = null
@@ -43,6 +43,14 @@ class ControlsTabPreference
             }
             onTabSelectedListener = listener
             tabLayout?.addOnTabSelectedListener(listener)
+        }
+
+        /**
+         * Selects a tab programmatically by position.
+         * @param tabPosition The position of the tab to select.
+         */
+        fun selectTab(tabPosition: Int) {
+            tabLayout?.selectTab(tabLayout?.getTabAt(tabPosition))
         }
 
         override fun onBindViewHolder(holder: PreferenceViewHolder) {

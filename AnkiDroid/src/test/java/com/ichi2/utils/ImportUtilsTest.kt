@@ -17,6 +17,7 @@ package com.ichi2.utils
 
 import android.content.ClipData
 import android.content.ClipDescription
+import android.content.ContentResolver
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
@@ -30,10 +31,15 @@ import org.hamcrest.Matchers.containsString
 import org.hamcrest.Matchers.endsWith
 import org.hamcrest.Matchers.lessThanOrEqualTo
 import org.hamcrest.Matchers.not
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.mockito.ArgumentMatchers.any
+import org.mockito.Mockito.mock
+import org.mockito.kotlin.whenever
+import java.io.File
 
 @RunWith(AndroidJUnit4::class)
 class ImportUtilsTest : RobolectricTest() {
@@ -63,7 +69,7 @@ class ImportUtilsTest : RobolectricTest() {
         assertThat(actualFilePath, containsString("..."))
         // Obtain the filename from the path
         assertThat(actualFilePath, containsString("%E5%A5%BD"))
-        val fileName = actualFilePath.substring(actualFilePath.indexOf("%E5%A5%BD"))
+        val fileName = actualFilePath.substringAfter("%E5%A5%BD")
         assertThat(fileName.length, lessThanOrEqualTo(100))
     }
 
@@ -74,6 +80,14 @@ class ImportUtilsTest : RobolectricTest() {
 
         // COULD_BE_BETTER: Strip off the file path
         return testFileImporter.cacheFileName
+    }
+
+    @Test
+    fun getFileCachedCopyReturnsAbsolutePath() {
+        val filename = "spaced filename.apkg"
+        val expectedFilepath = File(targetContext.cacheDir, filename).absolutePath
+        val actualFilepath = TestFileImporter(filename).getFileCachedCopy(targetContext, "dummy".toUri())
+        assertEquals(expectedFilepath, actualFilepath)
     }
 
     @Test
@@ -106,6 +120,47 @@ class ImportUtilsTest : RobolectricTest() {
         assertFalse(ImportUtils.isValidPackageName("test.docx"))
     }
 
+    @Test
+    fun onlyValidTextOrDataMimeTypesReturnTrue() {
+        val uri = "content://com.example".toUri()
+        val validMimeTypes =
+            listOf(
+                "text/plain",
+                "text/comma-separated-values",
+                "text/tab-separated-values",
+                "text/csv",
+                "text/tsv",
+            )
+        val invalidMimeTypes =
+            listOf(
+                null,
+                "text/html",
+                "application/pdf",
+                "image/jpeg",
+                "image/png",
+            )
+
+        for (mime in validMimeTypes) {
+            val context = mockContextWithMime(mime)
+            val isValid = ImportUtils.isValidTextOrDataFile(context, uri)
+            assertTrue("Expected MIME to be accepted: $mime", isValid)
+        }
+
+        for (mime in invalidMimeTypes) {
+            val context = mockContextWithMime(mime)
+            val isValid = ImportUtils.isValidTextOrDataFile(context, uri)
+            assertFalse("Expected MIME to be rejected: $mime", isValid)
+        }
+    }
+
+    private fun mockContextWithMime(mimeType: String?): Context {
+        val resolver = mock(ContentResolver::class.java)
+        whenever(resolver.getType(any())).thenReturn(mimeType)
+        val context = mock(Context::class.java)
+        whenever(context.contentResolver).thenReturn(resolver)
+        return context
+    }
+
     @CheckResult
     private fun getValidClipDataUri(fileName: String): Intent {
         val i = Intent()
@@ -127,11 +182,11 @@ class ImportUtilsTest : RobolectricTest() {
 
         override fun copyFileToCache(
             context: Context,
-            data: Uri?,
+            data: Uri,
             tempPath: String,
-        ): Pair<Boolean, String?> {
+        ) = run {
             cacheFileName = tempPath
-            return Pair(true, null)
+            CacheFileResult.Success(tempPath)
         }
 
         override fun getFileNameFromContentProvider(

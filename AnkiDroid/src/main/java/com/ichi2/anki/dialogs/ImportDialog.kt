@@ -1,25 +1,24 @@
-/****************************************************************************************
- * Copyright (c) 2015 Timothy Rae <perceptualchaos2@gmail.com>                          *
- *                                                                                      *
- * This program is free software; you can redistribute it and/or modify it under        *
- * the terms of the GNU General Public License as published by the Free Software        *
- * Foundation; either version 3 of the License, or (at your option) any later           *
- * version.                                                                             *
- *                                                                                      *
- * This program is distributed in the hope that it will be useful, but WITHOUT ANY      *
- * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A      *
- * PARTICULAR PURPOSE. See the GNU General Public License for more details.             *
- *                                                                                      *
- * You should have received a copy of the GNU General Public License along with         *
- * this program.  If not, see <http://www.gnu.org/licenses/>.                           *
- ****************************************************************************************/
+/*
+ * Copyright (c) 2015 Timothy Rae <perceptualchaos2@gmail.com>
+ *
+ * This program is free software; you can redistribute it and/or modify it under
+ * the terms of the GNU General Public License as published by the Free Software
+ * Foundation; either version 3 of the License, or (at your option) any later
+ * version.
+ *
+ * This program is distributed in the hope that it will be useful, but WITHOUT ANY
+ * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
+ * PARTICULAR PURPOSE. See the GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along with
+ * this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
 
 package com.ichi2.anki.dialogs
 
 import android.os.Bundle
 import androidx.annotation.CheckResult
 import androidx.appcompat.app.AlertDialog
-import androidx.core.os.bundleOf
 import com.ichi2.anki.R
 import com.ichi2.anki.dialogs.ImportDialog.Type.DIALOG_IMPORT_ADD_CONFIRM
 import com.ichi2.anki.dialogs.ImportDialog.Type.DIALOG_IMPORT_REPLACE_CONFIRM
@@ -43,7 +42,6 @@ class ImportDialog : AsyncDialogFragment() {
         get() = requireArguments().getString(IMPORT_DIALOG_PACKAGE_PATH_KEY)!!
 
     override fun onCreateDialog(savedInstanceState: Bundle?): AlertDialog {
-        super.onCreate(savedInstanceState)
         val dialog = AlertDialog.Builder(requireActivity())
         dialog.setCancelable(true)
         val displayFileName = filenameFromPath(convertToDisplayName(packagePath))
@@ -122,10 +120,10 @@ class ImportDialog : AsyncDialogFragment() {
         ): ImportDialog =
             ImportDialog().apply {
                 arguments =
-                    bundleOf(
-                        IMPORT_DIALOG_TYPE_KEY to dialogType.code,
-                        IMPORT_DIALOG_PACKAGE_PATH_KEY to packagePath,
-                    )
+                    Bundle().apply {
+                        putInt(IMPORT_DIALOG_TYPE_KEY, dialogType.code)
+                        putString(IMPORT_DIALOG_PACKAGE_PATH_KEY, packagePath)
+                    }
             }
 
         private fun filenameFromPath(path: String): String = path.split("/").toTypedArray()[path.split("/").toTypedArray().size - 1]

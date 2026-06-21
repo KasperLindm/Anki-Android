@@ -1,22 +1,22 @@
-/***************************************************************************************
- * Copyright (c) 2009 Nicolas Raoul <nicolas.raoul@gmail.com>                           *
- * Copyright (c) 2009 Edu Zamora <edu.zasu@gmail.com>                                   *
- * Copyright (c) 2010 Norbert Nagold <norbert.nagold@gmail.com>                         *
- * Copyright (c) 2012 Kostas Spyropoulos <inigo.aldana@gmail.com>                       *
- * Copyright (c) 2015 Timothy Rae <perceptualchaos2@gmail.com>                          *
- *                                                                                      *
- * This program is free software; you can redistribute it and/or modify it under        *
- * the terms of the GNU General Public License as published by the Free Software        *
- * Foundation; either version 3 of the License, or (at your option) any later           *
- * version.                                                                             *
- *                                                                                      *
- * This program is distributed in the hope that it will be useful, but WITHOUT ANY      *
- * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A      *
- * PARTICULAR PURPOSE. See the GNU General Public License for more details.             *
- *                                                                                      *
- * You should have received a copy of the GNU General Public License along with         *
- * this program.  If not, see <http://www.gnu.org/licenses/>.                           *
- ****************************************************************************************/
+/*
+ * Copyright (c) 2009 Nicolas Raoul <nicolas.raoul@gmail.com>
+ * Copyright (c) 2009 Edu Zamora <edu.zasu@gmail.com>
+ * Copyright (c) 2010 Norbert Nagold <norbert.nagold@gmail.com>
+ * Copyright (c) 2012 Kostas Spyropoulos <inigo.aldana@gmail.com>
+ * Copyright (c) 2015 Timothy Rae <perceptualchaos2@gmail.com>
+ *
+ * This program is free software; you can redistribute it and/or modify it under
+ * the terms of the GNU General Public License as published by the Free Software
+ * Foundation; either version 3 of the License, or (at your option) any later
+ * version.
+ *
+ * This program is distributed in the hope that it will be useful, but WITHOUT ANY
+ * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
+ * PARTICULAR PURPOSE. See the GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along with
+ * this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
 package com.ichi2.anki.preferences
 
 import android.content.Context
@@ -25,7 +25,6 @@ import android.os.Bundle
 import android.view.View
 import androidx.activity.OnBackPressedCallback
 import androidx.annotation.XmlRes
-import androidx.core.os.bundleOf
 import androidx.core.view.updateLayoutParams
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentFactory
@@ -42,19 +41,20 @@ import com.google.android.material.appbar.CollapsingToolbarLayout
 import com.google.android.material.appbar.MaterialToolbar
 import com.ichi2.anki.R
 import com.ichi2.anki.SingleFragmentActivity
+import com.ichi2.anki.common.android.Animations
+import com.ichi2.anki.common.annotations.LegacyNotifications
+import com.ichi2.anki.common.utils.android.getResFromAttr
 import com.ichi2.anki.preferences.HeaderFragment.Companion.getHeaderKeyForFragment
 import com.ichi2.anki.reviewreminders.ReviewReminderScope
-import com.ichi2.anki.reviewreminders.ScheduleReminders
-import com.ichi2.anki.utils.ext.sharedPrefs
+import com.ichi2.anki.reviewreminders.ScheduleRemindersFragment
 import com.ichi2.anki.utils.isWindowCompact
-import com.ichi2.themes.Themes
 import com.ichi2.utils.FragmentFactoryUtils
 import timber.log.Timber
 import kotlin.reflect.KClass
 import kotlin.reflect.jvm.jvmName
 
 class PreferencesFragment :
-    Fragment(R.layout.preferences),
+    Fragment(R.layout.fragment_preferences),
     PreferenceFragmentCompat.OnPreferenceStartFragmentCallback,
     SearchPreferenceResultListener {
     /**
@@ -122,7 +122,7 @@ class PreferencesFragment :
     override fun onSearchResultClicked(result: SearchPreferenceResult) {
         if (result.key == getString(R.string.pref_review_reminders_screen_key)) {
             Timber.i("Preferences:: edit review reminders button pressed")
-            val intent = ScheduleReminders.getIntent(requireContext(), ReviewReminderScope.Global)
+            val intent = ScheduleRemindersFragment.getIntent(requireContext(), ReviewReminderScope.Global)
             startActivity(intent)
             return
         }
@@ -136,8 +136,11 @@ class PreferencesFragment :
             addToBackStack(fragment.javaClass.name)
         }
 
-        Timber.i("Highlighting key '%s' on %s", result.key, fragment)
-        result.highlight(fragment as PreferenceFragmentCompat)
+        if (fragment is ControlsSettingsFragment) {
+            fragment.highlightPreference(result)
+        } else {
+            result.highlight(fragment as PreferenceFragmentCompat)
+        }
     }
 
     private fun setupBackCallbacks() {
@@ -162,7 +165,7 @@ class PreferencesFragment :
                     view.findViewById<CollapsingToolbarLayout>(R.id.collapsingToolbarLayout)?.apply {
                         updateLayoutParams<AppBarLayout.LayoutParams> {
                             scrollFlags = 0
-                            val resId = Themes.getResFromAttr(requireContext(), android.R.attr.actionBarSize)
+                            val resId = getResFromAttr(requireContext(), android.R.attr.actionBarSize)
                             height = resources.getDimensionPixelSize(resId)
                         }
                         isTitleEnabled = false
@@ -195,17 +198,17 @@ class PreferencesFragment :
         )
 
         // Configure headers highlight
-        childFragmentManager.executePendingTransactions() // wait for the headers page creation
-        childFragmentManager.findFragmentById(R.id.settings_container)?.let { fragment ->
+        childFragmentManager.addOnBackStackChangedListener {
             val headerFragment = childFragmentManager.findFragmentById(R.id.lateral_nav_container)
-            if (headerFragment !is HeaderFragment) return@let
-            val key = getHeaderKeyForFragment(fragment) ?: return@let
+            if (headerFragment !is HeaderFragment) return@addOnBackStackChangedListener
+            val fragment = childFragmentManager.findFragmentById(R.id.settings_container) ?: return@addOnBackStackChangedListener
+            val key = getHeaderKeyForFragment(fragment) ?: return@addOnBackStackChangedListener
             headerFragment.highlightPreference(key)
         }
     }
 
     private fun setFadeTransition(fragmentTransaction: FragmentTransaction) {
-        if (!sharedPrefs().getBoolean("safeDisplay", false)) {
+        if (Animations.areAnimationsEnabled(requireContext())) {
             fragmentTransaction.setTransition(FragmentTransaction.TRANSIT_FRAGMENT_FADE)
         }
     }
@@ -248,9 +251,9 @@ class PreferencesActivity :
     companion object {
         fun getIntent(
             context: Context,
-            initialFragment: KClass<out SettingsFragment>? = null,
+            initialFragment: KClass<out Fragment>? = null,
         ): Intent {
-            val arguments = bundleOf(INITIAL_FRAGMENT_EXTRA to initialFragment?.jvmName)
+            val arguments = Bundle().apply { putString(INITIAL_FRAGMENT_EXTRA, initialFragment?.jvmName) }
             return Intent(context, PreferencesActivity::class.java).apply {
                 putExtra(FRAGMENT_NAME_EXTRA, PreferencesFragment::class.jvmName)
                 putExtra(FRAGMENT_ARGS_EXTRA, arguments)
@@ -260,6 +263,7 @@ class PreferencesActivity :
 }
 
 // Only enable AnkiDroid notifications unrelated to due reminders
+@LegacyNotifications("Magic number which is no longer needed")
 const val PENDING_NOTIFICATIONS_ONLY = 1000000
 
 const val INITIAL_FRAGMENT_EXTRA = "initial_fragment"
@@ -280,9 +284,11 @@ fun getFragmentFromXmlRes(
         R.xml.preferences_notifications -> NotificationsSettingsFragment()
         R.xml.preferences_appearance -> AppearanceSettingsFragment()
         R.xml.preferences_controls -> ControlsSettingsFragment()
+        R.xml.preferences_reviewer_controls -> ControlsSettingsFragment()
+        R.xml.preferences_previewer_controls -> ControlsSettingsFragment()
         R.xml.preferences_advanced -> AdvancedSettingsFragment()
         R.xml.preferences_accessibility -> AccessibilitySettingsFragment()
-        R.xml.preferences_dev_options -> DevOptionsFragment()
+        R.xml.preferences_developer_options -> DeveloperOptionsFragment()
         R.xml.preferences_reviewer -> ReviewerOptionsFragment()
         R.xml.preferences_custom_buttons -> CustomButtonsSettingsFragment()
         else -> null

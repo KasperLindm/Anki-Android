@@ -20,7 +20,7 @@ import android.view.View
 import android.widget.ImageButton
 import androidx.annotation.VisibleForTesting
 import com.ichi2.anki.ActionProviderCompat
-import com.ichi2.compat.setTooltipTextCompat
+import com.ichi2.anki.compat.setTooltipTextCompat
 
 /**
  * An Rtl version of a normal action view, where the drawable is mirrored
@@ -67,11 +67,10 @@ class RtlCompliantActionProvider(
             while (unwrappedContext !is Activity && unwrappedContext is ContextWrapper) {
                 unwrappedContext = unwrappedContext.baseContext
             }
-            return if (unwrappedContext is Activity) {
-                unwrappedContext
-            } else {
-                throw ClassCastException("Passed context should be either an instanceof Activity or a ContextWrapper wrapping an Activity")
-            }
+            return unwrappedContext as? Activity
+                ?: throw ClassCastException(
+                    "Passed context should be either an instanceof Activity or a ContextWrapper wrapping an Activity",
+                )
         }
     }
 }

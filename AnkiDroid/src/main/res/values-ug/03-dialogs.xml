@@ -6,47 +6,24 @@
  ~    Instructions for this are available here: https://github.com/ankidroid/Anki-Android/wiki/Translating-AnkiDroid. 
  ~    You may also find the documentation on contributing to Anki useful: https://github.com/ankidroid/Anki-Android/wiki/Contributing   
  ~ 
- ~ Copyright (c) 2009 Andrew <andrewdubya@gmail> 
- ~ Copyright (c) 2009 Edu Zamora <edu.zasu@gmail.com> 
- ~ Copyright (c) 2009 Daniel Svaerd <daniel.svard@gmail.com> 
- ~ Copyright (c) 2009 Nicolas Raoul <nicolas.raoul@gmail.com> 
- ~ Copyright (c) 2010 Norbert Nagold <norbert.nagold@gmail.com> 
- ~ This program is free software; you can redistribute it and/or modify it under 
- ~ the terms of the GNU General Public License as published by the Free Software 
- ~ Foundation; either version 3 of the License, or (at your option) any later 
- ~ version. 
- ~ 
- ~ This program is distributed in the hope that it will be useful, but WITHOUT ANY 
- ~ WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A 
- ~ PARTICULAR PURPOSE. See the GNU General Public License for more details. 
- ~ 
- ~ You should have received a copy of the GNU General Public License along with 
- ~ this program.  If not, see <http://www.gnu.org/licenses/>. 
+ ~ SPDX-License-Identifier: GPL-3.0-or-later
+ ~ SPDX-FileCopyrightText: Copyright (c) 2009 Andrew <andrewdubya@gmail>
+ ~ SPDX-FileCopyrightText: Copyright (c) 2009 Edu Zamora <edu.zasu@gmail.com>
+ ~ SPDX-FileCopyrightText: Copyright (c) 2009 Daniel Svaerd <daniel.svard@gmail.com>
+ ~ SPDX-FileCopyrightText: Copyright (c) 2009 Nicolas Raoul <nicolas.raoul@gmail.com>
+ ~ SPDX-FileCopyrightText: Copyright (c) 2010 Norbert Nagold <norbert.nagold@gmail.com>
  -->
  
 <!--
-~ Copyright (c) 2009 Andrew <andrewdubya@gmail>
-~ Copyright (c) 2009 Edu Zamora <edu.zasu@gmail.com>
-~ Copyright (c) 2009 Daniel Svärd <daniel.svard@gmail.com>
-~ Copyright (c) 2009 Nicolas Raoul <nicolas.raoul@gmail.com>
-~ Copyright (c) 2010 Norbert Nagold <norbert.nagold@gmail.com>
-~
-~ This program is free software; you can redistribute it and/or modify it under
-~ the terms of the GNU General Public License as published by the Free Software
-~ Foundation; either version 3 of the License, or (at your option) any later
-~ version.
-~
-~ This program is distributed in the hope that it will be useful, but WITHOUT ANY
-~ WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
-~ PARTICULAR PURPOSE. See the GNU General Public License for more details.
-~
-~ You should have received a copy of the GNU General Public License along with
-~ this program.  If not, see <http://www.gnu.org/licenses/>.
--->
+  ~ SPDX-License-Identifier: GPL-3.0-or-later
+  ~ SPDX-FileCopyrightText: Copyright (c) 2009 Andrew <andrewdubya@gmail>
+  ~ SPDX-FileCopyrightText: Copyright (c) 2009 Edu Zamora <edu.zasu@gmail.com>
+  ~ SPDX-FileCopyrightText: Copyright (c) 2009 Daniel Svärd <daniel.svard@gmail.com>
+  ~ SPDX-FileCopyrightText: Copyright (c) 2009 Nicolas Raoul <nicolas.raoul@gmail.com>
+  ~ SPDX-FileCopyrightText: Copyright (c) 2010 Norbert Nagold <norbert.nagold@gmail.com>
+  -->
 <resources xmlns:tools="http://schemas.android.com/tools">
-    <string name="check_db_title">ساندان تەكشۈرەمدۇ؟</string>
-    <string name="check_db_warning">بۇنىڭغا ئۇزۇن ۋاقىت كېتىشى مۇمكىن</string>
-    <string name="contextmenu_deckpicker_delete_deck" maxLength="28">دەستە ئۆچۈر</string>
+    <string name="check_db_warning">This may take a long time. Proceed?</string>
     <string name="delete_deck_title">دەستە ئۆچۈرەمدۇ؟</string>
     <plurals name="delete_deck_message">
         <item quantity="one">%1$s دىكى ھەممە كارتىنى ئۆچۈرەمدۇ؟ ئۇنىڭدا %2$d كارتا بار</item>
@@ -83,11 +60,14 @@
     <string name="restore_backup_choose_another">باشقىسى تاللىنىدۇ</string>
     <string name="dialog_cancel">ۋاز كەچ</string>
     <string name="dialog_ok">جەزملە</string>
+    <string name="dialog_add" comment="Positive dialog action button label to add \'something\'">Add</string>
+    <string name="restore">Restore</string>
     <string name="dialog_confirm" tools:ignore="UnusedResources">جەزملە</string>
     <string name="dialog_no">ياق</string>
     <string name="dialog_yes">ھەئە</string>
     <string name="dialog_keep">ساقلاپ قال</string>
     <string name="dialog_remove">چىقىرىۋەت</string>
+    <string name="dialog_exit" comment="Label for a button which will exit/finish the current screen">Exit</string>
     <string name="dialog_continue">داۋاملاشتۇر</string>
     <string name="dialog_processing">بىر تەرەپ قىلىۋاتىدۇ&#8230;</string>
     <string name="dialog_positive_create" comment="Create a new collection, probably erasing the previous one, may be necessary in case of error.">قۇر</string>
@@ -102,8 +82,7 @@
     <string name="dialog_invalid_custom_certificate_title">گۇۋاھنامە يېشىش خاتالىقى</string>
     <string name="dialog_updated_custom_certificate">گۇۋاھنامە يېڭىلاندى</string>
     <!-- Media checking -->
-    <string name="check_media_title">ۋاسىتە تەكشۈرەمدۇ؟</string>
-    <string name="check_media_warning">چوڭ ۋاسىتە توپلىمىغا ئۇزۇن ۋاقىت كېتىشى مۇمكىن</string>
+    <string name="check_media_warning">This may take a long time with large media collections. Proceed?</string>
     <string name="check_media_message">ۋاسىتە تەكشۈرۈۋاتىدۇ&#8230;</string>
     <string name="check_media_adding_missing_tag">بەلگە قوش&#8230;</string>
     <string name="check_media_tags_added">بەلگە قوشۇلدى</string>
@@ -127,8 +106,6 @@
     <string name="permission_denied">ئىجازەت رەت قىلىندى</string>
     <string name="recording_permission_denied_message">مىكروفون ئىجازىتى «ئاۋاز خاتىرىلەش» ئىقتىدارى ئۈچۈن زۆرۈر. ئەپ تەڭشىكىدە ئىجازەت بېرىڭ.</string>
     <!-- Database Integrity Check -->
-    <string name="integrity_check_startup_title">AnkiDroid يېڭىلاندى</string>
-    <string name="integrity_check_startup_content">AnkiDroid يېڭىلانغان. بۇ يۈكسەلتىش بەلكىم ساندان مەسىلىلىرىنى ھەل قىلىشنى ئۆز ئىچىگە ئالىدۇ، ھازىر «ساندان تەكشۈر» نى ئىجرا قىلىشىڭىزنى تەۋسىيە قىلىمىز.</string>
     <string name="integrity_check_continue_anyway">داۋاملاشتۇرۇۋەر</string>
     <string name="integrity_check_insufficient_space">ساندان تەكشۈرۈشكە ئىشلىتىدىغان ۋاقىتلىق بوشلۇق چوڭ.\n\nداۋاملاشتۇرۇشتىن ئىلگىرى ئۈسكۈنىڭىزدە كەم دېگەندە %s ئەركىن بوشلۇق بولۇشىنى كۈچلۈك تەۋسىيە قىلىمىز.</string>
     <string name="integrity_check_insufficient_space_extra_content">\n\nھازىر %s ئەركىن بوشلۇقىڭىز بار.</string>
@@ -213,8 +190,6 @@
     <string name="dismiss_backup_warning_title">سانلىق-مەلۇمات يوقۇلۇش ئاگاھلاندۇرۇشى</string>
     <string name="dismiss_backup_warning_new_user">Android شەخسىيەت تۈزۈمى ئۆزگەرگەنلىكتىن، ئەگەر ئەپ ئۆچۈرۈلسە، سانلىق مەلۇماتىڭىز ۋە ئۆزلۈكىدىن زاپاسلانغانلار تېلېفونىڭىزدىن ئۆچۈرۈلىدۇ</string>
     <string name="dismiss_backup_warning_upgrade">Android شەخسىيەت تۈزۈمى ئۆزگەرگەنلىكتىن، ئەگەر ئەپ ئۆچۈرۈلسە، سانلىق مەلۇماتىڭىز ۋە ئۆزلۈكىدىن زاپاسلانغانلارنى زىيارەت قىلغىلى بولمايدۇ</string>
-    <string name="deck_already_exists">دەستە مەۋجۇت</string>
-    <string name="empty_deck_name">دەستە ئىسمى بوش قالمايدۇ</string>
     <string name="create_deck_numeric_hint">ئەگەر دەستە تەرتىپ مەسىلىسى بولسا (مەسىلەن، «10»«2»)دىن ئىلگىرى كۆرۈنسە، «2» نى «02» گە ئالماشتۇرۇڭ)</string>
     <!-- Set Due Date -->
     <string name="set_due_date_match_interval" comment="when setting a card\'s due date, this checkbox also changes the interval of the card">ئارىلىقنى ئوخشاش قىممەتكە تەڭشەڭ</string>
@@ -254,4 +229,32 @@
     <string name="tts_error_dialog_reason_text">تېكىستتىن ئاۋازغا موتورى b&gt;%1$s&lt;/b&gt; تۆۋەندىكى تىلنى قوللىمايدۇ: &lt;b&gt;%2$s&lt;/b&gt;</string>
     <string name="tts_error_dialog_change_button_text">موتورنى ئۆزگەرت</string>
     <string name="tts_error_dialog_supported_voices_button_text">ئاۋاز تاللانما</string>
+    <!-- import_cache_error_resolutions -->
+    <string name="import_error_resolution_try_again">ھۆججەتنى قايتا ئەكىر</string>
+    <string name="import_error_resolution_free_up_space">ئۈسكۈنىڭىزدە يېتەرلىك ئەركىن بوشلۇق بولۇشىغا كاپالەتلىك قىلىڭ.</string>
+    <string name="import_error_resolution_check_internet">ئىنتېرنېتقا باغلانغانلىقىڭىزنى جەزملەڭ</string>
+    <string name="import_error_resolution_copy_to_device">ھۆججەتنى ئۈسكۈنىڭىزگە كۆچۈرۈپ ئاندىن يەرلىك ھۆججەت بىلەن سىنايدۇ</string>
+    <string name="import_error_resolution_select_file">ھۆججەتنى ئۈسكۈنىدىكى ھۆججەت باشقۇرغۇچ ئەپتە ئاچىدۇ</string>
+    <!-- Post-login dialog -->
+    <string name="login_successful">مۇۋەپپەققىيەتلىك تىزىمغا كىردى</string>
+    <string name="sync_now">ھازىر قەدەمداشلامدۇ؟</string>
+    <!--Change Note Type Dialog Fragment-->
+    <string name="card_numbers_unchanged">كارتا نومۇرى ئۆزگەرمەي ساقلىنىدۇ</string>
+    <!-- Subset of TR.changeNotetypeToFromCloze -->
+    <string name="extra_cloze_deletions_removed">ئەگەر ئادەتتىكى خاتىرە تۈرىگە ئۆزگەرتىلسە ۋە ئىشلەتكىلى بولىدىغان كارتا قېلىپىغا نىسبەتەن تېخىمۇ كۆپ بوش ئورۇن تولدۇرۇپ ئۆچۈرۈش بولسا، ھەر قانداق ئارتۇقچە كارتا چىقىرىۋېتىلىدۇ.</string>
+    <string name="different_note_types_selected">بىر خاتىرە تۈرىدىن بىرلا خاتىرە تۈرىنى تاللاڭ.</string>
+    <string name="error_no_changes_to_save">ساقلايدىغان ئۆزگىرىش يوق</string>
+    <string name="choose_color">رەڭ تاللىنىدۇ</string>
+    <!-- Special Fields -->
+    <string name="standard_fields_tab_header" comment="Tab header for inserting non-special fields: {{Front}}">Fields</string>
+    <string name="special_fields_tab_header" comment="Tab header for inserting special fields: {{Deck}}">Special</string>
+    <string name="special_field_example_suffix"><![CDATA[: ‘<b>%1$s</b>’]]></string>
+    <string name="special_field_front_side_help">The front template content. Audio is not automatically played</string>
+    <string name="special_field_deck_help" comment="%s: either blank or \' %s\'">The full deck of the card, including parent decks%s</string>
+    <string name="special_field_subdeck_help" comment="%s: either blank or \' %s\'">The current deck of the card, excluding parent decks%s</string>
+    <string name="special_field_flag_help">Outputs ‘%1$s’, where %2$s is the flag code (%3$s\–%4$s\)</string>
+    <string name="special_field_tags_help" comment="%s: either blank or \' %s\'">The tags of the note%s</string>
+    <string name="special_field_card_id_help" comment="%s: either blank or \' %s\'">The ID of the card%s</string>
+    <string name="special_field_card_help" comment="%s: either blank or \' %s\'">The name of the card template%s</string>
+    <string name="special_field_type_help" comment="%s: either blank or \' %s\'">The name of the note type%s</string>
 </resources>

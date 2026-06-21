@@ -24,6 +24,10 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
+import com.ichi2.anki.common.utils.ext.indexOfOrNull
+import com.ichi2.anki.preferences.reviewer.WhiteboardAction
+import com.ichi2.anki.reviewer.BindingProcessor
+import com.ichi2.anki.reviewer.ReviewerBinding
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.combine
@@ -76,7 +80,8 @@ data class ClearAction(
  */
 class WhiteboardViewModel(
     private val repository: WhiteboardRepository,
-) : ViewModel() {
+) : ViewModel(),
+    BindingProcessor<ReviewerBinding, WhiteboardAction> {
     // State for drawing history and undo/redo
     val paths = MutableStateFlow<List<DrawingAction>>(emptyList())
     private val undoStack = MutableStateFlow<List<UndoableAction>>(emptyList())
@@ -98,12 +103,22 @@ class WhiteboardViewModel(
     val eraserMode = MutableStateFlow(EraserMode.INK)
     val isStylusOnlyMode = MutableStateFlow(false)
     val toolbarAlignment = MutableStateFlow(ToolbarAlignment.BOTTOM)
+    val isToolbarShown = MutableStateFlow(true)
+
+    /**
+     * Whether the whiteboard is hosted in a "drawing" flow (e.g. multimedia drawing
+     * capture) rather than the reviewer. In drawing mode the host owns the back
+     * navigation, so the "go back again to exit" snackbar is suppressed.
+     */
+    val isDrawing = MutableStateFlow(false)
 
     val eraserDisplayWidth =
         combine(eraserMode, inkEraserStrokeWidth, strokeEraserStrokeWidth) { mode, inkWidth, strokeWidth ->
             if (mode == EraserMode.INK) inkWidth else strokeWidth
         }.stateIn(viewModelScope, SharingStarted.Eagerly, WhiteboardRepository.DEFAULT_ERASER_WIDTH)
 
+    private var eraserLastX = 0.0f
+    private var eraserLastY = 0.0f
     private val pathsErasedInCurrentGesture = mutableListOf<DrawingAction>()
     private var pathsBeforeGesture: List<DrawingAction> = emptyList()
     private var isDarkMode = false
@@ -119,6 +134,7 @@ class WhiteboardViewModel(
         eraserMode.value = repository.eraserMode
         isStylusOnlyMode.value = repository.stylusOnlyMode
         toolbarAlignment.value = repository.toolbarAlignment
+        isToolbarShown.value = repository.isToolbarShown
 
         val lastActiveIndex = repository.loadLastActiveBrushIndex(isDarkMode)
 
@@ -145,17 +161,24 @@ class WhiteboardViewModel(
     }
 
     /**
-     * Clears the list of paths erased in the current gesture.
+     * Clears the list of paths erased in the current gesture and initializes previous
+     * eraser position.
      */
-    fun startPathEraseGesture() {
+    fun startPathEraseGesture(
+        x: Float,
+        y: Float,
+    ) {
         pathsBeforeGesture = paths.value
         pathsErasedInCurrentGesture.clear()
+        eraserLastX = x
+        eraserLastY = y
+        erasePathsToPoint(x, y)
     }
 
     /**
-     * Finds and removes paths that intersect with the given point.
+     * Finds and removes paths that intersect with the previous eraser line segment.
      */
-    fun erasePathsAtPoint(
+    fun erasePathsToPoint(
         x: Float,
         y: Float,
     ) {
@@ -167,7 +190,7 @@ class WhiteboardViewModel(
         val pathsToEvaluate = remainingPaths.filter { it !in pathsErasedInCurrentGesture && !it.isEraser }
 
         for (action in pathsToEvaluate) {
-            if (isPathIntersectingWithCircle(action, x, y, activeStrokeWidth.value / 2)) {
+            if (isPathIntersectingWithSegment(action, x, y, eraserLastX, eraserLastY, activeStrokeWidth.value / 2)) {
                 remainingPaths.remove(action)
                 pathsErasedInCurrentGesture.add(action)
                 pathWasErased = true
@@ -177,15 +200,20 @@ class WhiteboardViewModel(
         if (pathWasErased) {
             paths.value = remainingPaths
         }
+
+        eraserLastX = x
+        eraserLastY = y
     }
 
     /**
-     * Checks if a path intersects with a circular area.
+     * Checks if a path intersects with a line segment.
      */
-    private fun isPathIntersectingWithCircle(
+    private fun isPathIntersectingWithSegment(
         action: DrawingAction,
-        cx: Float,
-        cy: Float,
+        currentX: Float,
+        currentY: Float,
+        prevX: Float,
+        prevY: Float,
         eraserRadius: Float,
     ): Boolean {
         val path = action.path
@@ -199,18 +227,32 @@ class WhiteboardViewModel(
         val totalRadius = eraserRadius + pathRadius
         val totalRadiusSquared = totalRadius * totalRadius
 
-        if (length == 0f) {
-            pathMeasure.getPosTan(0f, pos, null)
-            val dx = pos[0] - cx
-            val dy = pos[1] - cy
-            return dx * dx + dy * dy <= totalRadiusSquared
-        }
+        val segmentX = currentX - prevX
+        val segmentY = currentY - prevY
+        val segmentLengthSq = segmentX * segmentX + segmentY * segmentY
 
         var distance = 0f
-        while (distance < length) {
+        while (distance <= length) {
             pathMeasure.getPosTan(distance, pos, null)
-            val dx = pos[0] - cx
-            val dy = pos[1] - cy
+
+            val prevToPathX = pos[0] - prevX
+            val prevToPathY = pos[1] - prevY
+
+            val dx: Float
+            val dy: Float
+
+            if (segmentLengthSq == 0f) {
+                dx = prevToPathX
+                dy = prevToPathY
+            } else {
+                // Project path point onto segment to find the closest point on the segment
+                val dot = prevToPathX * segmentX + prevToPathY * segmentY
+                val t = (dot / segmentLengthSq).coerceIn(0f, 1f)
+
+                dx = pos[0] - (prevX + t * segmentX)
+                dy = pos[1] - (prevY + t * segmentY)
+            }
+
             if (dx * dx + dy * dy <= totalRadiusSquared) {
                 return true
             }
@@ -226,12 +268,9 @@ class WhiteboardViewModel(
         if (pathsErasedInCurrentGesture.isNotEmpty()) {
             val removedWithIndices =
                 pathsErasedInCurrentGesture.mapNotNull { removedAction ->
-                    val index = pathsBeforeGesture.indexOf(removedAction)
-                    if (index != -1) {
-                        Pair(index, removedAction)
-                    } else {
-                        null
-                    }
+                    pathsBeforeGesture
+                        .indexOfOrNull(removedAction)
+                        ?.let { Pair(it, removedAction) }
                 }
             val action = RemoveAction(removedWithIndices)
             undoStack.update { it + action }
@@ -323,6 +362,17 @@ class WhiteboardViewModel(
     fun enableEraser() {
         isEraserActive.value = true
         activeStrokeWidth.value = eraserDisplayWidth.value
+    }
+
+    /**
+     * Toggles between the eraser and the last active brush.
+     */
+    fun toggleEraser() {
+        if (isEraserActive.value) {
+            setActiveBrush(activeBrushIndex.value)
+        } else {
+            enableEraser()
+        }
     }
 
     /**
@@ -435,12 +485,35 @@ class WhiteboardViewModel(
     }
 
     /**
+     * Sets the toolbar visibility.
+     */
+    fun setIsToolbarShown(isShown: Boolean) {
+        if (isToolbarShown.value != isShown) {
+            isToolbarShown.value = isShown
+            repository.isToolbarShown = isShown
+        }
+    }
+
+    /**
      * Clear the canvas and the undo/redo states
      */
     fun reset() {
         clearCanvas()
         undoStack.value = emptyList()
         redoStack.value = emptyList()
+    }
+
+    override fun processAction(
+        action: WhiteboardAction,
+        binding: ReviewerBinding,
+    ): Boolean {
+        when (action) {
+            WhiteboardAction.TOGGLE_ERASER -> toggleEraser()
+            WhiteboardAction.CLEAR -> clearCanvas()
+            WhiteboardAction.UNDO -> undo()
+            WhiteboardAction.REDO -> redo()
+        }
+        return true
     }
 
     companion object {

@@ -17,24 +17,37 @@
 package com.ichi2.utils
 
 import android.Manifest
+import android.app.Activity
 import android.content.Context
+import android.content.Intent
 import android.content.pm.PackageManager
-import android.content.pm.PackageManager.GET_PERMISSIONS
+import android.net.Uri
 import android.os.Build
-import android.os.Environment
+import android.provider.Settings
+import androidx.activity.result.ActivityResultLauncher
 import androidx.annotation.RequiresApi
+import androidx.annotation.StringRes
+import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import androidx.fragment.app.Fragment
+import androidx.fragment.app.FragmentActivity
+import androidx.fragment.app.FragmentManager
+import com.ichi2.anki.PermissionSet
+import com.ichi2.anki.R
+import com.ichi2.anki.common.permissions.MANAGE_EXTERNAL_STORAGE
+import com.ichi2.anki.common.permissions.hasPermission
 import com.ichi2.anki.common.utils.android.isRobolectric
-import com.ichi2.compat.CompatHelper.Companion.getPackageInfoCompat
-import com.ichi2.compat.PackageInfoFlagsCompat
-import com.ichi2.utils.Permissions.MANAGE_EXTERNAL_STORAGE
+import com.ichi2.anki.common.utils.android.showThemedToast
+import com.ichi2.anki.compat.CompatHelper.Companion.getPackageInfoCompat
+import com.ichi2.anki.compat.GET_PERMISSIONS_L
+import com.ichi2.anki.compat.PackageInfoFlagsCompat
+import com.ichi2.anki.settings.Prefs
+import com.ichi2.anki.ui.windows.permissions.PermissionsBottomSheet
 import com.ichi2.utils.Permissions.arePermissionsDefinedInManifest
-import com.ichi2.utils.Permissions.isExternalStorageManager
 import timber.log.Timber
+import kotlin.reflect.KMutableProperty
 
 object Permissions {
-    const val MANAGE_EXTERNAL_STORAGE = "android.permission.MANAGE_EXTERNAL_STORAGE"
-
     @RequiresApi(Build.VERSION_CODES.TIRAMISU)
     val tiramisuPhotosAndVideosPermissions =
         listOf(
@@ -52,97 +65,129 @@ object Permissions {
             null
         }
 
+    /**
+     * Returns whether AnkiDroid is able to request a permission from the user.
+     *
+     * @param activity Required by [ActivityCompat.shouldShowRequestPermissionRationale] to check if
+     * the user has clicked "Don't ask again" on previous requests.
+     * @param permission The permission to be requested.
+     * @param permissionRequestedFlag A reference to a mutable boolean flag that indicates whether the permission
+     * has been requested before. Required because [ActivityCompat.shouldShowRequestPermissionRationale]
+     * only works correctly after the first request.
+     */
+    fun canPermissionBeRequested(
+        activity: Activity,
+        permission: String,
+        permissionRequestedFlag: KMutableProperty<Boolean>,
+    ): Boolean =
+        if (permissionRequestedFlag.getter.call()) {
+            // Previous requests have been made, only request again if we are not blocked from requesting
+            ActivityCompat.shouldShowRequestPermissionRationale(activity, permission)
+        } else {
+            // No previous requests, so we can request
+            true
+        }
+
+    /**
+     * Requests a permission through a system dialog if the user has never been asked for this permission before or if they haven't
+     * clicked "Don't ask again" on previous requests (implicitly triggered if the user presses "deny" multiple times in newer API levels).
+     * If the user has clicked "Don't ask again" in the past, meaning Android won't let us open the permission request
+     * system UI dialog anymore, we assume that by triggering this method that the user has expressed a clear intent to grant the permission,
+     * so we open the app settings screen to let them manually grant it.
+     *
+     * @param activity Used for checking whether the user is open to granting the permission.
+     * @param permission The permission to be requested.
+     * @param permissionRequestedFlag A reference to a mutable boolean flag that indicates whether the permission
+     * has been requested before. Required because [ActivityCompat.shouldShowRequestPermissionRationale]
+     * only works correctly after the first request.
+     * @param permissionRequestLauncher The [ActivityResultLauncher] used to request the permission.
+     */
+    fun Fragment.requestPermissionThroughDialogOrSettings(
+        activity: Activity,
+        permission: String,
+        permissionRequestedFlag: KMutableProperty<Boolean>,
+        permissionRequestLauncher: ActivityResultLauncher<String>,
+    ) {
+        if (canPermissionBeRequested(activity, permission, permissionRequestedFlag)) {
+            permissionRequestedFlag.setter.call(true)
+            permissionRequestLauncher.launch(permission)
+        } else {
+            showToastAndOpenAppSettingsScreen(R.string.manually_grant_permissions)
+        }
+    }
+
+    /**
+     * Shows the [com.ichi2.anki.ui.windows.permissions.NotificationsPermissionFragment] in the [PermissionsBottomSheet]
+     * if notification permissions have not been granted. Does nothing if the permission does not need to
+     * be requested (i.e. API < 33), if the permission has already been granted,
+     * or if the user has previously denied the permission and selected "Don't ask again".
+     *
+     * @param activity Used for checking whether notification permissions have been granted, or if the user has clicked
+     * "Don't ask again" on previous requests.
+     * @param fragmentManager Used for launching the BottomSheet, if necessary.
+     * @param callback Executed only if the BottomSheet is actually shown.
+     */
+    fun showNotificationsPermissionBottomSheetIfNeeded(
+        activity: Activity,
+        fragmentManager: FragmentManager,
+        callback: () -> Unit,
+    ) {
+        postNotification?.let { notificationPermission ->
+            if (
+                !canPostNotifications(context = activity) &&
+                canPermissionBeRequested(
+                    activity,
+                    notificationPermission,
+                    Prefs::notificationsPermissionRequested,
+                )
+            ) {
+                Timber.i("Showing notifications bottom sheet")
+                PermissionsBottomSheet.launch(fragmentManager, PermissionSet.NOTIFICATIONS)
+                callback()
+            }
+        }
+    }
+
+    /**
+     * Request notification permissions from the user if they have not been requested due to syncing ever before.
+     * Should be called whenever the user logs in to an account, but not right before the login activity is about
+     * to be dismissed, as that will cause the BottomSheet to show up and then immediately be dismissed.
+     * This constraint means the code needs to be called in multiple places (DeckPicker, LoginFragment, etc.),
+     * and hence it is placed here as a utility function.
+     */
+    fun requestNotificationPermissionsForSyncing(fragmentActivity: FragmentActivity) {
+        if (!Prefs.syncNotifsRequestShown) {
+            showNotificationsPermissionBottomSheetIfNeeded(fragmentActivity, fragmentActivity.supportFragmentManager) {
+                Prefs.syncNotifsRequestShown = true
+            }
+        }
+    }
+
     @RequiresApi(Build.VERSION_CODES.TIRAMISU)
     val tiramisuAudioPermission = Manifest.permission.READ_MEDIA_AUDIO
 
-    val legacyStorageAccessPermissions =
+    val legacyStorageAccessStartupPermissions =
         listOf(
             Manifest.permission.READ_EXTERNAL_STORAGE,
             Manifest.permission.WRITE_EXTERNAL_STORAGE,
+            Manifest.permission.INTERNET,
         )
 
-    val recordAudioPermission = Manifest.permission.RECORD_AUDIO
-
-    fun canRecordAudio(context: Context): Boolean = hasPermission(context, recordAudioPermission)
-
-    /**
-     * Whether the app is granted [permission]
-     *
-     * Same as [androidx.core.content.ContextCompat.checkSelfPermission] except it corrects a bug related to [MANAGE_EXTERNAL_STORAGE].
-     */
-    fun hasPermission(
-        context: Context,
-        permission: String,
-    ): Boolean {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R && permission == MANAGE_EXTERNAL_STORAGE) {
-            // checkSelfPermission doesn't return PERMISSION_GRANTED, even if it's granted.
-            return isExternalStorageManager()
-        }
-
-        return ContextCompat.checkSelfPermission(context, permission) == PackageManager.PERMISSION_GRANTED
-    }
-
-    /**
-     * Whether the app is granted all permission of [permissions]
-     */
-    fun hasAllPermissions(
-        context: Context,
-        permissions: Collection<String>,
-    ): Boolean = permissions.all { hasPermission(context, it) }
-
     @RequiresApi(Build.VERSION_CODES.R)
-    fun isExternalStorageManager(): Boolean {
-        // BUG: Environment.isExternalStorageManager() crashes under robolectric
-        // https://github.com/robolectric/robolectric/issues/7300
-        if (isRobolectric) {
-            return false // TODO: handle tests with both 'true' and 'false'
-        }
-        return Environment.isExternalStorageManager()
-    }
+    val externalManagerStorageAccessStartupPermissions =
+        listOf(
+            Manifest.permission.MANAGE_EXTERNAL_STORAGE,
+            Manifest.permission.INTERNET,
+        )
 
-    /**
-     * On < Android 11, returns false.
-     * On >= Android 11, returns [isExternalStorageManager]
-     */
-    fun isExternalStorageManagerCompat(): Boolean {
-        return if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) {
-            return false
-        } else {
-            isExternalStorageManager()
-        }
-    }
+    val appPrivateStartupPermissions =
+        listOf(
+            Manifest.permission.INTERNET,
+        )
 
-    /**
-     * Check if we have write access permission to the external storage
-     * @param context
-     * @return
-     */
-    @JvmStatic // unit tests were flaky - maybe remove later
-    private fun hasStorageWriteAccessPermission(
-        context: Context,
-    ): Boolean = hasPermission(context, Manifest.permission.WRITE_EXTERNAL_STORAGE)
+    const val RECORD_AUDIO_PERMISSION = Manifest.permission.RECORD_AUDIO
 
-    /**
-     * Check if we have read access permission to the external storage
-     * @param context
-     * @return
-     */
-    @JvmStatic // unit tests were flaky - maybe remove later
-    private fun hasStorageReadAccessPermission(
-        context: Context,
-    ): Boolean = hasPermission(context, Manifest.permission.READ_EXTERNAL_STORAGE)
-
-    /**
-     * Check if we have read and write access permission to the external storage
-     * Note: This can return true >= R on a debug build or if storage is preserved
-     *
-     * @see IntentHandler.grantedStoragePermissions
-     *
-     * @param context
-     */
-    @JvmStatic // unit tests were flaky - maybe remove later
-    fun hasLegacyStorageAccessPermission(context: Context): Boolean =
-        hasStorageReadAccessPermission(context) && hasStorageWriteAccessPermission(context)
+    fun canRecordAudio(context: Context): Boolean = hasPermission(context, RECORD_AUDIO_PERMISSION)
 
     /**
      * Detects if permissions are defined via <uses-permission> in the Manifest.
@@ -172,7 +217,7 @@ object Permissions {
     private fun Context.getPermissionsDefinedInManifest(packageName: String): Array<out String>? =
         try {
             // requestedPermissions => <uses-permission> in manifest
-            val flags = PackageInfoFlagsCompat.of(GET_PERMISSIONS.toLong())
+            val flags = PackageInfoFlagsCompat.of(GET_PERMISSIONS_L)
             getPackageInfoCompat(packageName, flags)!!.requestedPermissions
         } catch (e: Exception) {
             Timber.w(e)
@@ -200,4 +245,30 @@ object Permissions {
     fun canPostNotifications(context: Context): Boolean =
         Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU ||
             ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED
+
+    /**
+     * Opens the Android settings for AnkiDroid if the device provide this feature.
+     * Lets a user grant any missing permissions which have been permanently denied.
+     */
+    fun Fragment.openAppSettingsScreen() {
+        Timber.i("launching ACTION_APPLICATION_DETAILS_SETTINGS")
+        startActivity(
+            Intent(
+                Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                Uri.fromParts("package", requireActivity().packageName, null),
+            ),
+        )
+    }
+
+    fun Fragment.showToastAndOpenAppSettingsScreen(
+        @StringRes message: Int,
+    ) {
+        showThemedToast(requireContext(), message, false)
+        openAppSettingsScreen()
+    }
+
+    fun Fragment.showToastAndOpenAppSettingsScreen(message: String) {
+        showThemedToast(requireContext(), message, false)
+        openAppSettingsScreen()
+    }
 }

@@ -15,7 +15,9 @@
  */
 package com.ichi2.anki.settings
 
+import android.content.Context
 import android.content.SharedPreferences
+import android.content.res.Resources
 import androidx.annotation.StringRes
 import androidx.annotation.VisibleForTesting
 import androidx.core.content.edit
@@ -23,9 +25,14 @@ import com.ichi2.anki.AnkiDroidApp
 import com.ichi2.anki.BuildConfig
 import com.ichi2.anki.R
 import com.ichi2.anki.cardviewer.TapGestureMode
+import com.ichi2.anki.common.preferences.AnimationPreferences
+import com.ichi2.anki.common.preferences.sharedPrefs
 import com.ichi2.anki.common.utils.isRunningAsUnitTest
+import com.ichi2.anki.settings.enums.AppTheme
+import com.ichi2.anki.settings.enums.DayTheme
 import com.ichi2.anki.settings.enums.FrameStyle
 import com.ichi2.anki.settings.enums.HideSystemBars
+import com.ichi2.anki.settings.enums.NightTheme
 import com.ichi2.anki.settings.enums.PrefEnum
 import com.ichi2.anki.settings.enums.ShouldFetchMedia
 import com.ichi2.anki.settings.enums.ToolbarPosition
@@ -34,11 +41,13 @@ import kotlin.reflect.KProperty
 
 // TODO move this to `com.ichi2.anki.preferences`
 //  after the UI classes of that package are moved to `com.ichi2.anki.ui.preferences`
-object Prefs {
-    private val sharedPrefs get() = AnkiDroidApp.sharedPrefs()
+object Prefs : PrefsRepository(AnkiDroidApp.sharedPrefs(), AnkiDroidApp.appResources)
 
-    @VisibleForTesting
-    val resources get() = AnkiDroidApp.appResources
+open class PrefsRepository(
+    val sharedPrefs: SharedPreferences,
+    private val resources: Resources,
+) : AnimationPreferences {
+    constructor(context: Context) : this(context.sharedPrefs(), context.resources)
 
     @VisibleForTesting
     fun key(
@@ -108,27 +117,41 @@ object Prefs {
         } ?: defaultValue
     }
 
+    fun <E> putEnum(
+        @StringRes keyResId: Int,
+        value: E,
+    ) where E : Enum<E>, E : PrefEnum {
+        val stringValue = resources.getString(value.entryResId)
+        putString(keyResId, stringValue)
+    }
+
     // **************************************** Delegates *************************************** //
 
     @VisibleForTesting
     fun booleanPref(
-        @StringRes keyResId: Int,
+        key: String,
         defaultValue: Boolean,
     ): ReadWriteProperty<Any?, Boolean> =
         object : ReadWriteProperty<Any?, Boolean> {
             override fun getValue(
                 thisRef: Any?,
                 property: KProperty<*>,
-            ): Boolean = getBoolean(keyResId, defaultValue)
+            ): Boolean = sharedPrefs.getBoolean(key, defaultValue)
 
             override fun setValue(
                 thisRef: Any?,
                 property: KProperty<*>,
                 value: Boolean,
             ) {
-                putBoolean(keyResId, value)
+                sharedPrefs.edit { putBoolean(key, value) }
             }
         }
+
+    @VisibleForTesting
+    fun booleanPref(
+        @StringRes keyResId: Int,
+        defaultValue: Boolean,
+    ): ReadWriteProperty<Any?, Boolean> = booleanPref(key(keyResId), defaultValue)
 
     @VisibleForTesting
     fun stringPref(
@@ -154,7 +177,7 @@ object Prefs {
     fun intPref(
         @StringRes keyResId: Int,
         defaultValue: Int,
-    ): ReadWriteProperty<Any, Int> =
+    ): ReadWriteProperty<Any?, Int> =
         object : ReadWriteProperty<Any?, Int> {
             override fun getValue(
                 thisRef: Any?,
@@ -174,7 +197,7 @@ object Prefs {
     fun longPref(
         @StringRes keyResId: Int,
         defaultValue: Long,
-    ): ReadWriteProperty<Any, Long> =
+    ): ReadWriteProperty<Any?, Long> =
         object : ReadWriteProperty<Any?, Long> {
             override fun getValue(
                 thisRef: Any?,
@@ -187,6 +210,26 @@ object Prefs {
                 value: Long,
             ) {
                 putLong(keyResId, value)
+            }
+        }
+
+    @VisibleForTesting
+    fun <E> enumPref(
+        @StringRes keyResId: Int,
+        defaultValue: E,
+    ): ReadWriteProperty<Any?, E> where E : Enum<E>, E : PrefEnum =
+        object : ReadWriteProperty<Any?, E> {
+            override fun getValue(
+                thisRef: Any?,
+                property: KProperty<*>,
+            ): E = getEnum(keyResId, defaultValue)
+
+            override fun setValue(
+                thisRef: Any?,
+                property: KProperty<*>,
+                value: E,
+            ) {
+                putEnum(keyResId, value)
             }
         }
 
@@ -213,13 +256,25 @@ object Prefs {
     val shouldFetchMedia: ShouldFetchMedia
         get() = getEnum(R.string.sync_fetch_media_key, ShouldFetchMedia.ALWAYS)
 
+    var networkTimeoutSecs by intPref(R.string.sync_io_timeout_secs_key, defaultValue = 60)
+
     //region Custom sync server
 
     val customSyncCertificate by stringPref(R.string.custom_sync_certificate_key)
     val customSyncUri by stringPref(R.string.custom_sync_server_collection_url_key)
     val isCustomSyncEnabled by booleanPref(R.string.custom_sync_server_enabled_key, defaultValue = false)
+    var isBackgroundEnabled by booleanPref(R.string.pref_deck_picker_background_key, defaultValue = false)
 
     //endregion
+
+    /**
+     * Whether the sync process has requested notification permissions before.
+     * We only want to request notification permissions for the sync feature if the dialog has never been shown
+     * for this reason before.
+     *
+     * @see reminderNotifsRequestShown
+     */
+    var syncNotifsRequestShown by booleanPref(R.string.sync_notifs_request_shown_key, defaultValue = false)
 
     // ************************************** Review Reminders ********************************** //
 
@@ -233,12 +288,66 @@ object Prefs {
      */
     var reviewReminderNextFreeId by intPref(R.string.review_reminders_next_free_id, defaultValue = 0)
 
+    /**
+     * Whether the review reminder feature has requested notification permissions before.
+     * We only want to request notification permissions for the review reminder feature if the dialog has never been
+     * shown for this reason before.
+     *
+     * @see syncNotifsRequestShown
+     */
+    var reminderNotifsRequestShown by booleanPref(R.string.reminder_notifs_request_shown_key, defaultValue = false)
+
+    /**
+     * A list of all recent deserialization errors that have occurred when trying to load review reminders from storage.
+     * For example, review reminders are deserialized and have their alarms scheduled when the device starts, but
+     * if the deserialization process fails and no valid migrations are available, the error can be put into this string
+     * so that the next time the user opens the app, an error dialog can be shown to inform them of the issue.
+     */
+    var reviewReminderDeserializationErrors by stringPref(R.string.review_reminder_deserialization_errors_key)
+
+    // *************************************** Permissions ************************************** //
+
+    // Flags for whether the system UI dialog for requesting certain permissions has been shown before.
+    // If the user has viewed the dialog at least once, we should check if they pressed "don't ask again"
+    // or pressed "deny" repeatedly (via [androidx.core.app.ActivityCompat.shouldShowRequestPermissionRationale]).
+    // This is because trying to show the system dialog again after the user has indicated they don't want to see it
+    // is likely tracked by Play Console statistics and may lead to lower Play Store discoverability.
+    //
+    // @see com.ichi2.anki.ui.windows.permissions.PermissionsFragment.requestPermissionThroughDialogOrSettings
+    // @see com.ichi2.utils.Permissions.isUserOpenToPermission
+
+    /**
+     * Whether the system UI dialog for requesting notification permissions has been shown before.
+     *
+     * Flags like [reminderNotifsRequestShown] etc. are not enough because those flags check if
+     * the BottomSheet dialog explaining the need for notification permissions has been shown before,
+     * whereas this flag checks if the system dialog has been shown before.
+     *
+     * If the user restores their data from a backup or migrates to a new device, this flag may be true
+     * when in reality notification permissions have not been requested for the device. This is most prominently
+     * an issue for the review reminders feature, so to ensure the user is able to receive review reminder notifications after
+     * a data restore / migration, a Snackbar noting that notification permissions are missing will be shown
+     * on the [com.ichi2.anki.reviewreminders.ScheduleRemindersFragment] fragment if notification permissions are not granted.
+     *
+     * @see com.ichi2.anki.reviewreminders.ScheduleRemindersFragment.checkForNotificationPermissions
+     */
+    var notificationsPermissionRequested by booleanPref(R.string.notifications_permission_requested_key, false)
+
+    /**
+     * Whether the system UI dialog for requesting audio recording permissions has been shown before.
+     */
+    var recordAudioPermissionRequested by booleanPref(R.string.record_audio_permission_requested_key, false)
+
+    var internetPermissionRequested by booleanPref(R.string.internet_permission_requested_key, false)
+
     // **************************************** Reviewer **************************************** //
 
     val ignoreDisplayCutout by booleanPref(R.string.ignore_display_cutout_key, false)
     val autoFocusTypeAnswer by booleanPref(R.string.type_in_answer_focus_key, true)
     val showAnswerFeedback by booleanPref(R.string.show_answer_feedback_key, defaultValue = true)
-    val showAnswerButtons by booleanPref(R.string.show_answer_buttons_key, true)
+    var showAnswerButtons by booleanPref(R.string.show_answer_buttons_key, true)
+    val keepScreenOn by booleanPref(R.string.keep_screen_on_preference, defaultValue = false)
+    val hideHardAndEasyButtons by booleanPref(R.string.hide_hard_and_easy_key, defaultValue = false)
 
     val doubleTapInterval by intPref(R.string.double_tap_timeout_pref_key, defaultValue = 200)
     val newStudyScreenAnswerButtonSize by intPref(R.string.answer_button_size_pref_key, defaultValue = 100)
@@ -246,14 +355,17 @@ object Prefs {
     val swipeSensitivity: Float
         get() = getInt(R.string.pref_swipe_sensitivity_key, 100) / 100F
 
-    val frameStyle: FrameStyle
-        get() = getEnum(R.string.reviewer_frame_style_key, FrameStyle.CARD)
+    var frameStyle: FrameStyle by enumPref(R.string.reviewer_frame_style_key, FrameStyle.CARD)
+    val hideSystemBars: HideSystemBars by enumPref(R.string.hide_system_bars_key, HideSystemBars.NONE)
+    var toolbarPosition: ToolbarPosition by enumPref(R.string.reviewer_toolbar_position_key, ToolbarPosition.TOP)
 
-    val hideSystemBars: HideSystemBars
-        get() = getEnum(R.string.hide_system_bars_key, HideSystemBars.NONE)
+    //region Appearance
 
-    val toolbarPosition: ToolbarPosition
-        get() = getEnum(R.string.reviewer_toolbar_position_key, ToolbarPosition.TOP)
+    var appTheme: AppTheme by enumPref(R.string.app_theme_key, AppTheme.FOLLOW_SYSTEM)
+    var dayTheme: DayTheme by enumPref(R.string.day_theme_key, DayTheme.LIGHT)
+    var nightTheme: NightTheme by enumPref(R.string.night_theme_key, NightTheme.BLACK)
+
+    //endregion
 
     // **************************************** Controls **************************************** //
     //region Controls
@@ -270,6 +382,7 @@ object Prefs {
 
     val answerButtonsSize: Int by intPref(R.string.answer_button_size_preference, 100)
     val cardZoom: Int by intPref(R.string.card_zoom_preference, 100)
+    override val removeAppAnimations by booleanPref(R.string.safe_display_key, defaultValue = false)
 
     // **************************************** Advanced **************************************** //
 
@@ -284,17 +397,23 @@ object Prefs {
      * Whether developer options should be shown to the user.
      * True in case [BuildConfig.DEBUG] is true
      * or if the user has enabled it with the secret on [com.ichi2.anki.preferences.AboutFragment]
+     *
+     * @see com.ichi2.anki.preferences.DeveloperOptionsFragment
      */
-    var isDevOptionsEnabled: Boolean
-        get() = getBoolean(R.string.dev_options_enabled_by_user_key, false) || BuildConfig.DEBUG
-        set(value) = putBoolean(R.string.dev_options_enabled_by_user_key, value)
+    var isDeveloperOptionsEnabled: Boolean
+        get() = getBoolean(R.string.developer_options_enabled_by_user_key, false) || BuildConfig.DEBUG
+        set(value) = putBoolean(R.string.developer_options_enabled_by_user_key, value)
 
-    val isNewStudyScreenEnabled by booleanPref(R.string.new_reviewer_options_key, false)
+    var isNewStudyScreenEnabled by booleanPref(R.string.new_reviewer_options_key, false)
 
     val devIsCardBrowserFragmented: Boolean
         get() = getBoolean(R.string.dev_card_browser_fragmented, false)
 
-    val devUsingCardBrowserSearchView: Boolean by booleanPref(R.string.dev_card_browser_search_view, false)
+    val devBottomNavEnabled: Boolean
+        get() = getBoolean(R.string.dev_bottom_nav_key, false)
+
+    @set:VisibleForTesting
+    var devUsingCardBrowserSearchView: Boolean by booleanPref(R.string.dev_card_browser_search_view, false)
 
     val isWebDebugEnabled: Boolean
         get() = (getBoolean(R.string.html_javascript_debugging_key, false) || BuildConfig.DEBUG) && !isRunningAsUnitTest
@@ -308,11 +427,12 @@ object Prefs {
 
     // **************************************** UI Config *************************************** //
 
-    private const val UI_CONFIG_PREFERENCES_NAME = "ui-config"
-
     /**
      * Get the SharedPreferences used for UI configuration such as Resizable layouts
      */
-    fun getUiConfig(context: android.content.Context): SharedPreferences =
-        context.getSharedPreferences(UI_CONFIG_PREFERENCES_NAME, android.content.Context.MODE_PRIVATE)
+    fun getUiConfig(context: Context): SharedPreferences = context.getSharedPreferences(UI_CONFIG_PREFERENCES_NAME, Context.MODE_PRIVATE)
+
+    companion object {
+        private const val UI_CONFIG_PREFERENCES_NAME = "ui-config"
+    }
 }

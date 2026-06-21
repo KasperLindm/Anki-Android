@@ -6,43 +6,22 @@
  ~    Instructions for this are available here: https://github.com/ankidroid/Anki-Android/wiki/Translating-AnkiDroid. 
  ~    You may also find the documentation on contributing to Anki useful: https://github.com/ankidroid/Anki-Android/wiki/Contributing   
  ~ 
- ~ Copyright (c) 2009 Andrew <andrewdubya@gmail> 
- ~ Copyright (c) 2009 Edu Zamora <edu.zasu@gmail.com> 
- ~ Copyright (c) 2009 Daniel Svaerd <daniel.svard@gmail.com> 
- ~ Copyright (c) 2009 Nicolas Raoul <nicolas.raoul@gmail.com> 
- ~ Copyright (c) 2010 Norbert Nagold <norbert.nagold@gmail.com> 
- ~ This program is free software; you can redistribute it and/or modify it under 
- ~ the terms of the GNU General Public License as published by the Free Software 
- ~ Foundation; either version 3 of the License, or (at your option) any later 
- ~ version. 
- ~ 
- ~ This program is distributed in the hope that it will be useful, but WITHOUT ANY 
- ~ WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A 
- ~ PARTICULAR PURPOSE. See the GNU General Public License for more details. 
- ~ 
- ~ You should have received a copy of the GNU General Public License along with 
- ~ this program.  If not, see <http://www.gnu.org/licenses/>. 
+ ~ SPDX-License-Identifier: GPL-3.0-or-later
+ ~ SPDX-FileCopyrightText: Copyright (c) 2009 Andrew <andrewdubya@gmail>
+ ~ SPDX-FileCopyrightText: Copyright (c) 2009 Edu Zamora <edu.zasu@gmail.com>
+ ~ SPDX-FileCopyrightText: Copyright (c) 2009 Daniel Svaerd <daniel.svard@gmail.com>
+ ~ SPDX-FileCopyrightText: Copyright (c) 2009 Nicolas Raoul <nicolas.raoul@gmail.com>
+ ~ SPDX-FileCopyrightText: Copyright (c) 2010 Norbert Nagold <norbert.nagold@gmail.com>
  -->
  
 <!--
-~ Copyright (c) 2009 Andrew <andrewdubya@gmail>
-~ Copyright (c) 2009 Edu Zamora <edu.zasu@gmail.com>
-~ Copyright (c) 2009 Daniel Svärd <daniel.svard@gmail.com>
-~ Copyright (c) 2009 Nicolas Raoul <nicolas.raoul@gmail.com>
-~ Copyright (c) 2010 Norbert Nagold <norbert.nagold@gmail.com>
-~
-~ This program is free software; you can redistribute it and/or modify it under
-~ the terms of the GNU General Public License as published by the Free Software
-~ Foundation; either version 3 of the License, or (at your option) any later
-~ version.
-~
-~ This program is distributed in the hope that it will be useful, but WITHOUT ANY
-~ WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
-~ PARTICULAR PURPOSE. See the GNU General Public License for more details.
-~
-~ You should have received a copy of the GNU General Public License along with
-~ this program.  If not, see <http://www.gnu.org/licenses/>.
--->
+  ~ SPDX-License-Identifier: GPL-3.0-or-later
+  ~ SPDX-FileCopyrightText: Copyright (c) 2009 Andrew <andrewdubya@gmail>
+  ~ SPDX-FileCopyrightText: Copyright (c) 2009 Edu Zamora <edu.zasu@gmail.com>
+  ~ SPDX-FileCopyrightText: Copyright (c) 2009 Daniel Svärd <daniel.svard@gmail.com>
+  ~ SPDX-FileCopyrightText: Copyright (c) 2009 Nicolas Raoul <nicolas.raoul@gmail.com>
+  ~ SPDX-FileCopyrightText: Copyright (c) 2010 Norbert Nagold <norbert.nagold@gmail.com>
+  -->
 <resources xmlns:tools="http://schemas.android.com/tools">
     <!-- generic strings -->
     <string name="disabled">გამორთულია</string>
@@ -129,7 +108,6 @@
     <string name="tts_summ">ხმამაღლა კითხულობს კითხვასა და პასუხს, როცა მოცემული არაა აუდიოფაილი</string>
     <!-- Sync -->
     <string name="sync_fetch_missing_media" maxLength="41">მედიაფაილების სინქრონიზაცია</string>
-    <string name="sync_account" maxLength="41">AnkiWeb ანგარიში</string>
     <string name="sync_account_summ_logged_out">არ ხართ შესული</string>
     <string name="automatic_sync_choice" maxLength="41">ავტომატური სინქრონიზაცია</string>
     <string name="automatic_sync_choice_summ">ავტომატური სინქრონიზაცია აპლიკაციის გახსნისას/აპლიკაციიდან გამოსვლისას, თუკი ბოლო სინქრონიზაცია 10-ზე მეტი წუთის წინ იყო.</string>
@@ -157,8 +135,6 @@
     <string name="select_locale_title">ენის არჩევა</string>
     <string name="software_render" maxLength="41">ბარათების აპარატული ვიზუალიზაციის გამორთვა</string>
     <string name="software_render_summ">აპარატული ვიზუალიზაცია უფრო სწრაფია, მაგრამ შეიძლება ხარვეზები ჰქონდეს, განსაკუთრებით Android 8/8.1-ს შემთხვევაში. სცადეთ ეს პარამეტრი, თუკი ვერ ხედავთ ბარათების გადამხედველის ინტერფეისის გარკვეულ ნაწილებს.</string>
-    <string name="safe_display" maxLength="41">უსაფრთხო ჩვენების რეჟიმი</string>
-    <string name="safe_display_summ">ყველა ანიმაციის გამორთვა და ბარათების საჩვენებლად უფრო უსაფრთხო მეთოდის გამოყენება. ელ-წამკითხველებისთვის ეს შეიძლება აუცილებელი იყოს.</string>
     <string name="disable_extended_text_ui" maxLength="41">ცალკე ველის რედაქტირების რეჟიმის გამორთვა</string>
     <!--See: multimedia_editor_popup_cloze. We can\'t use format strings as this is auto-generated-->
     <string name="disable_extended_text_ui_summ">შესაძლებელს ხდის, გამოიყენოთ „გამოტოვებული ადგილის“ კონტექსტური მენიუ ჰორიზონტალურ რეჟიმში.</string>
@@ -172,6 +148,8 @@
     <string name="show_estimates_summ">აჩვენებს შემდეგი გადახედვის დროს პასუხის ღილაკებზე</string>
     <string name="show_large_answer_buttons" maxLength="41">დიდი პასუხის ღილაკების ჩვენება</string>
     <string name="show_large_answer_buttons_summ">Show answer button in 2 rows</string>
+    <string name="remove_animations" maxLength="41">Remove animations</string>
+    <string name="remove_animations_summary">Also enabled if animations are removed on the system settings</string>
     <string name="show_top_bar" maxLength="41">ზედა ზოლის ჩვენება</string>
     <string name="show_top_bar_summary">Show card counts, answer timer, flag and mark in top bar</string>
     <string name="show_progress" maxLength="41">დარჩენილის ჩვენება</string>
@@ -207,8 +185,6 @@
     <string name="pref_cat_reviewer" maxLength="41">Study Screen</string>
     <string name="show_deck_title" maxLength="41">დასტის სათაურის ჩვენება</string>
     <string name="accessibility" maxLength="41">მარტივი წვდომა</string>
-    <!-- Paste clipboard image as png option -->
-    <string name="paste_as_png" maxLength="41">გაცვლითი ბუფერის სურათების PNG-ფაილებად ჩასმა</string>
     <string name="exit_via_double_tap_back" maxLength="41">სწავლის რეჟიმიდან/აპლიკაციიდან გამოსასვლელად უკან წასასვლელ ღილაკზე ორჯერ დაჭერა</string>
     <string name="exit_via_double_tap_back_summ">To avoid accidentally leaving the study screen or the app</string>
     <!-- Allow all files in media imports -->
@@ -222,7 +198,7 @@
         If not set, the default AnkiWeb server will be used instead.
         <a href="%s">Learn more</a>
         ]]></string>
-    <string name="custom_sync_server_base_url_title" maxLength="41">სინქრონიზაციის URL</string>
+    <string name="custom_sync_server_base_url_title" maxLength="41">Sync URL</string>
     <string name="custom_sync_certificate_title" maxLength="41">ინდივიდუალური ძირეული სერტიფიკატი (PEM)</string>
     <!-- Key Bindings -->
     <string name="keyboard">კლავიატურა</string>
@@ -242,16 +218,7 @@
     <string name="studyoptions_limit_select_tags">იარლიყების მონიშვნა</string>
     <!-- Deck configurations -->
     <string name="deck_conf_general" maxLength="41" comment="Label of the submenu for the general options of new deck">ზოგადი</string>
-    <string name="deck_conf_cram_filter" maxLength="41">ფილტრი</string>
     <string name="deck_conf_cram_search" maxLength="41" comment="Label of a text field that contains a search query.">ძებნა</string>
-    <string name="deck_conf_cram_limit" maxLength="41">ლიმიტი</string>
-    <string name="deck_conf_cram_order" maxLength="41">Cards selected by</string>
-    <string name="deck_conf_cram_reschedule" maxLength="41" comment="Title of the box labelled by deck_conf_cram_reschedule_summ">გადადება</string>
-    <string name="deck_conf_cram_reschedule_summ">Reschedule cards based on my answers in this deck</string>
-    <string name="deck_conf_cram_filter_2_check">მეორე ფილტრის გააქტიურება</string>
-    <string name="deck_conf_cram_steps_summ" maxLength="41">ინდივიდუალური ნაბიჯების განსაზღვრა</string>
-    <string name="deck_conf_cram_preview_delays" maxLength="41">გადადებულების წინასწარ ნახვა</string>
-    <string name="deck_conf_cram_preview_delays_summ">გადადებები წამებშია ნაჩვენები. 0-ით ბარათი საწყის დასტას დაუბრუნდება.</string>
     <!-- analytics options -->
     <string name="analytics_dialog_title">მოგვეხმარეთ AnkiDroid-ის გაუმჯობესებაში!</string>
     <string name="analytics_title" maxLength="41">ფუნქციათა მოხმარების მონაცემთა გაზიარება</string>
@@ -287,6 +254,10 @@
     <string name="user_action_8" maxLength="28">მომხმარებლის ქმედება 8</string>
     <string name="user_action_9" maxLength="28">მომხმარებლის ქმედება 9</string>
     <string name="toggle_auto_advance" maxLength="28">ავტომატური გაგრძელების ჩართვა/გამორთვა</string>
+    <string name="enable_auto_advance" maxLength="28">Enable auto advance</string>
+    <string name="disable_auto_advance" maxLength="28">Disable auto advance</string>
+    <string name="enable_voice_recording" maxLength="28">Enable voice recording</string>
+    <string name="disable_voice_recording" maxLength="28">Disable voice recording</string>
     <!-- Select card side -->
     <string name="card_side_selection_title">ბარათის გვერდის არჩევა</string>
     <string name="card_side_question">კითხვა</string>
@@ -389,6 +360,9 @@
     <string name="new_study_screen_summ"><![CDATA[Improved study screen that will succeed the current one. Some features of the old screen have been changed or removed. Please report any <a href="%1$s">feedback</a> or <a href="%2$s">bugs</a>.]]></string>
     <string name="show_answer_feedback" maxLength="41">Show answer feedback</string>
     <string name="screen" maxLength="41">Screen</string>
+    <string name="only_answer" maxLength="41" comment="Configuration of the \'Answer\' commands to only answer the card">Only answer</string>
+    <string name="flip_and_answer" maxLength="41" comment="Configuration of the \'Answer\' commands to answer the card if on the answer side, and flip it if on the question side">Flip and answer</string>
     <!--Keyboard shortcuts dialog-->
     <string name="open_settings" comment="Description of the shortcut that opens the app settings">პარამეტრების გახსნა</string>
+    <string name="related_settings_title" comment="Title of the section for related settings">Related settings</string>
 </resources>

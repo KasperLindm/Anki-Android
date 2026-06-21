@@ -29,9 +29,12 @@ import android.view.WindowManager
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
+import androidx.annotation.CheckResult
 import androidx.annotation.LayoutRes
 import androidx.core.content.ContextCompat
 import androidx.core.view.isVisible
+import androidx.lifecycle.LifecycleOwner
+import androidx.lifecycle.lifecycleScope
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.imageview.ShapeableImageView
 import com.google.android.material.progressindicator.LinearProgressIndicator
@@ -39,23 +42,26 @@ import com.ichi2.anki.R
 import com.ichi2.anki.Reviewer
 import com.ichi2.anki.common.annotations.NeedsTest
 import com.ichi2.anki.common.time.formatAsString
+import com.ichi2.anki.common.utils.android.showThemedToast
+import com.ichi2.anki.compat.Compat
+import com.ichi2.anki.compat.CompatHelper.Companion.compat
+import com.ichi2.anki.compat.USAGE_TOUCH
 import com.ichi2.anki.multimedia.AudioVideoFragment
 import com.ichi2.anki.multimedia.MultimediaViewModel
 import com.ichi2.anki.multimedia.audio.AudioRecordingController.RecordingState.AppendToRecording
 import com.ichi2.anki.multimedia.audio.AudioRecordingController.RecordingState.ImmediatePlayback
-import com.ichi2.anki.multimediacard.AudioRecorder
 import com.ichi2.anki.multimediacard.IMultimediaEditableNote
-import com.ichi2.anki.showThemedToast
+import com.ichi2.anki.recorder.AudioRecorder
+import com.ichi2.anki.recorder.AudioTimer
 import com.ichi2.anki.snackbar.showSnackbar
 import com.ichi2.anki.ui.OnHoldListener
 import com.ichi2.anki.ui.setOnHoldListener
 import com.ichi2.anki.utils.elapsed
-import com.ichi2.compat.Compat
-import com.ichi2.compat.CompatHelper.Companion.compat
-import com.ichi2.compat.USAGE_TOUCH
 import com.ichi2.ui.FixedTextView
 import com.ichi2.utils.Permissions.canRecordAudio
 import com.ichi2.utils.UiUtil
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import timber.log.Timber
 import java.io.File
 import java.io.IOException
@@ -72,8 +78,7 @@ class AudioRecordingController(
     val linearLayout: LinearLayout? = null,
     val viewModel: MultimediaViewModel? = null,
     val note: IMultimediaEditableNote? = null,
-) : AudioTimer.OnTimerTickListener,
-    AudioTimer.OnAudioTickListener {
+) {
     private lateinit var audioRecorder: AudioRecorder
     private var state: RecordingState = AppendToRecording.CLEARED
 
@@ -124,7 +129,7 @@ class AudioRecordingController(
         @LayoutRes controllerLayout: Int,
     ) {
         this.state = initialState
-        audioRecorder = AudioRecorder()
+        audioRecorder = AudioRecorder(context)
         if (inEditField) {
             val origAudioPath = viewModel?.currentMultimediaPath?.value
             var bExist = false
@@ -203,7 +208,7 @@ class AudioRecordingController(
 
         setUpMediaPlayer()
 
-        audioTimer = AudioTimer(this, this)
+        audioTimer = setupAudioTimer(context)
 
         // if the recorder is in the 'cleared' state
         // holding the 'record' button should start a recording
@@ -308,6 +313,42 @@ class AudioRecordingController(
                 },
             )
         }
+    }
+
+    @CheckResult
+    private fun setupAudioTimer(context: Context): AudioTimer {
+        fun onRecordingTimerTick(duration: Duration) {
+            if (isPlaying && !isRecording) {
+                // This may remain at 0 for a few hundred ms while the audio player starts
+                // BUG: It takes 300ms from elapsed == duration -> onCompletionListener being called
+                // probably best to move onCompletionListener to here
+                val elapsed = audioPlayer?.elapsed ?: Duration.ZERO
+                audioProgressBar.progress = elapsed.inWholeMilliseconds.toInt()
+                audioTimeView?.text = elapsed.formatAsString()
+            } else {
+                audioTimeView?.text = duration.formatAsString()
+                audioProgressBar.progress = 0
+            }
+        }
+
+        fun onRecordingAudioTick() {
+            try {
+                if (isRecording) {
+                    val maxAmplitude = audioRecorder.getMaxAmplitude() / 10
+                    audioWaveform.addAmplitude(maxAmplitude.toFloat())
+                }
+            } catch (e: IllegalStateException) {
+                Timber.d(e, "Audio recorder interrupted")
+            }
+        }
+
+        return AudioTimer(
+            scope =
+                (context as? LifecycleOwner)?.lifecycleScope
+                    ?: CoroutineScope(Dispatchers.Main),
+            onTimerTick = ::onRecordingTimerTick,
+            onAudioTick = ::onRecordingAudioTick,
+        )
     }
 
     private fun setUpMediaPlayer() {
@@ -472,7 +513,7 @@ class AudioRecordingController(
         } catch (e: Exception) {
             Timber.w(e)
         }
-        audioTimer = AudioTimer(this, this)
+        audioTimer = setupAudioTimer(context)
     }
 
     private fun prepareAudioPlayer() {
@@ -526,13 +567,13 @@ class AudioRecordingController(
                 when {
                     isRecordingPaused -> resumeRecording()
                     isRecording -> pauseRecorder()
-                    isCleared -> startRecording(context, tempAudioPath!!)
-                    else -> startRecording(context, tempAudioPath!!)
+                    isCleared -> startRecording(tempAudioPath!!)
+                    else -> startRecording(tempAudioPath!!)
                 }
             }
             is ImmediatePlayback -> {
                 when (state as ImmediatePlayback) {
-                    ImmediatePlayback.CLEARED -> startRecording(context, tempAudioPath!!)
+                    ImmediatePlayback.CLEARED -> startRecording(tempAudioPath!!)
                     // end recording, allow a user to play or clear
                     ImmediatePlayback.RECORDING_IN_PROGRESS -> toggleSave(vibrate = false)
                     // stop -> playing
@@ -605,13 +646,10 @@ class AudioRecordingController(
         }
     }
 
-    private fun startRecording(
-        context: Context,
-        audioPath: File,
-    ) {
+    private fun startRecording(audioPath: File) {
         Timber.i("starting recording")
         try {
-            audioRecorder.startRecording(context, audioPath)
+            audioRecorder.start(audioPath)
             isRecording = true
             audioTimer.start()
             setUiState(state.recording())
@@ -630,7 +668,7 @@ class AudioRecordingController(
     fun stopAndSaveRecording() {
         audioTimer.stop()
         try {
-            audioRecorder.stopRecording()
+            audioRecorder.stop()
         } catch (e: RuntimeException) {
             Timber.i(e, "Recording stop failed, this happens if stop was hit immediately after start")
             showThemedToast(context, context.resources.getString(R.string.multimedia_editor_audio_view_recording_failed), true)
@@ -662,19 +700,19 @@ class AudioRecordingController(
         vibrate(20.milliseconds)
         audioTimer.stop()
         setUiState(state.clear())
-        audioRecorder.stopRecording()
+        audioRecorder.stop()
         viewModel?.updateCurrentMultimediaPath(null)
         tempAudioPath = generateTempAudioFile(context).also { tempAudioPath = it }
         isRecording = false
     }
 
     fun onFocusLost() {
-        audioRecorder.release()
+        audioRecorder.stop()
         audioPlayer!!.release()
     }
 
     fun onDestroy() {
-        audioRecorder.release()
+        audioRecorder.close()
     }
 
     // when answer button is clicked in reviewer
@@ -699,31 +737,6 @@ class AudioRecordingController(
         }
     }
 
-    override fun onTimerTick(duration: Duration) {
-        if (isPlaying && !isRecording) {
-            // This may remain at 0 for a few hundred ms while the audio player starts
-            // BUG: It takes 300ms from elapsed == duration -> onCompletionListener being called
-            // probably best to move onCompletionListener to here
-            val elapsed = audioPlayer!!.elapsed
-            audioProgressBar.progress = elapsed.inWholeMilliseconds.toInt()
-            audioTimeView?.text = elapsed.formatAsString()
-        } else {
-            audioTimeView?.text = duration.formatAsString()
-            audioProgressBar.progress = 0
-        }
-    }
-
-    override fun onAudioTick() {
-        try {
-            if (isRecording) {
-                val maxAmplitude = audioRecorder.maxAmplitude() / 10
-                audioWaveform.addAmplitude(maxAmplitude.toFloat())
-            }
-        } catch (e: IllegalStateException) {
-            Timber.d(e, "Audio recorder interrupted")
-        }
-    }
-
     /**
      * @see Compat.vibrate
      */
@@ -734,7 +747,7 @@ class AudioRecordingController(
         var isAudioRecordingSaved = false
         private var inEditField: Boolean = true
         const val DEFAULT_TIME = "00:00.00"
-        const val JUMP_VALUE = 500
+        const val JUMP_VALUE = 5000
 
         fun generateTempAudioFile(context: Context) =
             try {

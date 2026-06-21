@@ -6,43 +6,22 @@
  ~    Instructions for this are available here: https://github.com/ankidroid/Anki-Android/wiki/Translating-AnkiDroid. 
  ~    You may also find the documentation on contributing to Anki useful: https://github.com/ankidroid/Anki-Android/wiki/Contributing   
  ~ 
- ~ Copyright (c) 2009 Andrew <andrewdubya@gmail> 
- ~ Copyright (c) 2009 Edu Zamora <edu.zasu@gmail.com> 
- ~ Copyright (c) 2009 Daniel Svaerd <daniel.svard@gmail.com> 
- ~ Copyright (c) 2009 Nicolas Raoul <nicolas.raoul@gmail.com> 
- ~ Copyright (c) 2010 Norbert Nagold <norbert.nagold@gmail.com> 
- ~ This program is free software; you can redistribute it and/or modify it under 
- ~ the terms of the GNU General Public License as published by the Free Software 
- ~ Foundation; either version 3 of the License, or (at your option) any later 
- ~ version. 
- ~ 
- ~ This program is distributed in the hope that it will be useful, but WITHOUT ANY 
- ~ WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A 
- ~ PARTICULAR PURPOSE. See the GNU General Public License for more details. 
- ~ 
- ~ You should have received a copy of the GNU General Public License along with 
- ~ this program.  If not, see <http://www.gnu.org/licenses/>. 
+ ~ SPDX-License-Identifier: GPL-3.0-or-later
+ ~ SPDX-FileCopyrightText: Copyright (c) 2009 Andrew <andrewdubya@gmail>
+ ~ SPDX-FileCopyrightText: Copyright (c) 2009 Edu Zamora <edu.zasu@gmail.com>
+ ~ SPDX-FileCopyrightText: Copyright (c) 2009 Daniel Svaerd <daniel.svard@gmail.com>
+ ~ SPDX-FileCopyrightText: Copyright (c) 2009 Nicolas Raoul <nicolas.raoul@gmail.com>
+ ~ SPDX-FileCopyrightText: Copyright (c) 2010 Norbert Nagold <norbert.nagold@gmail.com>
  -->
  
 <!--
-~ Copyright (c) 2009 Andrew <andrewdubya@gmail>
-~ Copyright (c) 2009 Edu Zamora <edu.zasu@gmail.com>
-~ Copyright (c) 2009 Daniel Svärd <daniel.svard@gmail.com>
-~ Copyright (c) 2009 Nicolas Raoul <nicolas.raoul@gmail.com>
-~ Copyright (c) 2010 Norbert Nagold <norbert.nagold@gmail.com>
-~
-~ This program is free software; you can redistribute it and/or modify it under
-~ the terms of the GNU General Public License as published by the Free Software
-~ Foundation; either version 3 of the License, or (at your option) any later
-~ version.
-~
-~ This program is distributed in the hope that it will be useful, but WITHOUT ANY
-~ WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
-~ PARTICULAR PURPOSE. See the GNU General Public License for more details.
-~
-~ You should have received a copy of the GNU General Public License along with
-~ this program.  If not, see <http://www.gnu.org/licenses/>.
--->
+  ~ SPDX-License-Identifier: GPL-3.0-or-later
+  ~ SPDX-FileCopyrightText: Copyright (c) 2009 Andrew <andrewdubya@gmail>
+  ~ SPDX-FileCopyrightText: Copyright (c) 2009 Edu Zamora <edu.zasu@gmail.com>
+  ~ SPDX-FileCopyrightText: Copyright (c) 2009 Daniel Svärd <daniel.svard@gmail.com>
+  ~ SPDX-FileCopyrightText: Copyright (c) 2009 Nicolas Raoul <nicolas.raoul@gmail.com>
+  ~ SPDX-FileCopyrightText: Copyright (c) 2010 Norbert Nagold <norbert.nagold@gmail.com>
+  -->
 <resources xmlns:tools="http://schemas.android.com/tools">
     <!-- generic strings -->
     <string name="disabled">Désactivé</string>
@@ -129,7 +108,6 @@
     <string name="tts_summ">Lire la question et la réponse si aucun fichier son n’est inclus</string>
     <!-- Sync -->
     <string name="sync_fetch_missing_media" maxLength="41">Télécharger les médias lors de la synchronisation</string>
-    <string name="sync_account" maxLength="41">Compte AnkiWeb</string>
     <string name="sync_account_summ_logged_out">Pas connecté</string>
     <string name="automatic_sync_choice" maxLength="41">Synchronisation automatique</string>
     <string name="automatic_sync_choice_summ">Synchroniser automatiquement à la sortie de l\'application si la dernière synchronisation était il y a plus de 10 minutes.</string>
@@ -157,8 +135,6 @@
     <string name="select_locale_title">Sélectionnez la langue</string>
     <string name="software_render" maxLength="41">Désactiver le rendu matériel de carte</string>
     <string name="software_render_summ">Le rendu matériel est plus rapide mais peut rencontrer des problèmes, en particulier sur Android 8/8.1. Si vous ne pouvez pas visualiser certaines parties de l\'interface de révision des cartes, essayez d\'activer cette option.</string>
-    <string name="safe_display" maxLength="41">Mode d’affichage protégé</string>
-    <string name="safe_display_summ">Désactiver toutes les animations et utiliser le mode sécurisé pour afficher les cartes. Les appareils à encre électronique peuvent nécessiter ceci.</string>
     <string name="disable_extended_text_ui" maxLength="41">Désactiver le mode d\'édition à champ unique</string>
     <!--See: multimedia_editor_popup_cloze. We can\'t use format strings as this is auto-generated-->
     <string name="disable_extended_text_ui_summ">Autorise le menu contextuel « Texte à trous » dans le mode paysage.</string>
@@ -172,6 +148,8 @@
     <string name="show_estimates_summ">Afficher le temps avant la prochaine révision sur les boutons de réponse</string>
     <string name="show_large_answer_buttons" maxLength="41">Afficher de gros boutons de réponse</string>
     <string name="show_large_answer_buttons_summ">Montrer le bouton de réponse en deux lignes</string>
+    <string name="remove_animations" maxLength="41">Supprimer les animations</string>
+    <string name="remove_animations_summary">Également activé si les animations sont supprimées dans les paramètres système</string>
     <string name="show_top_bar" maxLength="41">Afficher la barre supérieure</string>
     <string name="show_top_bar_summary">Afficher le nombre de cartes, le chronomètre, la balise et la marque dans la barre supérieure</string>
     <string name="show_progress" maxLength="41">Afficher le nombre restant de révision</string>
@@ -207,8 +185,6 @@
     <string name="pref_cat_reviewer" maxLength="41">Écran de révision</string>
     <string name="show_deck_title" maxLength="41">Afficher le titre du deck</string>
     <string name="accessibility" maxLength="41">Accessibilité</string>
-    <!-- Paste clipboard image as png option -->
-    <string name="paste_as_png" maxLength="41">Coller les images du pressepapiers en PNG</string>
     <string name="exit_via_double_tap_back" maxLength="41">Appuis double sur retour pour quitter</string>
     <string name="exit_via_double_tap_back_summ">Pour éviter de quitter accidentellement l\'écran de révision ou l\'application</string>
     <!-- Allow all files in media imports -->
@@ -222,7 +198,7 @@
         Si non défini, le serveur AnkiWeb par défaut sera utilisé à la place.
         <a href="%s">En savoir plus</a>
         ]]></string>
-    <string name="custom_sync_server_base_url_title" maxLength="41">Synchroniser l’URL</string>
+    <string name="custom_sync_server_base_url_title" maxLength="41">URL de synchronisation</string>
     <string name="custom_sync_certificate_title" maxLength="41">Certificat racine personnalisé (PEM)</string>
     <!-- Key Bindings -->
     <string name="keyboard">Clavier</string>
@@ -235,23 +211,14 @@
     <string name="misc" maxLength="41">Divers</string>
     <!-- Review reminders -->
     <string name="add_reminder" comment="Label for the add reminder button in the screen for adding and editing review reminders">Ajouter un rappel</string>
-    <string name="add_review_reminder" comment="Title of the screen for creating a new review reminder">Add review reminder</string>
-    <string name="edit_review_reminder" comment="Title of the screen for editing an existing review reminder">Edit review reminder</string>
-    <string name="you_have_no_review_reminders" comment="Text that appears in the review reminder editing screen when there are no reminders set">You have no review reminders</string>
+    <string name="add_review_reminder" comment="Title of the screen for creating a new review reminder">Ajouter un rappel de révision</string>
+    <string name="edit_review_reminder" comment="Title of the screen for editing an existing review reminder">Modifier le rappel de révision</string>
+    <string name="you_have_no_review_reminders" comment="Text that appears in the review reminder editing screen when there are no reminders set">Vous n\'avez aucun rappel de révision</string>
     <!-- studyoptions -->
     <string name="studyoptions_limit_select_tags">Sélectionner les étiquettes</string>
     <!-- Deck configurations -->
     <string name="deck_conf_general" maxLength="41" comment="Label of the submenu for the general options of new deck">Général</string>
-    <string name="deck_conf_cram_filter" maxLength="41">Filtre</string>
     <string name="deck_conf_cram_search" maxLength="41" comment="Label of a text field that contains a search query.">Recherche</string>
-    <string name="deck_conf_cram_limit" maxLength="41">Limiter à</string>
-    <string name="deck_conf_cram_order" maxLength="41">Cartes sélectionnées par</string>
-    <string name="deck_conf_cram_reschedule" maxLength="41" comment="Title of the box labelled by deck_conf_cram_reschedule_summ">Replanifier</string>
-    <string name="deck_conf_cram_reschedule_summ">Replanifier les cartes selon mes réponses dans ce paquet</string>
-    <string name="deck_conf_cram_filter_2_check">Activer le second filtrage</string>
-    <string name="deck_conf_cram_steps_summ" maxLength="41">Définir le pas personnalisé</string>
-    <string name="deck_conf_cram_preview_delays" maxLength="41">Retards dans la prévisualisation</string>
-    <string name="deck_conf_cram_preview_delays_summ">Les délais sont exprimés en secondes. 0 remet la carte dans le paquet d\'origine.</string>
     <!-- analytics options -->
     <string name="analytics_dialog_title">Aidez à améliorer AnkiDroid !</string>
     <string name="analytics_title" maxLength="41">Partager l\'utilisation de la fonctionnalité</string>
@@ -287,6 +254,10 @@
     <string name="user_action_8" maxLength="28">Action utilisateur 8</string>
     <string name="user_action_9" maxLength="28">Action utilisateur 9</string>
     <string name="toggle_auto_advance" maxLength="28">Activer/désactiver l\'avancement automatique</string>
+    <string name="enable_auto_advance" maxLength="28">Enable auto advance</string>
+    <string name="disable_auto_advance" maxLength="28">Disable auto advance</string>
+    <string name="enable_voice_recording" maxLength="28">Enable voice recording</string>
+    <string name="disable_voice_recording" maxLength="28">Disable voice recording</string>
     <!-- Select card side -->
     <string name="card_side_selection_title">Sélectionner le côté de la carte</string>
     <string name="card_side_question">Question</string>
@@ -390,6 +361,9 @@ Elles ne sont pas destinées à la plupart des utilisateurs et restent en anglai
     <string name="new_study_screen_summ"><![CDATA[L\'écran de révision amélioré qui succédera à l\'actuel. Quelques caractéristiques de l\'ancien écran ont été modifiées ou retirées. Merci de nous signaler tout <a href="%1$s">feedback</a> ou <a href="%2$s">bugs</a>.]]></string>
     <string name="show_answer_feedback" maxLength="41">Montrer la réaction de réponse</string>
     <string name="screen" maxLength="41">Écran</string>
+    <string name="only_answer" maxLength="41" comment="Configuration of the \'Answer\' commands to only answer the card">Répondre uniquement</string>
+    <string name="flip_and_answer" maxLength="41" comment="Configuration of the \'Answer\' commands to answer the card if on the answer side, and flip it if on the question side">Retourner et répondre</string>
     <!--Keyboard shortcuts dialog-->
     <string name="open_settings" comment="Description of the shortcut that opens the app settings">Aller aux paramètres</string>
+    <string name="related_settings_title" comment="Title of the section for related settings">Paramètres associés</string>
 </resources>

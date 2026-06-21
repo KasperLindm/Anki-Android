@@ -6,47 +6,24 @@
  ~    Instructions for this are available here: https://github.com/ankidroid/Anki-Android/wiki/Translating-AnkiDroid. 
  ~    You may also find the documentation on contributing to Anki useful: https://github.com/ankidroid/Anki-Android/wiki/Contributing   
  ~ 
- ~ Copyright (c) 2009 Andrew <andrewdubya@gmail> 
- ~ Copyright (c) 2009 Edu Zamora <edu.zasu@gmail.com> 
- ~ Copyright (c) 2009 Daniel Svaerd <daniel.svard@gmail.com> 
- ~ Copyright (c) 2009 Nicolas Raoul <nicolas.raoul@gmail.com> 
- ~ Copyright (c) 2010 Norbert Nagold <norbert.nagold@gmail.com> 
- ~ This program is free software; you can redistribute it and/or modify it under 
- ~ the terms of the GNU General Public License as published by the Free Software 
- ~ Foundation; either version 3 of the License, or (at your option) any later 
- ~ version. 
- ~ 
- ~ This program is distributed in the hope that it will be useful, but WITHOUT ANY 
- ~ WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A 
- ~ PARTICULAR PURPOSE. See the GNU General Public License for more details. 
- ~ 
- ~ You should have received a copy of the GNU General Public License along with 
- ~ this program.  If not, see <http://www.gnu.org/licenses/>. 
+ ~ SPDX-License-Identifier: GPL-3.0-or-later
+ ~ SPDX-FileCopyrightText: Copyright (c) 2009 Andrew <andrewdubya@gmail>
+ ~ SPDX-FileCopyrightText: Copyright (c) 2009 Edu Zamora <edu.zasu@gmail.com>
+ ~ SPDX-FileCopyrightText: Copyright (c) 2009 Daniel Svaerd <daniel.svard@gmail.com>
+ ~ SPDX-FileCopyrightText: Copyright (c) 2009 Nicolas Raoul <nicolas.raoul@gmail.com>
+ ~ SPDX-FileCopyrightText: Copyright (c) 2010 Norbert Nagold <norbert.nagold@gmail.com>
  -->
  
 <!--
-~ Copyright (c) 2009 Andrew <andrewdubya@gmail>
-~ Copyright (c) 2009 Edu Zamora <edu.zasu@gmail.com>
-~ Copyright (c) 2009 Daniel Svärd <daniel.svard@gmail.com>
-~ Copyright (c) 2009 Nicolas Raoul <nicolas.raoul@gmail.com>
-~ Copyright (c) 2010 Norbert Nagold <norbert.nagold@gmail.com>
-~
-~ This program is free software; you can redistribute it and/or modify it under
-~ the terms of the GNU General Public License as published by the Free Software
-~ Foundation; either version 3 of the License, or (at your option) any later
-~ version.
-~
-~ This program is distributed in the hope that it will be useful, but WITHOUT ANY
-~ WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
-~ PARTICULAR PURPOSE. See the GNU General Public License for more details.
-~
-~ You should have received a copy of the GNU General Public License along with
-~ this program.  If not, see <http://www.gnu.org/licenses/>.
--->
+  ~ SPDX-License-Identifier: GPL-3.0-or-later
+  ~ SPDX-FileCopyrightText: Copyright (c) 2009 Andrew <andrewdubya@gmail>
+  ~ SPDX-FileCopyrightText: Copyright (c) 2009 Edu Zamora <edu.zasu@gmail.com>
+  ~ SPDX-FileCopyrightText: Copyright (c) 2009 Daniel Svärd <daniel.svard@gmail.com>
+  ~ SPDX-FileCopyrightText: Copyright (c) 2009 Nicolas Raoul <nicolas.raoul@gmail.com>
+  ~ SPDX-FileCopyrightText: Copyright (c) 2010 Norbert Nagold <norbert.nagold@gmail.com>
+  -->
 <resources xmlns:tools="http://schemas.android.com/tools">
-    <string name="check_db_title">Ĉu kontroli datumbazon?</string>
-    <string name="check_db_warning">Tio ĉi povas okupi multan tempon</string>
-    <string name="contextmenu_deckpicker_delete_deck" maxLength="28">Forigi kartaron</string>
+    <string name="check_db_warning">This may take a long time. Proceed?</string>
     <string name="delete_deck_title">Ĉu forigi kartaron?</string>
     <plurals name="delete_deck_message">
         <item quantity="one">Ĉu forigi ĉiujn kartojn el %1$s? Ĝi enhavas %2$d karton</item>
@@ -83,11 +60,14 @@
     <string name="restore_backup_choose_another">Elekti alian</string>
     <string name="dialog_cancel">Nuligi</string>
     <string name="dialog_ok">Bone</string>
+    <string name="dialog_add" comment="Positive dialog action button label to add \'something\'">Add</string>
+    <string name="restore">Restore</string>
     <string name="dialog_confirm" tools:ignore="UnusedResources">Konfirmi</string>
     <string name="dialog_no">Ne</string>
     <string name="dialog_yes">Jes</string>
     <string name="dialog_keep">Konservi</string>
     <string name="dialog_remove">Forigi</string>
+    <string name="dialog_exit" comment="Label for a button which will exit/finish the current screen">Eliri</string>
     <string name="dialog_continue">Pluigi</string>
     <string name="dialog_processing">Traktado&#8230;</string>
     <string name="dialog_positive_create" comment="Create a new collection, probably erasing the previous one, may be necessary in case of error.">Krei</string>
@@ -102,8 +82,7 @@
     <string name="dialog_invalid_custom_certificate_title">Eraro dum pritrakti atestilon</string>
     <string name="dialog_updated_custom_certificate">Ĝisdatigis atestilon</string>
     <!-- Media checking -->
-    <string name="check_media_title">Ĉu kontroli aŭdvidaĵojn?</string>
-    <string name="check_media_warning">Tio ĉi povas okupi multan tempon por grandaj aŭdvidaĵaj kolektoj</string>
+    <string name="check_media_warning">This may take a long time with large media collections. Proceed?</string>
     <string name="check_media_message">Kontrolado de aŭdvidaĵoj&#8230;</string>
     <string name="check_media_adding_missing_tag">Aldonado de etikedoj&#8230;</string>
     <string name="check_media_tags_added">Aldonis etikedojn</string>
@@ -127,8 +106,6 @@
     <string name="permission_denied">Pemeso rifuzita</string>
     <string name="recording_permission_denied_message">La permeso por aliri mikrofonon estas necesa por la eblo “Registri voĉon”. Donu la permeson en agordoj pri la aplikaĵo.</string>
     <!-- Database Integrity Check -->
-    <string name="integrity_check_startup_title">AnkiDroid aktualigita</string>
-    <string name="integrity_check_startup_content">AnkiDroid estis aktualigita. Tiu ĉi aktualigo liveras riparojn al eblaj problemoj pri datumbazo, estas konsilinde kontroli la datumbazon nun.</string>
     <string name="integrity_check_continue_anyway">Pluigi malgraŭ tio</string>
     <string name="integrity_check_insufficient_space">Kontrolado de datumbazo uzos multon da provizora memoro.\n\nEstas tre konsilinde por ke vi havu almenaŭ %s da libera spaco en via aparato antaŭ ol pluigi.</string>
     <string name="integrity_check_insufficient_space_extra_content">\n\nLibera spaco: %s.</string>
@@ -213,8 +190,6 @@
     <string name="dismiss_backup_warning_title">Averto pri perdi datumojn</string>
     <string name="dismiss_backup_warning_new_user">Pro privatecaj ŝanĝoj en la operaciumo Android, viaj datumoj kaj aŭtomataj sekurkopioj estos forigitaj el via telefono, se la aplikaĵo estos malinstalita</string>
     <string name="dismiss_backup_warning_upgrade">Pro privatecaj ŝanĝoj en la operaciumo Android, viaj datumoj kaj aŭtomataj sekurkopioj estos nealireblaj, se la aplikaĵo estos malinstalita</string>
-    <string name="deck_already_exists">Kartaro jam ekzistas</string>
-    <string name="empty_deck_name">Nomo de kartaro ne estu malplena</string>
     <string name="create_deck_numeric_hint">Se vi havas problemojn pri karta ordigo (ekzemple “10” troviĝas antaŭ “2”), renomu “2” al “02”</string>
     <!-- Set Due Date -->
     <string name="set_due_date_match_interval" comment="when setting a card\'s due date, this checkbox also changes the interval of the card">Agordi intertempon al la sama valoro</string>
@@ -254,4 +229,32 @@
     <string name="tts_error_dialog_reason_text">La lingvo <b>%2$s</b> ne estas subtenata de la parolsintezilo <b>%1$s</b>.</string>
     <string name="tts_error_dialog_change_button_text">Ŝanĝi</string>
     <string name="tts_error_dialog_supported_voices_button_text">Agordi</string>
+    <!-- import_cache_error_resolutions -->
+    <string name="import_error_resolution_try_again">reenportu la dosieron</string>
+    <string name="import_error_resolution_free_up_space">certiĝu, ke sufiĉas libera spaco en via aparato</string>
+    <string name="import_error_resolution_check_internet">certiĝu, ke vi estas konektita kun la interreto</string>
+    <string name="import_error_resolution_copy_to_device">kopiu la dosieron al via aparato kaj reprovu elektante lokan dosieron</string>
+    <string name="import_error_resolution_select_file">malfermu la dosieron per dosier-esplorilo</string>
+    <!-- Post-login dialog -->
+    <string name="login_successful">Sukcese ensalutis</string>
+    <string name="sync_now">Ĉu samtempigi nun?</string>
+    <!--Change Note Type Dialog Fragment-->
+    <string name="card_numbers_unchanged">Nombro da kartoj ne ŝanĝiĝos</string>
+    <!-- Subset of TR.changeNotetypeToFromCloze -->
+    <string name="extra_cloze_deletions_removed">Se vi ŝanĝos nototipon al baza kaj estos pli da truoj en teksto ol nombro da disponeblaj ŝablonoj, ĉiuj superfluaj kartoj estos forigitaj.</string>
+    <string name="different_note_types_selected">Elektu notojn de nur unu nototipo.</string>
+    <string name="error_no_changes_to_save">Neniu ŝanĝo por konservi</string>
+    <string name="choose_color">Elekti koloron</string>
+    <!-- Special Fields -->
+    <string name="standard_fields_tab_header" comment="Tab header for inserting non-special fields: {{Front}}">Kampoj</string>
+    <string name="special_fields_tab_header" comment="Tab header for inserting special fields: {{Deck}}">Specialaj</string>
+    <string name="special_field_example_suffix"><![CDATA[: ‘<b>%1$s</b>’]]></string>
+    <string name="special_field_front_side_help">Enhavo de fronta ŝablono. Sono ne estos aŭtomate ludata.</string>
+    <string name="special_field_deck_help" comment="%s: either blank or \' %s\'">La plena kartaro de la karto, ampleksante superajn kartarojn%s</string>
+    <string name="special_field_subdeck_help" comment="%s: either blank or \' %s\'">La nuna kartaro de la karto, ekskluzivante superajn kartarojn%s</string>
+    <string name="special_field_flag_help">Outputs ‘%1$s’, where %2$s is the flag code (%3$s\–%4$s\)</string>
+    <string name="special_field_tags_help" comment="%s: either blank or \' %s\'">Etikedoj por la noto%s</string>
+    <string name="special_field_card_id_help" comment="%s: either blank or \' %s\'">Identigilo de la karto%s</string>
+    <string name="special_field_card_help" comment="%s: either blank or \' %s\'">Nomo de ŝablono de la karto%s</string>
+    <string name="special_field_type_help" comment="%s: either blank or \' %s\'">Nomo de la nototipo%s</string>
 </resources>

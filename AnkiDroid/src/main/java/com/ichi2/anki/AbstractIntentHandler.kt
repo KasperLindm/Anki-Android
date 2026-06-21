@@ -1,5 +1,5 @@
-/****************************************************************************************
- * Copyright (c) 2024 Sanjay Sargam <sargamsanjaykumar@gmail.com>                          *
+/*
+ * Copyright (c) 2024 Sanjay Sargam <sargamsanjaykumar@gmail.com>
  *                                                                                      *
  * This program is free software; you can redistribute it and/or modify it under        *
  * the terms of the GNU General Public License as published by the Free Software        *
@@ -12,14 +12,14 @@
  *                                                                                      *
  * You should have received a copy of the GNU General Public License along with         *
  * this program.  If not, see <http://www.gnu.org/licenses/>.                           *
- ****************************************************************************************/
+ */
 
 package com.ichi2.anki
 
 import android.app.Activity
 import android.os.Bundle
+import com.ichi2.anki.common.android.themes.disableXiaomiForceDarkMode
 import com.ichi2.themes.Themes
-import com.ichi2.themes.Themes.disableXiaomiForceDarkMode
 
 /**
  * This class is an abstract base class that extends Activity and provides common initialization logic for [IntentHandler] and [IntentHandler2].
@@ -30,6 +30,6 @@ abstract class AbstractIntentHandler : Activity() {
         super.onCreate(savedInstanceState)
         Themes.setTheme(this)
         disableXiaomiForceDarkMode(this)
-        setContentView(R.layout.progress_bar)
+        setContentView(R.layout.activity_progress_bar)
     }
 }

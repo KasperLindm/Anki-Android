@@ -1,25 +1,12 @@
-/*
- *  Copyright (c) 2023 Brayan Oliveira <brayandso.dev@gmail.com>
- *
- *  This program is free software; you can redistribute it and/or modify it under
- *  the terms of the GNU General Public License as published by the Free Software
- *  Foundation; either version 3 of the License, or (at your option) any later
- *  version.
- *
- *  This program is distributed in the hope that it will be useful, but WITHOUT ANY
- *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
- *  PARTICULAR PURPOSE. See the GNU General Public License for more details.
- *
- *  You should have received a copy of the GNU General Public License along with
- *  this program.  If not, see <http://www.gnu.org/licenses/>.
- */
+// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-FileCopyrightText: Copyright (c) 2023 Brayan Oliveira <brayandso.dev@gmail.com>
+
 package com.ichi2.anki.pages
 
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import android.view.View
-import androidx.annotation.CheckResult
 import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.FragmentActivity
 import androidx.fragment.app.setFragmentResultListener
@@ -33,24 +20,25 @@ import com.google.android.material.appbar.MaterialToolbar
 import com.ichi2.anki.CollectionManager.TR
 import com.ichi2.anki.CollectionManager.withCol
 import com.ichi2.anki.DeckPicker
-import com.ichi2.anki.FilteredDeckOptions
 import com.ichi2.anki.OnErrorListener
 import com.ichi2.anki.R
+import com.ichi2.anki.SingleFragmentActivity
 import com.ichi2.anki.StudyOptionsActivity
+import com.ichi2.anki.common.destinations.DeckOptionsDestination
+import com.ichi2.anki.common.destinations.navigate
+import com.ichi2.anki.common.preferences.sharedPrefs
 import com.ichi2.anki.common.time.SECONDS_PER_DAY
 import com.ichi2.anki.common.time.TIME_HOUR
 import com.ichi2.anki.common.time.TIME_MINUTE
+import com.ichi2.anki.common.utils.android.showThemedToast
 import com.ichi2.anki.dialogs.customstudy.CustomStudyDialog
 import com.ichi2.anki.dialogs.customstudy.CustomStudyDialog.CustomStudyAction
 import com.ichi2.anki.launchCatchingIO
 import com.ichi2.anki.launchCatchingTask
-import com.ichi2.anki.libanki.DeckId
 import com.ichi2.anki.observability.ChangeManager
 import com.ichi2.anki.observability.undoableOp
-import com.ichi2.anki.preferences.sharedPrefs
-import com.ichi2.anki.showThemedToast
 import com.ichi2.anki.snackbar.showSnackbar
-import com.ichi2.anki.utils.Destination
+import com.ichi2.anki.ui.internationalization.sentenceCase
 import com.ichi2.utils.listItemsAndMessage
 import com.ichi2.utils.negativeButton
 import com.ichi2.utils.show
@@ -63,6 +51,8 @@ import kotlin.math.round
 class CongratsPage :
     PageFragment(),
     ChangeManager.Subscriber {
+    override val pagePath: String = "congrats"
+
     private val viewModel by viewModels<CongratsViewModel>()
 
     init {
@@ -76,7 +66,7 @@ class CongratsPage :
         // typically due to 'day rollover'
         if (changes.studyQueues) {
             Timber.i("refreshing: study queues updated")
-            webView.reload()
+            webViewLayout.post { webViewLayout.reload() }
         }
     }
 
@@ -130,12 +120,12 @@ class CongratsPage :
         viewModel.deckOptionsDestination
             .flowWithLifecycle(lifecycle)
             .onEach { destination ->
-                val intent = destination.toIntent(requireContext())
-                startActivity(intent, null)
+                navigate(destination)
             }.launchIn(lifecycleScope)
 
         with(view.findViewById<MaterialToolbar>(R.id.toolbar)) {
             inflateMenu(R.menu.congrats)
+            menu.findItem(R.id.action_open_deck_options)?.title = TR.sentenceCase.deckOptions
             setOnMenuItemClickListener { item ->
                 if (item.itemId == R.id.action_open_deck_options) {
                     viewModel.onDeckOptions()
@@ -173,7 +163,7 @@ class CongratsPage :
     }
 
     companion object {
-        fun getIntent(context: Context): Intent = getIntent(context, path = "congrats", clazz = CongratsPage::class)
+        fun getIntent(context: Context): Intent = SingleFragmentActivity.getIntent(context, fragmentClass = CongratsPage::class)
 
         private fun displayNewCongratsScreen(context: Context): Boolean = context.sharedPrefs().getBoolean("new_congrats_screen", false)
 
@@ -230,6 +220,7 @@ class CongratsPage :
         }
 
         fun DeckPicker.onDeckCompleted() {
+            Timber.i("Opening CongratsPage")
             startActivity(getIntent(this))
         }
     }
@@ -273,36 +264,6 @@ class CongratsViewModel :
             val isFiltered = withCol { decks.isFiltered(deckId) }
             deckOptionsDestination.emit(DeckOptionsDestination(deckId, isFiltered))
         }
-    }
-}
-
-class DeckOptionsDestination(
-    private val deckId: DeckId,
-    private val isFiltered: Boolean,
-) : Destination {
-    override fun toIntent(context: Context): Intent =
-        if (isFiltered) {
-            FilteredDeckOptions.getIntent(context, deckId = deckId)
-        } else {
-            DeckOptions.getIntent(context, deckId)
-        }
-
-    companion object {
-        suspend fun fromDeckId(deckId: DeckId): DeckOptionsDestination =
-            DeckOptionsDestination(
-                deckId = deckId,
-                isFiltered = withCol { decks.isFiltered(deckId) },
-            )
-
-        @CheckResult
-        suspend fun fromCurrentDeck() =
-            withCol {
-                val deckId = decks.getCurrentId()
-                DeckOptionsDestination(
-                    deckId = deckId,
-                    isFiltered = decks.isFiltered(deckId),
-                )
-            }
     }
 }
 

@@ -20,15 +20,14 @@ import android.app.Dialog
 import android.content.Context
 import android.os.Bundle
 import android.util.AttributeSet
-import android.view.View
 import android.widget.ArrayAdapter
-import android.widget.ListView
 import androidx.appcompat.app.AlertDialog
 import androidx.core.view.isVisible
 import androidx.fragment.app.DialogFragment
 import androidx.preference.DialogPreference
 import androidx.preference.PreferenceFragmentCompat
 import com.ichi2.anki.R
+import com.ichi2.anki.databinding.DialogControlPreferenceBinding
 import com.ichi2.anki.dialogs.GestureSelectionDialogUtils
 import com.ichi2.anki.dialogs.GestureSelectionDialogUtils.onGestureChanged
 import com.ichi2.anki.dialogs.KeySelectionDialogUtils
@@ -40,6 +39,7 @@ import com.ichi2.anki.reviewer.Binding
 import com.ichi2.anki.reviewer.MappableBinding
 import com.ichi2.anki.reviewer.MappableBinding.Companion.toPreferenceString
 import com.ichi2.ui.AxisPicker
+import com.ichi2.ui.GesturePicker
 import com.ichi2.ui.KeyPicker
 import com.ichi2.utils.create
 import com.ichi2.utils.customView
@@ -109,11 +109,13 @@ open class ControlPreference :
 
     override fun makeDialogFragment(): DialogFragment = ControlPreferenceDialogFragment()
 
+    protected open fun createGesturePicker(): GesturePicker = GestureSelectionDialogUtils.getGesturePicker(context)
+
     fun showGesturePickerDialog() {
         AlertDialog.Builder(context).show {
             setTitle(title)
             setIcon(icon)
-            val gesturePicker = GestureSelectionDialogUtils.getGesturePicker(context)
+            val gesturePicker = createGesturePicker()
             positiveButton(R.string.dialog_ok) {
                 val gesture = gesturePicker.getGesture() ?: return@positiveButton
                 val binding = Binding.GestureInput(gesture)
@@ -150,10 +152,10 @@ open class ControlPreference :
     }
 
     fun showAddAxisDialog() {
-        val axisPicker = AxisPicker.inflate(context)
+        val axisPicker = AxisPicker(context)
         val dialog =
             AlertDialog.Builder(context).create {
-                customView(view = axisPicker.rootLayout)
+                customView(view = axisPicker.binding.root)
                 setTitle(title)
                 setIcon(icon)
                 negativeButton(R.string.dialog_cancel) { it.dismiss() }
@@ -178,7 +180,7 @@ open class ControlPreference :
         dialog.show()
     }
 
-    private fun warnIfUsedOrClearWarning(
+    protected fun warnIfUsedOrClearWarning(
         binding: Binding,
         warningDisplay: WarningDisplay,
     ) {
@@ -202,12 +204,19 @@ open class ControlPreference :
     }
 
     /**
-     * Checks if any other [ControlPreference] in the `preferenceScreen`
-     * has the given [binding] assigned to.
+     * @return a list of preferences related to the same context or screen.
      */
-    protected fun getPreferenceAssignedTo(binding: Binding): ControlPreference? {
-        for (pref in preferenceManager.preferenceScreen.allPreferences()) {
-            if (pref !is ControlPreference) continue
+    protected open fun getRelatedPreferences(): List<ControlPreference> =
+        preferenceManager.preferenceScreen.allPreferences().filterIsInstance<ControlPreference>()
+
+    /**
+     * Checks if any other related preference
+     * has the given [binding] assigned to.
+     *
+     * @see getRelatedPreferences
+     */
+    protected open fun getPreferenceAssignedTo(binding: Binding): ControlPreference? {
+        for (pref in getRelatedPreferences()) {
             val bindings = pref.getMappableBindings().map { it.binding }
             if (binding in bindings) {
                 return pref
@@ -217,8 +226,8 @@ open class ControlPreference :
     }
 }
 
-class ControlPreferenceDialogFragment : DialogFragment() {
-    private lateinit var preference: ControlPreference
+open class ControlPreferenceDialogFragment : DialogFragment() {
+    protected lateinit var preference: ControlPreference
 
     @Suppress("DEPRECATION") // targetFragment
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -232,21 +241,21 @@ class ControlPreferenceDialogFragment : DialogFragment() {
     }
 
     override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
-        val view = requireActivity().layoutInflater.inflate(R.layout.control_preference, null)
+        val binding = DialogControlPreferenceBinding.inflate(requireActivity().layoutInflater)
 
-        setupAddBindingDialogs(view)
-        setupRemoveControlEntries(view)
+        setupAddBindingDialogs(binding)
+        setupRemoveControlEntries(binding)
 
         return AlertDialog.Builder(requireContext()).create {
             setTitle(preference.title)
             setIcon(preference.icon)
-            customView(view, paddingTop = 16.dp.toPx(context))
+            customView(binding.root, paddingTop = 16.dp.toPx(context))
             negativeButton(R.string.dialog_cancel)
         }
     }
 
-    private fun setupAddBindingDialogs(view: View) {
-        view.findViewById<View>(R.id.add_gesture).apply {
+    private fun setupAddBindingDialogs(binding: DialogControlPreferenceBinding) {
+        binding.addGesture.apply {
             setOnClickListener {
                 preference.showGesturePickerDialog()
                 dismiss()
@@ -254,30 +263,29 @@ class ControlPreferenceDialogFragment : DialogFragment() {
             isVisible = preference.areGesturesEnabled
         }
 
-        view.findViewById<View>(R.id.add_key).setOnClickListener {
+        binding.addKey.setOnClickListener {
             preference.showKeyPickerDialog()
             dismiss()
         }
 
-        view.findViewById<View>(R.id.add_axis).setOnClickListener {
+        binding.addAxis.setOnClickListener {
             preference.showAddAxisDialog()
             dismiss()
         }
     }
 
-    private fun setupRemoveControlEntries(view: View) {
+    private fun setupRemoveControlEntries(binding: DialogControlPreferenceBinding) {
         val bindings = preference.getMappableBindings().toMutableList()
-        val listView = view.findViewById<ListView>(R.id.list_view)
         if (bindings.isEmpty()) {
-            listView.isVisible = false
+            binding.listView.isVisible = false
             return
         }
         val titles =
             bindings.map {
-                getString(R.string.binding_remove_binding, it.toDisplayString(requireContext()))
+                getString(R.string.binding_remove_binding, getDisplayString(it))
             }
-        listView.apply {
-            adapter = ArrayAdapter(requireContext(), R.layout.control_preference_list_item, titles)
+        binding.listView.apply {
+            adapter = ArrayAdapter(requireContext(), R.layout.item_control_preference, titles)
             setOnItemClickListener { _, _, index, _ ->
                 bindings.removeAt(index)
                 preference.value = bindings.toPreferenceString()
@@ -285,4 +293,7 @@ class ControlPreferenceDialogFragment : DialogFragment() {
             }
         }
     }
+
+    /** @return how a binding should be displayed to the user */
+    protected open fun getDisplayString(mappableBinding: MappableBinding): String = mappableBinding.toDisplayString(requireContext())
 }

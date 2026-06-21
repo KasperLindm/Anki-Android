@@ -21,7 +21,6 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ArrayAdapter
-import android.widget.TextView
 import androidx.annotation.DrawableRes
 import androidx.appcompat.app.AppCompatActivity
 import anki.scheduler.CardAnswer.Rating
@@ -29,11 +28,12 @@ import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.ichi2.anki.CollectionManager.TR
 import com.ichi2.anki.R
 import com.ichi2.anki.common.annotations.NeedsTest
+import com.ichi2.anki.databinding.ItemGradeNowBinding
 import com.ichi2.anki.launchCatchingTask
 import com.ichi2.anki.libanki.CardId
 import com.ichi2.anki.observability.undoableOp
 import com.ichi2.anki.snackbar.showSnackbar
-import com.ichi2.anki.ui.internationalization.toSentenceCase
+import com.ichi2.anki.ui.internationalization.sentenceCase
 import com.ichi2.anki.undoAndShowSnackbar
 import com.ichi2.anki.utils.ext.setCompoundDrawablesRelativeWithIntrinsicBoundsKt
 import com.ichi2.anki.withProgress
@@ -51,8 +51,7 @@ import timber.log.Timber
  *
  * @see net.ankiweb.rsdroid.Backend.gradeNow
  */
-@NeedsTest("UI test for this dialog")
-@NeedsTest("Menu only displayed if cards selected")
+// TODO: handle rotation, via a DialogFragment with IdsFile handling or Fragment Result API
 @NeedsTest("Suspended card handling")
 object GradeNowDialog {
     fun showDialog(
@@ -69,15 +68,15 @@ object GradeNowDialog {
         val adapter = GradeNowListAdapter(context, Grade.entries)
 
         MaterialAlertDialogBuilder(context).show {
-            title(text = TR.actionsGradeNow().toSentenceCase(context, R.string.sentence_grade_now))
+            title(text = with(context) { TR.sentenceCase.gradeNow })
             negativeButton(R.string.dialog_cancel)
-            setAdapter(adapter, { dialog, which ->
+            setAdapter(adapter) { dialog, which ->
                 val selectedGrade = adapter.getItem(which)!!
                 Timber.i("selected '%s'", selectedGrade.name)
                 // dismiss the dialog before the operation completes to stop duplicate clicks
                 context.gradeNow(cardIds, selectedGrade)
                 dialog.dismiss()
-            })
+            }
         }
     }
 
@@ -97,20 +96,27 @@ object GradeNowDialog {
 
 private class GradeNowListAdapter(
     context: Context,
-    val grades: List<Grade>,
-) : ArrayAdapter<Grade>(context, R.layout.grade_now_list_item, grades) {
+    grades: List<Grade>,
+) : ArrayAdapter<Grade>(context, R.layout.item_grade_now, grades) {
     override fun getView(
         position: Int,
         convertView: View?,
         parent: ViewGroup,
-    ): View =
-        convertView ?: LayoutInflater.from(context).inflate(R.layout.grade_now_list_item, parent, false).apply {
-            val grade = getItem(position)!!
-            findViewById<TextView>(R.id.grade_view).apply {
-                text = grade.getLabel()
-                setCompoundDrawablesRelativeWithIntrinsicBoundsKt(start = grade.iconRes)
+    ): View {
+        val binding =
+            if (convertView != null) {
+                ItemGradeNowBinding.bind(convertView)
+            } else {
+                ItemGradeNowBinding.inflate(LayoutInflater.from(context), parent, false)
             }
+
+        val grade = getItem(position)!!
+        binding.gradeTextView.apply {
+            text = grade.getLabel()
+            setCompoundDrawablesRelativeWithIntrinsicBoundsKt(start = grade.iconRes)
         }
+        return binding.root
+    }
 }
 
 private enum class Grade(

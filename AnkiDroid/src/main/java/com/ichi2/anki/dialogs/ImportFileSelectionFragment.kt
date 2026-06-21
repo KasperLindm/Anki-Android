@@ -23,14 +23,14 @@ import android.os.Bundle
 import android.os.Parcelable
 import androidx.activity.result.ActivityResultLauncher
 import androidx.annotation.StringRes
+import androidx.annotation.VisibleForTesting
 import androidx.appcompat.app.AlertDialog
 import androidx.core.os.BundleCompat
-import androidx.core.os.bundleOf
 import androidx.fragment.app.DialogFragment
 import com.ichi2.anki.AnkiActivity
 import com.ichi2.anki.R
+import com.ichi2.anki.analytics.AnalyticsConstants
 import com.ichi2.anki.analytics.UsageAnalytics
-import com.ichi2.anki.common.annotations.NeedsTest
 import com.ichi2.anki.requireAnkiActivity
 import com.ichi2.anki.snackbar.showSnackbar
 import com.ichi2.anki.utils.MimeTypeUtils
@@ -38,9 +38,6 @@ import com.ichi2.utils.title
 import kotlinx.parcelize.Parcelize
 import timber.log.Timber
 
-@NeedsTest("Selecting APKG does not allow multiple files")
-@NeedsTest("Selecting COLPKG does not allow multiple files")
-@NeedsTest("Restore backup dialog does not allow multiple files")
 class ImportFileSelectionFragment : DialogFragment() {
     override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
         val entries = buildImportEntries()
@@ -52,7 +49,7 @@ class ImportFileSelectionFragment : DialogFragment() {
             ) { _, position ->
                 val entry = entries[position]
                 UsageAnalytics.sendAnalyticsEvent(
-                    UsageAnalytics.Category.LINK_CLICKED,
+                    AnalyticsConstants.Category.LINK_CLICKED,
                     entry.analyticsId,
                 )
                 openImportFilePicker(
@@ -76,7 +73,7 @@ class ImportFileSelectionFragment : DialogFragment() {
                     add(
                         ImportEntry(
                             R.string.import_deck_package,
-                            UsageAnalytics.Actions.IMPORT_APKG_FILE,
+                            AnalyticsConstants.Actions.IMPORT_APKG_FILE,
                             ImportFileType.APKG,
                         ),
                     )
@@ -85,7 +82,7 @@ class ImportFileSelectionFragment : DialogFragment() {
                     add(
                         ImportEntry(
                             R.string.import_collection_package,
-                            UsageAnalytics.Actions.IMPORT_COLPKG_FILE,
+                            AnalyticsConstants.Actions.IMPORT_COLPKG_FILE,
                             ImportFileType.COLPKG,
                         ),
                     )
@@ -94,7 +91,7 @@ class ImportFileSelectionFragment : DialogFragment() {
                     add(
                         ImportEntry(
                             R.string.import_csv,
-                            UsageAnalytics.Actions.IMPORT_CSV_FILE,
+                            AnalyticsConstants.Actions.IMPORT_CSV_FILE,
                             ImportFileType.CSV,
                             multiple = false,
                             mimeType = "*/*",
@@ -106,13 +103,11 @@ class ImportFileSelectionFragment : DialogFragment() {
         } ?: emptyList()
     }
 
-    // safe as this data class is used as a container and it's not involved in any comparing
-    @Suppress("ArrayInDataClass")
-    private data class ImportEntry(
+    private class ImportEntry(
         @StringRes val titleRes: Int,
         val analyticsId: String,
         val type: ImportFileType,
-        var multiple: Boolean = false,
+        val multiple: Boolean = false,
         val mimeType: String = "*/*",
         val extraMimes: Array<String>? = null,
     )
@@ -143,7 +138,26 @@ class ImportFileSelectionFragment : DialogFragment() {
 
         fun newInstance(options: ImportOptions) =
             ImportFileSelectionFragment().apply {
-                arguments = bundleOf(ARG_IMPORT_OPTIONS to options)
+                arguments = Bundle().apply { putParcelable(ARG_IMPORT_OPTIONS, options) }
+            }
+
+        /**
+         * Builds the [Intent] used to launch the system file picker.
+         */
+        @VisibleForTesting
+        internal fun buildImportFilePickerIntent(
+            multiple: Boolean = false,
+            mimeType: String = "*/*",
+            extraMimes: Array<String>? = null,
+        ): Intent =
+            Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
+                addCategory(Intent.CATEGORY_OPENABLE)
+                type = mimeType
+                putExtra("android.content.extra.SHOW_ADVANCED", true)
+                putExtra("android.content.extra.FANCY", true)
+                putExtra("android.content.extra.SHOW_FILESIZE", true)
+                putExtra(Intent.EXTRA_ALLOW_MULTIPLE, multiple)
+                extraMimes?.let { putExtra(Intent.EXTRA_MIME_TYPES, it) }
             }
 
         /**
@@ -157,14 +171,7 @@ class ImportFileSelectionFragment : DialogFragment() {
             extraMimes: Array<String>? = null,
         ) {
             Timber.d("openImportFilePicker() delegating to file picker intent")
-            val intent = Intent(Intent.ACTION_OPEN_DOCUMENT)
-            intent.addCategory(Intent.CATEGORY_OPENABLE)
-            intent.type = mimeType
-            intent.putExtra("android.content.extra.SHOW_ADVANCED", true)
-            intent.putExtra("android.content.extra.FANCY", true)
-            intent.putExtra("android.content.extra.SHOW_FILESIZE", true)
-            intent.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, multiple)
-            extraMimes?.let { intent.putExtra(Intent.EXTRA_MIME_TYPES, it) }
+            val intent = buildImportFilePickerIntent(multiple, mimeType, extraMimes)
 
             try {
                 if (

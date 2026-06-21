@@ -16,6 +16,7 @@
 package com.ichi2.anki.analytics
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.ichi2.anki.EmptyApplicationCategory
 import com.ichi2.anki.R
 import com.ichi2.anki.RobolectricTest
 import com.ichi2.anki.preferences.PreferenceTestUtils
@@ -24,22 +25,24 @@ import com.ichi2.testutils.EmptyApplication
 import org.hamcrest.MatcherAssert.assertThat
 import org.hamcrest.Matchers
 import org.junit.Test
+import org.junit.experimental.categories.Category
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
 import kotlin.test.assertNull
 
 @RunWith(AndroidJUnit4::class)
 @Config(application = EmptyApplication::class)
+@Category(EmptyApplicationCategory::class)
 class PreferencesAnalyticsTest : RobolectricTest() {
-    private val devOptionsKeys = PreferenceTestUtils.getDevOptionsKeys(targetContext)
+    private val developerOptionsKeys = PreferenceTestUtils.getDeveloperOptionsKeys(targetContext)
 
     /** All preference keys besides dev options */
     private val allKeys =
         PreferenceTestUtils
             .getAllPreferenceKeys(targetContext)
-            .subtract(devOptionsKeys)
+            .subtract(developerOptionsKeys)
 
-    private val reportableKeys = UsageAnalytics.reportablePrefKeys.toStringResourceSet()
+    private val reportableKeys = AnalyticsConstants.reportablePrefKeys.toStringResourceSet()
 
     /** Keys of preferences that shouldn't be reported */
     private val excludedPrefs: Set<String> =
@@ -148,14 +151,14 @@ class PreferencesAnalyticsTest : RobolectricTest() {
     }
 
     @Test
-    fun `Dev options changes must not be reported`() {
-        val devOptionsKeys = PreferenceTestUtils.getKeysFromXml(targetContext, R.xml.preferences_dev_options)
-        val devOptionsAtReportList = reportableKeys.intersect(devOptionsKeys.toSet())
+    fun `Developer options changes must not be reported`() {
+        val developerOptionsKeys = PreferenceTestUtils.getKeysFromXml(targetContext, R.xml.preferences_developer_options)
+        val developerOptionsAtReportList = reportableKeys.intersect(developerOptionsKeys.toSet())
 
         assertThat(
             "dev options keys must not be in the `reportableKeys` list" +
-                ": $devOptionsAtReportList",
-            devOptionsAtReportList.isEmpty(),
+                ": $developerOptionsAtReportList",
+            developerOptionsAtReportList.isEmpty(),
         )
     }
 

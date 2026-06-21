@@ -1,19 +1,18 @@
-/***************************************************************************************
- *                                                                                      *
- * Copyright (c) 2020 Mike Hardy <mike@mikehardy.net>                                   *
- *                                                                                      *
- * This program is free software; you can redistribute it and/or modify it under        *
- * the terms of the GNU General Public License as published by the Free Software        *
- * Foundation; either version 3 of the License, or (at your option) any later           *
- * version.                                                                             *
- *                                                                                      *
- * This program is distributed in the hope that it will be useful, but WITHOUT ANY      *
- * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A      *
- * PARTICULAR PURPOSE. See the GNU General Public License for more details.             *
- *                                                                                      *
- * You should have received a copy of the GNU General Public License along with         *
- * this program.  If not, see <http://www.gnu.org/licenses/>.                           *
- ****************************************************************************************/
+/*
+ * Copyright (c) 2020 Mike Hardy <mike@mikehardy.net>
+ *
+ * This program is free software; you can redistribute it and/or modify it under
+ * the terms of the GNU General Public License as published by the Free Software
+ * Foundation; either version 3 of the License, or (at your option) any later
+ * version.
+ *
+ * This program is distributed in the hope that it will be useful, but WITHOUT ANY
+ * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
+ * PARTICULAR PURPOSE. See the GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along with
+ * this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
 package com.ichi2.anki
 
 import android.content.Context
@@ -21,13 +20,15 @@ import android.content.Intent
 import android.os.Bundle
 import android.os.Parcel
 import android.os.Parcelable
-import androidx.core.os.bundleOf
+import com.ichi2.anki.CollectionManager.withCol
+import com.ichi2.anki.common.android.appContext
+import com.ichi2.anki.common.annotations.NeedsTest
+import com.ichi2.anki.compat.CompatHelper.Companion.compat
+import com.ichi2.anki.compat.CompatHelper.Companion.getSerializableCompat
 import com.ichi2.anki.libanki.CardTemplate
-import com.ichi2.anki.libanki.Collection
 import com.ichi2.anki.libanki.NoteTypeId
 import com.ichi2.anki.libanki.NotetypeJson
-import com.ichi2.compat.CompatHelper.Companion.compat
-import com.ichi2.compat.CompatHelper.Companion.getSerializableCompat
+import com.ichi2.anki.observability.undoableOp
 import timber.log.Timber
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
@@ -43,19 +44,20 @@ class CardTemplateNotetype(
         DELETE,
     }
 
+    @NeedsTest("serialization on Android 15+ - regression test for crash when TemplateChange wasn't serializable")
     data class TemplateChange(
         var ordinal: Int,
         val type: ChangeType,
-    )
+    ) : java.io.Serializable
 
     var templateChanges = ArrayList<TemplateChange>()
         private set
 
     fun toBundle(): Bundle =
-        bundleOf(
-            INTENT_MODEL_FILENAME to saveTempNoteType(AnkiDroidApp.instance.applicationContext, notetype),
-            "mTemplateChanges" to templateChanges,
-        )
+        Bundle().apply {
+            putString(INTENT_MODEL_FILENAME, saveTempNoteType(appContext, notetype))
+            putSerializable("mTemplateChanges", templateChanges)
+        }
 
     private fun loadTemplateChanges(bundle: Bundle) {
         try {
@@ -99,36 +101,34 @@ class CardTemplateNotetype(
         addTemplateChange(ChangeType.DELETE, ord)
     }
 
-    fun saveToDatabase(col: Collection) {
+    suspend fun saveToDatabase() {
         Timber.d("saveToDatabase() called")
         dumpChanges()
         clearTempNoteTypeFiles()
-        return saveNoteType(col, notetype, adjustedTemplateChanges)
+        saveNoteType(notetype, adjustedTemplateChanges)
     }
 
     /**
      * Handles everything for a note type change at once - template add / deletes as well as content updates
      */
-    fun saveNoteType(
-        col: Collection,
+    suspend fun saveNoteType(
         notetype: NotetypeJson,
         templateChanges: ArrayList<TemplateChange>,
     ) {
         Timber.d("saveNoteType")
-        val oldNoteType = col.notetypes.get(notetype.id)
+        val oldNoteType = withCol { notetypes.get(notetype.id) }
 
-        // TODO: make undoable
         val newTemplates = notetype.templates
         for (change in templateChanges) {
             val oldTemplates = oldNoteType!!.templates
             when (change.type) {
                 ChangeType.ADD -> {
                     Timber.d("saveNoteType() adding template %s", change.ordinal)
-                    col.notetypes.addTemplate(oldNoteType, newTemplates[change.ordinal])
+                    withCol { notetypes.addTemplate(oldNoteType, newTemplates[change.ordinal]) }
                 }
                 ChangeType.DELETE -> {
                     Timber.d("saveNoteType() deleting template currently at ordinal %s", change.ordinal)
-                    col.notetypes.remTemplate(oldNoteType, oldTemplates[change.ordinal])
+                    withCol { notetypes.removeTemplate(oldNoteType, oldTemplates[change.ordinal]) }
                 }
             }
         }
@@ -136,8 +136,9 @@ class CardTemplateNotetype(
         // required for Rust: the modified time can't go backwards, and we updated the note type by adding fields
         // This could be done better
         notetype.mod = oldNoteType!!.mod
-        col.notetypes.save(notetype)
-        col.notetypes.update(notetype)
+        undoableOp {
+            notetypes.updateDict(notetype)
+        }
     }
 
     /**
@@ -405,7 +406,7 @@ class CardTemplateNotetype(
         /** Clear any temp note type files saved into internal cache directory  */
         fun clearTempNoteTypeFiles(): Int {
             var deleteCount = 0
-            for (c in AnkiDroidApp.instance.cacheDir.listFiles() ?: arrayOf()) {
+            for (c in appContext.cacheDir.listFiles() ?: arrayOf()) {
                 val absolutePath = c.absolutePath
                 if (absolutePath.contains("editedTemplate") && absolutePath.endsWith("json")) {
                     if (!c.delete()) {
@@ -541,8 +542,20 @@ class NotetypeFile(
                 NotetypeJson(target.toString())
             }
         } catch (e: IOException) {
-            Timber.e(e, "Unable to read+parse tempNoteType from file %s", absolutePath)
+            Timber.w(e, "Unable to read+parse tempNoteType from file %s", absolutePath)
             throw e
+        }
+
+    /**
+     * Returns the notetype, or `null` if the backing file can't be read (e.g. the temp
+     * file was cleaned up by the OS after process death, or the user cleared app data).
+     */
+    fun getNotetypeOrNull(): NotetypeJson? =
+        try {
+            getNotetype()
+        } catch (e: IOException) {
+            Timber.d(e, "Failed to read notetype")
+            null
         }
 
     override fun describeContents(): Int = 0

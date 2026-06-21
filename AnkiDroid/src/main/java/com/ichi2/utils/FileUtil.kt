@@ -21,11 +21,13 @@ import android.content.Context
 import android.net.Uri
 import android.os.Environment
 import android.os.StatFs
-import com.ichi2.compat.CompatHelper
+import com.ichi2.anki.compat.CompatHelper
 import timber.log.Timber
 import java.io.File
+import java.io.FileNotFoundException
 import java.io.IOException
 import java.io.InputStream
+import java.nio.file.FileSystems
 
 object FileUtil {
     /**
@@ -96,7 +98,7 @@ object FileUtil {
         // If we got a real file name, do a copy from it
         val inputStream: InputStream =
             try {
-                contentResolver.openInputStream(uri)!!
+                contentResolver.openInputStreamSafe(uri)!!
             } catch (e: Exception) {
                 Timber.w(e, "internalizeUri() unable to open input stream from content resolver for Uri %s", uri)
                 throw e
@@ -123,21 +125,6 @@ object FileUtil {
     fun listFiles(dir: File): Array<File> =
         dir.listFiles()
             ?: throw IOException("Failed to list the contents of '$dir'")
-
-    /**
-     * Returns a sequence containing the provided file, and its parents
-     * up to the root of the filesystem.
-     */
-    fun File.getParentsAndSelfRecursive() =
-        sequence {
-            var currentPath: File? = this@getParentsAndSelfRecursive.canonicalFile
-            while (currentPath != null) {
-                yield(currentPath)
-                currentPath = currentPath.parentFile?.canonicalFile
-            }
-        }
-
-    fun File.isDescendantOf(ancestor: File) = this.getParentsAndSelfRecursive().drop(1).contains(ancestor)
 }
 
 /**
@@ -180,10 +167,63 @@ data class FileNameAndExtension private constructor(
                 null
             } else {
                 FileNameAndExtension(
-                    fileName = fileName.substring(0, index),
+                    fileName = fileName.take(index),
                     extensionWithDot = fileName.substring(index),
                 )
             }
         }
     }
+}
+
+/**
+ * Open a stream on to the content associated with a content URI.
+ * If there is no data associated with the URI, [FileNotFoundException] is thrown.
+ * If the path is to the internal `/data` directory, a [SecurityException] is thrown.
+ *
+ * ##### Accepts the following URI schemes:
+ *
+ * * content ({@link #SCHEME_CONTENT})
+ * * android.resource ({@link #SCHEME_ANDROID_RESOURCE})
+ * * file ({@link #SCHEME_FILE})
+ *
+ * See [openAssetFileDescriptor][ContentResolver.openAssetFileDescriptor] for more information
+ * on these schemes.
+ *
+ * @param uri The desired URI.
+ * @return [InputStream] or `null` if the provider recently crashed.
+ *
+ * @throws FileNotFoundException if the provided URI could not be opened.
+ * @throws SecurityException if a `/data` path is accessed
+ *
+ * @see ContentResolver.openAssetFileDescriptor
+ *
+ * Fix for [java/android/unsafe-content-uri-resolution][https://codeql.github.com/codeql-query-help/java/java-android-unsafe-content-uri-resolution/]
+ */
+fun ContentResolver.openInputStreamSafe(uri: Uri): InputStream? {
+    val normalized = FileSystems.getDefault().getPath(uri.path).normalize()
+    if (normalized.startsWith("/data")) {
+        throw SecurityException("java/android/unsafe-content-uri-resolution")
+    }
+    return openInputStream(uri)
+}
+
+/**
+ * Extension method to safely resolve a child file within this parent directory.
+ * Prevents directory traversal attacks (e.g. "../", symlinks) by verifying canonical paths.
+ *
+ * @throws SecurityException If the resolved path escapes the parent directory.
+ */
+fun File.withFileNameSafe(childName: String): File {
+    val child = File(this, childName)
+    try {
+        val canonicalParent = this.canonicalPath
+        val canonicalChild = child.canonicalPath
+
+        if (!canonicalChild.startsWith(canonicalParent)) {
+            throw SecurityException("Invalid path: $childName traversal attempt detected")
+        }
+    } catch (e: IOException) {
+        throw IllegalArgumentException("Unable to resolve canonical path for $childName", e)
+    }
+    return child
 }

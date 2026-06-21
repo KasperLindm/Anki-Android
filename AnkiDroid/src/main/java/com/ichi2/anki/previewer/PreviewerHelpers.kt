@@ -16,17 +16,23 @@
 package com.ichi2.anki.previewer
 
 import android.content.Context
+import android.view.ViewGroup.MarginLayoutParams
 import androidx.appcompat.widget.ThemeUtils
-import com.ichi2.anki.AnkiDroidApp
+import androidx.core.view.updateLayoutParams
+import com.google.android.material.card.MaterialCardView
+import com.google.android.material.shape.ShapeAppearanceModel
 import com.ichi2.anki.LanguageUtils
+import com.ichi2.anki.common.android.appContext
+import com.ichi2.anki.libanki.CardOrdinal
+import com.ichi2.anki.settings.Prefs
+import com.ichi2.anki.settings.enums.FrameStyle
 import com.ichi2.themes.Themes
 import com.ichi2.utils.toRGBHex
 import org.intellij.lang.annotations.Language
 
 /**
  * Not exactly equal to anki's stdHtml. Some differences:
- * * `ankidroid.css` is added
- * * `bridgeCommand()` is ignored
+ * * `ankidroid.css` and `ankidroid-cardviewer.js` are added
  *
  * Aimed to be used only for reviewing/previewing cards
  *
@@ -35,7 +41,7 @@ import org.intellij.lang.annotations.Language
  */
 @Language("HTML")
 fun stdHtml(
-    context: Context = AnkiDroidApp.instance,
+    context: Context = appContext,
     extraJsAssets: List<String> = emptyList(),
     nightMode: Boolean = false,
 ): String {
@@ -54,6 +60,7 @@ fun stdHtml(
             "backend/js/mathjax.js",
             "backend/js/vendor/mathjax/tex-chtml-full.js",
             "backend/js/reviewer.js",
+            "scripts/ankidroid-cardviewer.js",
         ) + extraJsAssets
     val jsTxt =
         jsAssets.joinToString("\n") {
@@ -76,16 +83,30 @@ fun stdHtml(
         <body class="${bodyClass()}">
             <div id="qa"></div>
             $jsTxt
-            <script>bridgeCommand = function(){};</script>
         </body>
         </html>
         """.trimIndent()
 }
 
-/** @return body classes used when showing a card */
+/**
+ * "mathjax-rendered" is a legacy class kept only to support old note types.
+ *
+ * @return body classes used when showing a card
+ */
 fun bodyClassForCardOrd(
-    cardOrd: Int,
-    nightMode: Boolean = Themes.currentTheme.isNightMode,
-): String = "card card${cardOrd + 1} ${bodyClass(nightMode)}"
+    cardOrd: CardOrdinal,
+    nightMode: Boolean = Themes.isNightTheme,
+): String = "card card${cardOrd + 1} ${bodyClass(nightMode)} mathjax-rendered"
 
-private fun bodyClass(nightMode: Boolean = Themes.currentTheme.isNightMode): String = if (nightMode) "nightMode night_mode" else ""
+private fun bodyClass(nightMode: Boolean = Themes.isNightTheme): String = if (nightMode) "nightMode night_mode" else ""
+
+fun MaterialCardView.setFrameStyle() {
+    if (Prefs.frameStyle == FrameStyle.BOX && Prefs.isNewStudyScreenEnabled) {
+        updateLayoutParams<MarginLayoutParams> {
+            leftMargin = 0
+            rightMargin = 0
+        }
+        cardElevation = 0F
+        shapeAppearanceModel = ShapeAppearanceModel() // Remove corners
+    }
+}

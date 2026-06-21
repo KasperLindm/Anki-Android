@@ -1,18 +1,18 @@
-/****************************************************************************************
- * Copyright (c) 2015 Timothy Rae <perceptualchaos2@gmail.com>                          *
- *                                                                                      *
- * This program is free software; you can redistribute it and/or modify it under        *
- * the terms of the GNU General Public License as published by the Free Software        *
- * Foundation; either version 3 of the License, or (at your option) any later           *
- * version.                                                                             *
- *                                                                                      *
- * This program is distributed in the hope that it will be useful, but WITHOUT ANY      *
- * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A      *
- * PARTICULAR PURPOSE. See the GNU General Public License for more details.             *
- *                                                                                      *
- * You should have received a copy of the GNU General Public License along with         *
- * this program.  If not, see <http://www.gnu.org/licenses/>.                           *
- ****************************************************************************************/
+/*
+ * Copyright (c) 2015 Timothy Rae <perceptualchaos2@gmail.com>
+ *
+ * This program is free software; you can redistribute it and/or modify it under
+ * the terms of the GNU General Public License as published by the Free Software
+ * Foundation; either version 3 of the License, or (at your option) any later
+ * version.
+ *
+ * This program is distributed in the hope that it will be useful, but WITHOUT ANY
+ * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
+ * PARTICULAR PURPOSE. See the GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along with
+ * this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
 
 package com.ichi2.anki.dialogs
 
@@ -21,8 +21,8 @@ import android.os.Bundle
 import android.os.Message
 import androidx.annotation.CheckResult
 import androidx.appcompat.app.AlertDialog
-import androidx.core.os.bundleOf
 import com.ichi2.anki.AnkiActivity
+import com.ichi2.anki.CollectionManager.TR
 import com.ichi2.anki.ConflictResolution
 import com.ichi2.anki.R
 import com.ichi2.anki.dialogs.SyncErrorDialog.Type.DIALOG_CONNECTION_ERROR
@@ -36,8 +36,10 @@ import com.ichi2.anki.dialogs.SyncErrorDialog.Type.DIALOG_SYNC_SANITY_ERROR
 import com.ichi2.anki.dialogs.SyncErrorDialog.Type.DIALOG_SYNC_SANITY_ERROR_CONFIRM_KEEP_LOCAL
 import com.ichi2.anki.dialogs.SyncErrorDialog.Type.DIALOG_SYNC_SANITY_ERROR_CONFIRM_KEEP_REMOTE
 import com.ichi2.anki.dialogs.SyncErrorDialog.Type.DIALOG_USER_NOT_LOGGED_IN_SYNC
+import com.ichi2.anki.ui.internationalization.sentenceCase
 import com.ichi2.anki.utils.ext.dismissAllDialogFragments
 import com.ichi2.anki.utils.openUrl
+import com.ichi2.utils.titleWithHelpIcon
 
 class SyncErrorDialog : AsyncDialogFragment() {
     interface SyncErrorDialogListener {
@@ -64,7 +66,6 @@ class SyncErrorDialog : AsyncDialogFragment() {
         get() = Type.fromCode(requireArguments().getInt(SYNC_ERROR_DIALOG_TYPE_KEY))
 
     override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
-        super.onCreate(savedInstanceState)
         val dialog =
             AlertDialog
                 .Builder(requireContext())
@@ -75,7 +76,7 @@ class SyncErrorDialog : AsyncDialogFragment() {
                 // User not logged in; take them to login screen
                 dialog
                     .setIcon(R.drawable.ic_sync_problem)
-                    .setPositiveButton(R.string.log_in) { _, _ ->
+                    .setPositiveButton(TR.sentenceCase.logIn) { _, _ ->
                         requireSyncErrorDialogListener().loginToSyncServer()
                     }.setNegativeButton(R.string.dialog_cancel) { _, _ -> }
                     .create()
@@ -93,8 +94,12 @@ class SyncErrorDialog : AsyncDialogFragment() {
             DIALOG_SYNC_CONFLICT_RESOLUTION -> {
                 // Sync conflict; allow user to cancel, or choose between local and remote versions
                 dialog
-                    .setIcon(R.drawable.ic_sync_problem)
-                    .setPositiveButton(R.string.sync_conflict_keep_local_new) { _, _ ->
+                    .titleWithHelpIcon(
+                        text = getString(R.string.sync_conflict_title_new),
+                        startIcon = R.drawable.ic_sync_problem,
+                    ) {
+                        requireContext().openUrl(getString(R.string.link_sync_conflict_help))
+                    }.setPositiveButton(R.string.sync_conflict_keep_local_new) { _, _ ->
                         requireSyncErrorDialogListener().showSyncErrorDialog(DIALOG_SYNC_CONFLICT_CONFIRM_KEEP_LOCAL)
                     }.setNegativeButton(R.string.sync_conflict_keep_remote_new) { _, _ ->
                         requireSyncErrorDialogListener().showSyncErrorDialog(DIALOG_SYNC_CONFLICT_CONFIRM_KEEP_REMOTE)
@@ -148,7 +153,7 @@ class SyncErrorDialog : AsyncDialogFragment() {
             }
             DIALOG_MEDIA_SYNC_ERROR -> {
                 dialog
-                    .setPositiveButton(R.string.check_media) { _, _ ->
+                    .setPositiveButton(TR.sentenceCase.checkMediaAction) { _, _ ->
                         requireSyncErrorDialogListener().mediaCheck()
                         activity?.dismissAllDialogFragments()
                     }.setNegativeButton(R.string.dialog_cancel) { _, _ -> }
@@ -164,7 +169,7 @@ class SyncErrorDialog : AsyncDialogFragment() {
             }
             DIALOG_SYNC_BASIC_CHECK_ERROR -> {
                 dialog
-                    .setPositiveButton(R.string.check_db) { _, _ ->
+                    .setPositiveButton(TR.sentenceCase.checkDatabase) { _, _ ->
                         requireSyncErrorDialogListener().integrityCheck()
                         activity?.dismissAllDialogFragments()
                     }.setNegativeButton(R.string.dialog_cancel) { _, _ -> }
@@ -319,16 +324,16 @@ class SyncErrorDialog : AsyncDialogFragment() {
             dialogMessage: String?,
         ) = SyncErrorDialog().apply {
             arguments =
-                bundleOf(
-                    SYNC_ERROR_DIALOG_TYPE_KEY to dialogType.code,
-                    DIALOG_MESSAGE_KEY to dialogMessage,
-                )
+                Bundle().apply {
+                    putInt(SYNC_ERROR_DIALOG_TYPE_KEY, dialogType.code)
+                    putString(DIALOG_MESSAGE_KEY, dialogMessage)
+                }
         }
     }
 
     class SyncErrorDialogMessageHandler(
-        private val dialogType: Type,
-        private val dialogMessage: String?,
+        val dialogType: Type,
+        val dialogMessage: String?,
     ) : DialogHandlerMessage(WhichDialogHandler.MSG_SHOW_SYNC_ERROR_DIALOG, "SyncErrorDialog") {
         override fun handleAsyncMessage(activity: AnkiActivity) {
             // we may be called via any AnkiActivity but media check is a DeckPicker thing
@@ -341,10 +346,10 @@ class SyncErrorDialog : AsyncDialogFragment() {
             Message.obtain().apply {
                 what = this@SyncErrorDialogMessageHandler.what
                 data =
-                    bundleOf(
-                        SYNC_ERROR_DIALOG_TYPE_KEY to dialogType,
-                        DIALOG_MESSAGE_KEY to dialogMessage,
-                    )
+                    Bundle().apply {
+                        putInt(SYNC_ERROR_DIALOG_TYPE_KEY, dialogType.code)
+                        putString(DIALOG_MESSAGE_KEY, dialogMessage)
+                    }
             }
 
         companion object {

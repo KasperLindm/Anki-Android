@@ -1,19 +1,5 @@
-/***************************************************************************************
- *                                                                                      *
- * Copyright (c) 2016 Timothy Rae <perceptualchaos2@gmail.com>                          *
- *                                                                                      *
- * This program is free software; you can redistribute it and/or modify it under        *
- * the terms of the GNU Lesser General Public License as published by the Free Software *
- * Foundation; either version 3 of the License, or (at your option) any later           *
- * version.                                                                             *
- *                                                                                      *
- * This program is distributed in the hope that it will be useful, but WITHOUT ANY      *
- * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A      *
- * PARTICULAR PURPOSE. See the GNU General Public License for more details.             *
- *                                                                                      *
- * You should have received a copy of the GNU Lesser General Public License along with  *
- * this program.  If not, see <http://www.gnu.org/licenses/>.                           *
- ****************************************************************************************/
+// SPDX-FileCopyrightText: Copyright (c) 2016 Timothy Rae <perceptualchaos2@gmail.com>
+// SPDX-License-Identifier: LGPL-3.0-or-later
 package com.ichi2.anki.api
 
 import android.text.Html
@@ -46,10 +32,7 @@ internal object Utils {
         if (tags.isNullOrEmpty()) {
             return ""
         }
-        for (t in tags) {
-            t!!.replace(" ".toRegex(), "_")
-        }
-        return tags.joinToString(" ")
+        return tags.joinToString(" ") { it!!.replace(" ", "_") }
     }
 
     fun splitTags(tags: String): Array<String> = tags.trim().split("\\s+".toRegex()).toTypedArray()
@@ -65,9 +48,9 @@ internal object Utils {
             // pad checksum to 40 bytes, as is done in the main AnkiDroid code
             if (result.length < 40) {
                 val zeroes = "0000000000000000000000000000000000000000"
-                result = zeroes.substring(0, zeroes.length - result.length) + result
+                result = zeroes.take(zeroes.length - result.length) + result
             }
-            java.lang.Long.valueOf(result.substring(0, 8), 16)
+            java.lang.Long.valueOf(result.take(8), 16)
         } catch (e: Exception) {
             // This is guaranteed to never happen
             throw IllegalStateException(

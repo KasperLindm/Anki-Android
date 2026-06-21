@@ -18,6 +18,7 @@ package com.ichi2.anki.ui.windows.reviewer.whiteboard
 import android.content.SharedPreferences
 import android.graphics.Color
 import androidx.core.content.edit
+import com.ichi2.utils.toRGBAHex
 
 /**
  * Holds the configuration for a single brush.
@@ -25,7 +26,9 @@ import androidx.core.content.edit
 data class BrushInfo(
     val color: Int,
     val width: Float,
-)
+) {
+    override fun toString(): String = "BrushInfo(color=${color.toRGBAHex()}, width=${"%.1f".format(width)})"
+}
 
 /**
  * Repository for handling data operations, specifically for saving and loading
@@ -91,6 +94,10 @@ class WhiteboardRepository(
         }
         set(value) = sharedPreferences.edit { putString(KEY_TOOLBAR_ALIGNMENT, value.name) }
 
+    var isToolbarShown: Boolean
+        get() = sharedPreferences.getBoolean(KEY_IS_TOOLBAR_SHOWN, true)
+        set(value) = sharedPreferences.edit { putBoolean(KEY_IS_TOOLBAR_SHOWN, value) }
+
     private fun List<BrushInfo>.toPreferenceString(): String = this.joinToString(",") { "${it.color}|${it.width}" }
 
     private fun String.fromPreferenceString(): List<BrushInfo> =
@@ -117,6 +124,7 @@ class WhiteboardRepository(
         private const val KEY_ERASER_MODE = "eraser_mode"
         private const val KEY_STYLUS_ONLY_MODE = "stylus_only_mode"
         private const val KEY_TOOLBAR_ALIGNMENT = "toolbar_alignment"
+        private const val KEY_IS_TOOLBAR_SHOWN = "is_toolbar_shown"
         const val DEFAULT_STROKE_WIDTH = 10f
         const val DEFAULT_ERASER_WIDTH = 30f
 

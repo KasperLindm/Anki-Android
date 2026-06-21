@@ -1,18 +1,5 @@
-<?xml version="1.0" encoding="utf-8"?><!--
-  ~  Copyright (c) 2025 David Allison <davidallisongithub@gmail.com>
-  ~
-  ~  This program is free software; you can redistribute it and/or modify it under
-  ~  the terms of the GNU General Public License as published by the Free Software
-  ~  Foundation; either version 3 of the License, or (at your option) any later
-  ~  version.
-  ~
-  ~  This program is distributed in the hope that it will be useful, but WITHOUT ANY
-  ~  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
-  ~  PARTICULAR PURPOSE. See the GNU General Public License for more details.
-  ~
-  ~  You should have received a copy of the GNU General Public License along with
-  ~  this program.  If not, see <http://www.gnu.org/licenses/>.
-  -->
+<?xml version="1.0" encoding="utf-8"?>
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     xmlns:app="http://schemas.android.com/apk/res-auto"
@@ -34,7 +21,7 @@
             app:layout_constraintTop_toTopOf="parent"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintEnd_toStartOf="@+id/text"
+            app:layout_constraintEnd_toStartOf="@+id/loading_message"
             app:layout_constraintHorizontal_chainStyle="packed"
             app:layout_constraintHorizontal_bias="0.0"
             android:indeterminate="true" />
@@ -46,7 +33,7 @@
         ~  Using "wrap_content" here may cause message text overflow.
         -->
         <TextView
-            android:id="@+id/text"
+            android:id="@+id/loading_message"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_marginStart="16dp"
@@ -59,7 +46,7 @@
     </androidx.constraintlayout.widget.ConstraintLayout>
 
     <com.ichi2.ui.FixedTextView
-        android:id="@+id/empty_report_label"
+        android:id="@+id/empty_report_message"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:paddingTop="16dp"
@@ -85,7 +72,7 @@
             app:layout_constraintTop_toTopOf="parent"
             android:layout_marginTop="8dp"
             android:paddingHorizontal="8dp"
-            app:layout_constraintBottom_toTopOf="@+id/preserve_notes">
+            app:layout_constraintBottom_toTopOf="@+id/keep_notes_with_no_valid_cards">
             <TextView
                 android:id="@+id/report"
                 android:layout_width="match_parent"
@@ -93,7 +80,7 @@
         </ScrollView>
 
         <CheckBox
-            android:id="@+id/preserve_notes"
+            android:id="@+id/keep_notes_with_no_valid_cards"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:checked="true"

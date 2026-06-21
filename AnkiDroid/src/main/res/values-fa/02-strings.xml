@@ -6,55 +6,35 @@
  ~    Instructions for this are available here: https://github.com/ankidroid/Anki-Android/wiki/Translating-AnkiDroid. 
  ~    You may also find the documentation on contributing to Anki useful: https://github.com/ankidroid/Anki-Android/wiki/Contributing   
  ~ 
- ~ Copyright (c) 2009 Andrew <andrewdubya@gmail> 
- ~ Copyright (c) 2009 Edu Zamora <edu.zasu@gmail.com> 
- ~ Copyright (c) 2009 Daniel Svaerd <daniel.svard@gmail.com> 
- ~ Copyright (c) 2009 Nicolas Raoul <nicolas.raoul@gmail.com> 
- ~ Copyright (c) 2010 Norbert Nagold <norbert.nagold@gmail.com> 
- ~ This program is free software; you can redistribute it and/or modify it under 
- ~ the terms of the GNU General Public License as published by the Free Software 
- ~ Foundation; either version 3 of the License, or (at your option) any later 
- ~ version. 
- ~ 
- ~ This program is distributed in the hope that it will be useful, but WITHOUT ANY 
- ~ WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A 
- ~ PARTICULAR PURPOSE. See the GNU General Public License for more details. 
- ~ 
- ~ You should have received a copy of the GNU General Public License along with 
- ~ this program.  If not, see <http://www.gnu.org/licenses/>. 
+ ~ SPDX-License-Identifier: GPL-3.0-or-later
+ ~ SPDX-FileCopyrightText: Copyright (c) 2009 Andrew <andrewdubya@gmail>
+ ~ SPDX-FileCopyrightText: Copyright (c) 2009 Edu Zamora <edu.zasu@gmail.com>
+ ~ SPDX-FileCopyrightText: Copyright (c) 2009 Daniel Svaerd <daniel.svard@gmail.com>
+ ~ SPDX-FileCopyrightText: Copyright (c) 2009 Nicolas Raoul <nicolas.raoul@gmail.com>
+ ~ SPDX-FileCopyrightText: Copyright (c) 2010 Norbert Nagold <norbert.nagold@gmail.com>
  -->
  
 <!--
-~ Copyright (c) 2009 Andrew <andrewdubya@gmail>
-~ Copyright (c) 2009 Edu Zamora <edu.zasu@gmail.com>
-~ Copyright (c) 2009 Daniel Svärd <daniel.svard@gmail.com>
-~ Copyright (c) 2009 Nicolas Raoul <nicolas.raoul@gmail.com>
-~ Copyright (c) 2010 Norbert Nagold <norbert.nagold@gmail.com>
-~
-~ This program is free software; you can redistribute it and/or modify it under
-~ the terms of the GNU General Public License as published by the Free Software
-~ Foundation; either version 3 of the License, or (at your option) any later
-~ version.
-~
-~ This program is distributed in the hope that it will be useful, but WITHOUT ANY
-~ WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
-~ PARTICULAR PURPOSE. See the GNU General Public License for more details.
-~
-~ You should have received a copy of the GNU General Public License along with
-~ this program.  If not, see <http://www.gnu.org/licenses/>.
--->
+  ~ SPDX-License-Identifier: GPL-3.0-or-later
+  ~ SPDX-FileCopyrightText: Copyright (c) 2009 Andrew <andrewdubya@gmail>
+  ~ SPDX-FileCopyrightText: Copyright (c) 2009 Edu Zamora <edu.zasu@gmail.com>
+  ~ SPDX-FileCopyrightText: Copyright (c) 2009 Daniel Svärd <daniel.svard@gmail.com>
+  ~ SPDX-FileCopyrightText: Copyright (c) 2009 Nicolas Raoul <nicolas.raoul@gmail.com>
+  ~ SPDX-FileCopyrightText: Copyright (c) 2010 Norbert Nagold <norbert.nagold@gmail.com>
+  -->
 <resources xmlns:tools="http://schemas.android.com/tools">
     <!-- Navigation drawer strings -->
     <string name="drawer_open">باز کردن منوی جانبی</string>
     <string name="drawer_close">بستن منوی جانبی</string>
     <string name="note_message">یادداشت ذخیره شد</string>
+    <!-- Note editor screen -->
     <string name="CardEditorCardDeck">دسته کارت:</string>
     <string name="CardEditorNoteDeck">دسته:</string>
     <string name="CardEditorModel">نوع:</string>
     <string name="CardEditorTags">برچسب ها: %1$s</string>
     <string name="CardEditorCards">کارت‌ها: %1$s</string>
-    <string name="edit_occlusions">ویرایش پوشانده ها</string>
-    <string name="tag_name">نام برچسب</string>
+    <string name="edit_occlusions">Edit occlusions</string>
+    <string name="paste_from_clipboard" maxLength="28">جای گذاری از کیبورد</string>
     <string name="add_new_filter_tags">افزودن/فیلترکردن برچسب‌ها</string>
     <string name="add_tag" maxLength="28">اضافه نمودن برچسب</string>
     <string name="check_all_tags" maxLength="28">علامت زدن/نزدن همه برچسب ها</string>
@@ -70,13 +50,12 @@
     <string name="whiteboard_align_left" comment="Option to align the whiteboard toolbar on the left" maxLength="28">چپ</string>
     <string name="whiteboard_align_bottom" comment="Option to align the whiteboard toolbar on the bottom" maxLength="28">پایین</string>
     <string name="whiteboard_align_right" comment="Option to align the whiteboard toolbar on the right" maxLength="28">راست</string>
-    <string name="whiteboard_clear" comment="Button text to clear the whiteboard" maxLength="28">پاک کن</string>
     <string name="whiteboard_more_options" comment="Tooltip of the whiteboard \'More\' button" maxLength="28">گزینه های بیشتر</string>
-    <string name="whiteboard_remove_brush_message">Are you sure you want to remove this brush from your palette?</string>
+    <string name="whiteboard_remove_brush_message">آیا مطمئن هستید که می‌خواهید این قلم‌مو را از پالت خود حذف کنید؟</string>
     <string name="whiteboard_ink_eraser" comment="Title of the whiteboard Ink eraser">جوهر</string>
     <string name="whiteboard_stroke_eraser" comment="Title of the whiteboard Stroke eraser">خط</string>
-    <string name="stylus_mode" comment="Title of the menu item that toggles the whiteboard stylus mode" maxLength="28">Stylus mode</string>
-    <string name="cannot_remove_last_brush_message">The last brush may not be removed</string>
+    <string name="stylus_mode" comment="Title of the menu item that toggles the whiteboard stylus mode" maxLength="28">حالت قلم</string>
+    <string name="cannot_remove_last_brush_message">آخرین قلم ممکن است حذف نشود.</string>
     <string name="enable_whiteboard" maxLength="28">فعال سازی تخته سفید</string>
     <string name="disable_whiteboard">غیر فعال کردن تخته سفید</string>
     <string name="show_whiteboard">نمایش تخته سفید</string>
@@ -84,6 +63,7 @@
     <string name="disable_eraser" maxLength="28">غیرفعال‌کردن پاک‌کن</string>
     <string name="hide_whiteboard" maxLength="28">پنهان کردن تخته سفید</string>
     <string name="clear_whiteboard" maxLength="28">پاک کردن تخته سفید</string>
+    <string name="hide_toolbar" maxLength="28">Hide toolbar</string>
     <string name="replay_media" maxLength="28">بازپخش رسانه</string>
     <string name="leech_suspend_notification">کارت به عنوان مزاحم مشخص و تعلیق شده است</string>
     <string name="leech_notification">کارت به عنوان مزاحم مشخص شده است</string>
@@ -95,8 +75,12 @@
     <string name="webview_crash_fatal">خطای وخیم: تنظیم‌کنندۀ ظاهر برنامه دچار مشکل شد. دلیل: %s</string>
     <string name="webview_crash_loop_dialog_title">مشکل در سیستم تنظیم‌کنندۀ ظاهر برنامه</string>
     <string name="webview_crash_loop_dialog_content">سیستم در تنظیم ظاهر کارت %1$s با خطا مواجه شد.\n%2$s</string>
-    <string name="slide_to_cancel" comment="Message shown when pressing the record button">Slide to cancel</string>
+    <string name="slide_to_cancel" comment="Message shown when pressing the record button">برای لغو، صفحه و بکشید.</string>
     <string name="filter_by_flags" maxLength="41">پرچم ها</string>
+    <!-- filtered deck options -->
+    <string name="filtered_option_delay_again">Delay for again</string>
+    <string name="filtered_option_delay_hard">Delay for hard</string>
+    <string name="filtered_option_delay_good">Delay for good</string>
     <!-- Custom study options -->
     <string name="custom_study_loading_tags">در حال ساختن لیست تگ ها&#8230;</string>
     <!-- Study options -->
@@ -118,7 +102,6 @@
     <string name="close">بستن</string>
     <string name="select">انتخاب</string>
     <string name="field_remapping">%1$s (از \"%2$s\")</string>
-    <string name="confirm_map_cards_to_nothing">هرکارتی که با هیچ چیز پیوند نخورده باشد حذف خواهد شد. اگر یک یادداشت هیچ کارت باقی مانده ای نداشته باشد، از دست خواهد رفت. ادامه می دهید؟</string>
     <string name="missing_note_type">نوع یادداشتی یافت نشد</string>
     <string name="card_previewer_empty_front_indicator" comment="Extra text appended onto a tab title in the card previewer so that the user can see at a glance whether a card has no front.">%1$s (خالی)</string>
     <!-- Image cropper -->
@@ -147,9 +130,6 @@
     <string name="preview_progress_bar_text" comment="What card we are on out of how many in card previewer progress bar">%1$d از %2$d</string>
     <string name="rename" comment="Confirm that the renaming action should be processed." maxLength="28">تغییر نام</string>
     <string name="checks_action" maxLength="28">بررسی</string>
-    <string name="check_db" maxLength="28">بررسی پایگاه داده</string>
-    <string name="check_media" maxLength="28">بررسی رسانه ها</string>
-    <string name="empty_cards" maxLength="28">کارت های خالی</string>
     <string name="unknown_type_field_warning">پاسخ را تایپ کنید:فیلد نامشخص %s</string>
     <string name="delete_deck" comment="Message on a progress bar starting a deck is being deleted.">در حال حذف دسته کارت&#8230;</string>
     <string name="info_rate">امتیازدهی به AnkiDroid</string>
@@ -164,7 +144,8 @@
     <string name="import_error_not_apkg_extension">فایل \"%s\" فاقد پسوند .apkg یا .colpkg است</string>
     <string name="import_error_load_imported_database">جایگزین پایگاه داده آنکی (.anki2) هنوز پشتیبانی نشده است. لطفاً برای راهنمایی در مورد جایگزینی راهنما را بخوانید.</string>
     <string name="import_error_content_provider">فایل انتخاب شده به صورت خودکار توسط AnkiDroid نمی تواند وارد شود. لطفا راهنمای کاربر را ببینید که چگونه به صورت دستی بتوان فایل Anki را وارد کرد:\n%s</string>
-    <string name="import_error_copy_to_cache">کش کردن فایل ناموفق بود (احتمالا به دلیل کمبود حافظه)</string>
+    <string name="import_error_copy_to_cache_title">کش کردن فایل ناموفق بود</string>
+    <string name="import_error_copy_to_cache_explanation" comment="The substitution is a list of suggested fixes in bullet point form">این مشکل اغلب به دلیل وجود اشکال در برنامه‌ای که برای انتخاب فایل استفاده کرده‌اید، ایجاد می‌شود. لطفاً راه‌حل‌های زیر را امتحان کنید:\n\n%s</string>
     <string name="import_interrupted">در فرایند ورود اختلال ایجاد شد: AnkiDroid بسته بود</string>
     <string name="export_ready_title">خروجی آماده است</string>
     <string name="export_send_no_handlers">هیچ برنامه ای برای بررسی apkg در دسترس نیست. در حال ذخیره&#8230;</string>
@@ -183,15 +164,14 @@
     <string name="export_choice_save_to">ذخیره به</string>
     <string name="export_saving_exported_collection">در حال ذخیره فایل صادر شده&#8230;</string>
     <string name="study_options" comment="Name for a preference category in Filtered deck (aka Cram deck, aka Custom study) options" maxLength="28">گزینه ها</string>
-    <string name="menu__deck_options" maxLength="28">گزینه های دسته</string>
     <string name="menu__study_options" comment="Menu item that opens options for a Filtered deck (aka Cram deck, aka Custom study)">گزینه‌های مطالعه</string>
     <string name="select_tts" maxLength="28">تنظیم زبان تبدیل متن به صدا TTS</string>
-    <string name="custom_study" maxLength="28">مطالعه بر اساس تنظیمات دلخواه</string>
     <string name="dyn_deck_desc">این یک دسته ویژه برای مطالعه در خارج از زمان‌بندی عادی می باشد.بعد از مرور کارتها آنها به‌طور خودکار به دسته های اصلی برگردانده خواهد شد.حذف کردن این دسته از لیست دسته ها سبب می شود که همه کارتهای باقیمانده نیز به دسته اصلی برگردانده شود.</string>
-    <string name="steps_error">مراحل باید با اعداد بزرگتر از 0 شماره گذاری گردند</string>
-    <string name="steps_min_error">حداقل یک مرحله لازم است</string>
     <string name="tag_editor_add_feedback">برای تایید افزودن \"%1$s\" روی \"%2$s\" ضربه بزنید</string>
     <string name="tag_editor_add_feedback_existing">برچسب موجود \"%1$s\" انتخاب شده است</string>
+    <string name="tag_already_exists">Tag already exists</string>
+    <string name="error_name_exists">Name already exists</string>
+    <string name="warning_find_and_replace">Consider backing up your collection from DeckPicker before using this option!</string>
     <!-- Time spans -->
     <!-- Currently only used if exporting APKG fails -->
     <string name="apk_share_error">اشتراک گذاری فایل apkg با خطا مواجه شد</string>
@@ -203,15 +183,17 @@
     <!-- The name of the deck which corrupt cards will be moved to -->
     <!-- Deckpicker Background -->
     <string name="background_image_title" maxLength="41">پس زمینه</string>
-    <string name="choose_an_image" maxLength="41">انتخاب تصویر</string>
     <string name="remove_wallpaper_image" maxLength="41">حذف نسخه های پشتیبان</string>
-    <string name="remove_background_image">حذف پس‌زمینه؟</string>
+    <string name="remove_background_image">Are you sure you wish to remove the background?</string>
     <!-- Card Template Browser Appearance -->
-    <string name="restore_default" maxLength="28">بازنشانی پیش‌فرض</string>
-    <string name="reviewer_tts_cloze_spoken_replacement">خالی</string>
+    <string name="restore_default" maxLength="28">Restore default</string>
     <!-- Whiteboard eraser mode toggle message in Reviewer -->
     <string name="white_board_eraser_enabled">پاک‌کن فعال شد</string>
     <string name="white_board_eraser_disabled">پاک‌کن غیرفعال شد</string>
+    <string comment="Progress amount e.g. \'28 MB/141 MB\'. %1$s is the current amount, %2$s is the max." name="progress_amount_bytes">%1$s/%2$s</string>
+    <string name="media_file_size_warning_title">Media too large</string>
+    <string name="media_file_size_warning_message" comment="1$s: File name, 2$s: File size, 3$s: The size limit (e.g. 100MB)">The file \"%1$s\" (%2$s) exceeds the AnkiWeb limit of %3$s and cannot be synced. Add anyway?</string>
+    <string name="media_file_size_add_anyway">Add anyway</string>
     <!-- Whiteboard save image message in the Study Screen -->
     <string name="white_board_image_save_failed">ذخیرۀ تصویر تخته سفید با مشکل مواجه شد. %s</string>
     <string name="white_board_image_saved">تصویر تخته سفید در %s ذخیره شد</string>
@@ -233,39 +215,49 @@
     <string name="search_decks" maxLength="28">جستجو در تمام دسته‌ها</string>
     <string name="ankidroid_init_failed_webview_title">خطای مخرب</string>
     <string name="ankidroid_init_failed_webview">AnkiDroid بر روی سیستم WebView تکیه میکند که غیرقابل دسترسی است. این میتواند اتفاق بیفتد اگر سیستم در حال نسب کردن آپدیت باشد. لطفا دقایقی دیگر تلاش کنید.\n\n%s</string>
+    <string name="ankidroid_init_failed_storage">آنکی‌دروید به دلیل خطای اندروید نمی‌تواند به فضای ذخیره‌سازی دسترسی داشته باشد
+
+خطا.\n\n%s</string>
     <!-- A Menu item to change the Font Size (currently in the Note Editor) -->
     <string name="menu_font_size" maxLength="28">اندازه فونت</string>
     <string name="menu_show_toolbar" comment="Checkable item stating whether the note editor toolbar should be shown" maxLength="28">نمایش نوار ابزار</string>
-    <string name="format_insert_bold">قالب‌بندی پررنگ</string>
-    <string name="format_insert_italic">قالب‌بندی کج (ایتالیک)</string>
-    <string name="format_insert_underline">قالب‌بندی خط‌ زیرین</string>
-    <string name="insert_horizontal_line">افزودن خط افقی</string>
-    <string name="insert_heading">افزودن سربرگ</string>
-    <string name="format_font_size">تغییر اندازۀ قلم</string>
-    <string name="insert_mathjax">افزودن معادله MathJax</string>
+    <string name="format_insert_bold">Format as bold</string>
+    <string name="format_insert_italic">Format as italic</string>
+    <string name="format_insert_underline">Format as underline</string>
+    <string name="insert_horizontal_line">Insert horizontal line</string>
+    <string name="insert_heading">Insert heading</string>
+    <string name="format_font_size">Change font size</string>
+    <string name="insert_mathjax">Insert MathJax equation</string>
     <string name="note_editor_toolbar_icon">نوشته دکمه</string>
-    <string name="before_text">کد HTML قبل از نوشته</string>
-    <string name="after_text">کد HTML بعد از نوشته</string>
-    <string name="add_toolbar_item">ساخت مورد نوار‌ابزاری</string>
-    <string name="edit_toolbar_item">ویرایش دکمه نوارابزاری</string>
+    <string name="before_text">HTML before selection</string>
+    <string name="after_text">HTML after selection</string>
+    <string name="add_toolbar_item">Create toolbar item</string>
+    <string name="edit_toolbar_item">Edit toolbar item</string>
     <string name="toolbar_item_explain_edit_or_remove">کد HTMLای که میخواهید قبل و بعد نوشته‌تان قرار بگیرد را وارد کنید\n\nبرای ویرایش یا حذف هریک از دکمه‌های نوارابزار، آنرا نگه دارید</string>
-    <string name="remove_toolbar_item">حذف دکمه نوارابزاری؟</string>
+    <string name="remove_toolbar_item">Remove toolbar item?</string>
     <string name="note_editor_image_too_large">عکس زیادی بزرگ است، لطفا عکس را دستی وارد کنید</string>
     <string name="note_editor_video_too_large">فایل ویدیو زیادی بزرگ است، لطفا ویدیو را دستی وارد کنید</string>
     <string name="note_editor_audio_too_large">فایل صدا زیادی بزرگ است، لطفا صدا را دستی وارد کنید</string>
     <string name="ankidroid_cannot_open_after_backup_try_again" comment="After an Android backup is restored, AnkiDroid opens and shows this message.         Opening AnkiDroid again will work correctly">پشتیبان گیری اندروید درحال انجام شدن هست. لطفا دوباره تلاش کنید</string>
     <string name="create_shortcut_error_vivo" comment="iManager is an app on Vivo phones">شما به iManager نیاز دارید تا به AnkiDroid اجازه اضافه کردن میانبر بدهید</string>
+    <string name="create_shortcut_error_miui" comment="Keep the message as short, as this is shown in a toast. %s is the app name: \'AnkiDroid\'">Allow ‘Home screen shortcuts’ in system settings for %s to add shortcuts</string>
     <string name="create_shortcut_failed" comment="home screen == launcher">صفحه اصلی شما به AnkiDroid اجازه میانبور اضافه کردن نمیدهد</string>
     <string name="create_shortcut_error">خطا در افزودن میانبُر: %s</string>
     <string name="note_editor_capitalize" comment="This is for a switch with a checkbox - on: enabled" maxLength="28">جملات را با حروف بزرگ بنویس</string>
     <string name="menu_scroll_toolbar" comment="Checkbox stating whether note editor toolbar is scrollable or stacked. Checked: Scroll" maxLength="28">پیمایش نوار ابزار</string>
-    <!-- Symbols used as Button text in IncrementNumberRangePreference -->
+    <!-- Dialog hints -->
+    <string name="dialog_hint_url">URL</string>
+    <string name="dialog_hint_certificate">Certificate</string>
+    <!-- IncrementNumberRangePreference -->
     <string name="plus_sign" comment="Label for increment button in IncrementerNumberRangePreference">+</string>
     <string name="minus_sign" comment="Label for decrement button in IncrementerNumberRangePreference">-</string>
+    <string name="invalid_value" comment="Error message in IncrementerNumberRangePreference when input is not a valid number">Invalid value</string>
+    <string name="maximum_value_is" comment="Error message in IncrementerNumberRangePreference. %d is the maximum allowed value">Maximum value is %d</string>
+    <string name="minimum_value_is" comment="Error message in IncrementerNumberRangePreference. %d is the minimum allowed value">Minimum value is %d</string>
     <!-- Used for credential empty warning message -->
     <string name="invalid_email">لطفا یک آدرس ایمیل معتبر وارد کنید</string>
     <string name="password_empty">رمز عبور لازم است</string>
-    <string name="back_pressed_once">برای خروج، دکمه بازگشت را مجددا فشار دهید</string>
+    <string name="back_pressed_once">Go back again to exit</string>
     <!-- %% is required to display % symbol. Reference: https://stackoverflow.com/a/16834358 -->
     <string name="percentage">%s%%</string>
     <string name="download_deck">دانلود دسته</string>
@@ -303,6 +295,10 @@
     <!-- Manage note types -->
     <string name="field_editor_model_not_available">دسترسی به مجموعه ناموقف بود. لطفا دوباره تلاش کنید</string>
     <string name="cd_manage_notetypes_add">افزودن یک نوع یادداشت جدید</string>
+    <plurals name="note_types_selected">
+        <item quantity="one">%d نوع یادداشت انتخاب شد</item>
+        <item quantity="other">%d نوع یادداشت انتخاب شد</item>
+    </plurals>
     <!-- App Intro -->
     <string name="intro_ankidroid_tagline_one">کمتر مطالعه کنید</string>
     <string name="intro_ankidroid_tagline_two">بیشتر به خاطر بسپارید</string>
@@ -311,7 +307,6 @@
     <string name="intro_sync_from_ankiweb">با AnkiWeb همگام سازی کن</string>
     <!-- IntentHandler -->
     <string name="app_not_initialized_new">انکی‌دروید هنوز راه‌اندازی نشده است. لطفاً انکی‌دروید را باز کرده و دوباره تلاش کنید</string>
-    <string name="already_logged_in">قبلاً وارد شده‌اید</string>
     <!-- Deck Creation -->
     <string name="deck_created">دسته ایجاد شد</string>
     <string name="deck_renamed">نام دسته تغییر کرد</string>
@@ -320,9 +315,7 @@
     <!-- Browser Options Dialog -->
     <string name="show_cards" comment="Label for toggle cards button in BrowserOptionsDialog">کارتها</string>
     <string name="show_notes" comment="Label for toggle notes button in BrowserOptionsDialog">یادداشت‌ها</string>
-    <string name="toggle_cards_notes">تغییر کارت‌ها/یادداشت‌ها</string>
     <string name="truncate_content_help">ارتفاع هر ردیف از مرورگر را کوتاه کن تا فقط ۳ خط اول محتوا نشان داده شود</string>
-    <string name="browser_options_dialog_heading">تنظیمات مرورگر</string>
     <string name="audio_saved">مورد ضبط شده ذخیره شد</string>
     <string name="deleting_selected_notes">در حال حذف یادداشت های انتخاب شده</string>
     <string name="tts_voices_default_text" comment="The default text to speak when selecting     Text to speech voices">برای شنیدن رو صدا کلیک کنید</string>
@@ -336,10 +329,9 @@
     <string name="shared_decks_login_required">لطفا وارد حساب کاربری خود شوید که دسته های بیشتری را دانلود کنید</string>
     <string name="deck_description_field_hint">توضیحات</string>
     <string name="deck_description_saved">توضیح به‌روز شد</string>
-    <string name="format_deck_description_as_markdown">به فرمت مارک‌داون درآور</string>
+    <string name="format_deck_description_as_markdown">Format as Markdown</string>
     <string name="help_button_content_description">راهنمای «%s» را باز کن</string>
     <string name="failed_to_copy">کپی کردن ناموفق بود</string>
-    <string name="card_browser_unavailable_when_notes_mode">در حالت \'یادداشت‌ها\' در دسترس نیست</string>
     <plurals name="unbury_cards_feedback">
         <item quantity="one">%d کارت از حالت مخفی خارج شد</item>
         <item quantity="other">%d کارت از حالت مخفی خارج شد</item>
@@ -352,14 +344,13 @@
     <string name="play_recording">پخش</string>
     <string name="next_recording" comment="Description of a button to go to the next recording">بعدی</string>
     <!--  AlertDialog in the deleteCardTemplate  -->
-    <string name="orphan_note_title">نمیتوان نوع کارت را حذف کرد</string>
+    <string name="orphan_note_title">Cannot delete card type</string>
     <string name="orphan_note_message">حذف این نوع کارت باعث بی کارت شدن بعضی یادداشت ها می شود</string>
     <string name="voice_not_supported">صدای انتخاب شده همایت شده نیست. یکی دیگر را انتخاب کنید یا یک موتور صدا نصب کنید.</string>
     <!--Keyboard shortcuts dialog-->
     <string name="deck_picker_group" comment="Label for the group of shortcuts related to the deck picker">انتخاب کننده دسته</string>
     <string name="delete_deck_without_confirmation" comment="Description of the shortcut that deletes the deck without asking for confirmation">دسته را بدون تایید حذف کن</string>
     <string name="note_editor_group" comment="Label for the group of shortcuts related to the note editor">ویرایشگر یادداشت</string>
-    <string name="select_deck" comment="Description of the shortcut that opens the deck selection dialog">انتخاب دسته</string>
     <string name="select_note_type" comment="Description of the shortcut that shows the note selection spinner">انتخاب نوع یادداشت</string>
     <string name="tag_editor" comment="Description of the shortcut that opens the tags dialog">ویرایشگر یادداشت</string>
     <string name="card_template_editor_group" comment="Label for the group of shortcuts related to the card template editor">ویرایشگر قالب کارت</string>
@@ -369,7 +360,14 @@
     <string name="copy_the_template" comment="Description of the shortcut that copy the template as markdown">ویرایش قالب به عنوان مارک‌داون</string>
     <string name="edit_browser_appearance" comment="Description of the shortcut that edits the browser appearance of card template">ویرایش ظاهر مرورگر</string>
     <string name="missing_user_action_dialog_message" comment="%s is the user action number">عمل کاربر %s در این نوع کارت تنظیم نشده است. لطفاً آن را پیکربندی کنید.</string>
+    <string name="feature_not_supported_by_study_screen">This card has features that are not yet supported by the new study screen.</string>
     <string name="directory_inaccessible_info">برای کسب اطلاعات بیشتر در مورد نحوه بازیابی دسترسی اینجا %s را ببینید یا به تنظیمات بروید تا پوشه مجموعه را به‌روزرسانی کنید.</string>
     <!-- Scheduler Upgrade Required Dialog title-->
     <string name="scheduler_upgrade_required_dialog_title" comment="Shown in a dialog when user has imported a collection using a very old version of the Anki spaced repetition scheduler">ارتقای زمان‌بند لازم است</string>
+    <!-- Whitespace is OK -->
+    <string name="list_separator" comment="The character and spacing to display between elements of a list, for example \', \' in \'Apple, Banana, Cherry" tools:ignore="TranslationTypo">, </string>
+    <!--Set up date-->
+    <string name="set_due_date_day" comment="Used for setting due date">Day</string>
+    <string name="set_due_date_date_range">Date range</string>
+    <string comment="Shown when retrying a running action" name="already_in_progress">Already in progress</string>
 </resources>

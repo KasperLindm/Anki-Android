@@ -16,8 +16,10 @@
 
 package com.ichi2.anki
 
+import android.Manifest
 import android.content.Context
 import android.content.SharedPreferences
+import android.database.sqlite.SQLiteDatabaseCorruptException
 import android.database.sqlite.SQLiteFullException
 import android.os.Build
 import android.os.Environment
@@ -25,14 +27,21 @@ import android.os.Parcelable
 import androidx.annotation.CheckResult
 import androidx.annotation.RequiresApi
 import androidx.core.content.edit
+import com.ichi2.anki.backend.DatabaseCorruption
+import com.ichi2.anki.common.crashreporting.CrashReportService
+import com.ichi2.anki.common.permissions.hasAllPermissions
+import com.ichi2.anki.common.utils.android.SdCard
+import com.ichi2.anki.compat.CompatHelper.Companion.sdkVersion
 import com.ichi2.anki.exception.StorageAccessException
 import com.ichi2.anki.servicelayer.PreferenceUpgradeService
 import com.ichi2.anki.servicelayer.PreferenceUpgradeService.setPreferencesUpToDate
 import com.ichi2.anki.servicelayer.ScopedStorageService.isLegacyStorage
+import com.ichi2.anki.storage.AnkiDroidFolder
+import com.ichi2.anki.ui.windows.permissions.InternetPermissionFragment
+import com.ichi2.anki.ui.windows.permissions.NotificationsPermissionFragment
 import com.ichi2.anki.ui.windows.permissions.PermissionsFragment
 import com.ichi2.anki.ui.windows.permissions.PermissionsStartingAt30Fragment
 import com.ichi2.anki.ui.windows.permissions.PermissionsUntil29Fragment
-import com.ichi2.compat.CompatHelper.Companion.sdkVersion
 import com.ichi2.utils.Permissions
 import com.ichi2.utils.VersionUtils.pkgVersionName
 import kotlinx.parcelize.Parcelize
@@ -48,9 +57,8 @@ object InitialActivity {
     /** Returns null on success  */
     @CheckResult
     fun getStartupFailureType(initializeAnkiDroidDirectory: () -> Boolean): StartupFailure? {
-        // A WebView failure means that we skip `AnkiDroidApp`, and therefore haven't loaded the collection
-        if (AnkiDroidApp.webViewFailedToLoad()) {
-            return StartupFailure.WebviewFailed
+        AnkiDroidApp.fatalError?.let {
+            return StartupFailure.InitializationError(it)
         }
 
         val failure =
@@ -66,6 +74,10 @@ object InitialActivity {
             } catch (e: SQLiteFullException) {
                 Timber.w(e)
                 StartupFailure.DiskFull
+            } catch (e: SQLiteDatabaseCorruptException) {
+                Timber.w(e)
+                DatabaseCorruption.isDetected = true
+                StartupFailure.DBError(e)
             } catch (e: StorageAccessException) {
                 // Same handling as the fall through, but without the exception report
                 // These are now handled with a dialog and don't generate actionable reports
@@ -77,7 +89,7 @@ object InitialActivity {
                 StartupFailure.DBError(e)
             }
 
-        if (!AnkiDroidApp.isSdCardMounted) {
+        if (!SdCard.isMounted) {
             return StartupFailure.SDCardNotMounted
         } else if (!initializeAnkiDroidDirectory()) {
             return StartupFailure.DirectoryNotAccessible
@@ -150,35 +162,32 @@ object InitialActivity {
 
         data object DatabaseLocked : StartupFailure()
 
-        data object WebviewFailed : StartupFailure()
+        /**
+         * [AnkiDroidApp] encountered a fatal error
+         */
+        data class InitializationError(
+            val error: FatalInitializationError,
+        ) : StartupFailure() {
+            val infoLink
+                get() = error.infoLink
+
+            fun toHumanReadableString(context: Context): String =
+                when (error) {
+                    is FatalInitializationError.WebViewError ->
+                        context.getString(
+                            R.string.ankidroid_init_failed_webview,
+                            error.errorDetail,
+                        )
+                    is FatalInitializationError.StorageError ->
+                        context.getString(
+                            R.string.ankidroid_init_failed_storage,
+                            error.errorDetail,
+                        )
+                }
+        }
 
         data object DiskFull : StartupFailure()
     }
-}
-
-sealed class AnkiDroidFolder(
-    val permissionSet: PermissionSet,
-) {
-    /**
-     * AnkiDroid will use the folder ~/AnkiDroid by default
-     * To access it, we must first get [permissionSet].permissions.
-     * This folder is not deleted when the user uninstalls the app, which reduces the risk of data loss,
-     * but increase the risk of space used on their storage when they don't want to.
-     * It can not be used on the play store starting with Sdk 30.
-     **/
-    class PublicFolder(
-        requiredPermissions: PermissionSet,
-    ) : AnkiDroidFolder(requiredPermissions)
-
-    /**
-     * AnkiDroid will use the app-private folder: `~/Android/data/com.ichi2.anki[.A]/files/AnkiDroid`.
-     * The user may delete when they uninstall the app, risking data loss.
-     * No permission dialog is required.
-     * Google will not allow [android.Manifest.permission.MANAGE_EXTERNAL_STORAGE], so this is default on the Play Store.
-     */
-    data object AppPrivateFolder : AnkiDroidFolder(PermissionSet.APP_PRIVATE)
-
-    fun hasRequiredPermissions(context: Context): Boolean = Permissions.hasAllPermissions(context, permissionSet.permissions)
 }
 
 @Parcelize
@@ -186,49 +195,64 @@ enum class PermissionSet(
     val permissions: List<String>,
     val permissionsFragment: Class<out PermissionsFragment>?,
 ) : Parcelable {
-    LEGACY_ACCESS(Permissions.legacyStorageAccessPermissions, PermissionsUntil29Fragment::class.java),
+    LEGACY_ACCESS(Permissions.legacyStorageAccessStartupPermissions, PermissionsUntil29Fragment::class.java),
 
     @RequiresApi(Build.VERSION_CODES.R)
-    EXTERNAL_MANAGER(listOf(Permissions.MANAGE_EXTERNAL_STORAGE), PermissionsStartingAt30Fragment::class.java),
+    EXTERNAL_MANAGER(Permissions.externalManagerStorageAccessStartupPermissions, PermissionsStartingAt30Fragment::class.java),
 
-    APP_PRIVATE(emptyList(), null),
+    APP_PRIVATE(Permissions.appPrivateStartupPermissions, InternetPermissionFragment::class.java),
+
+    /** Optional. */
+    @RequiresApi(Build.VERSION_CODES.TIRAMISU)
+    NOTIFICATIONS(listOf(Manifest.permission.POST_NOTIFICATIONS), NotificationsPermissionFragment::class.java),
+    ;
+
+    fun hasRequiredPermissions(context: Context): Boolean = hasAllPermissions(context, permissions)
 }
 
 /**
- * Returns in which folder AnkiDroid data is saved.
- * [AnkiDroidFolder.PublicFolder] is preferred, as it reduce risk of data loss.
+ * Returns the [PermissionSet] required to access the folder where AnkiDroid data is saved.
+ * [com.ichi2.anki.storage.AnkiDroidFolder.PUBLIC] is preferred, as it reduces risk of data loss.
  * When impossible, we use the app-private directory.
  * See https://github.com/ankidroid/Anki-Android/issues/5304 for more context.
  */
-internal fun selectAnkiDroidFolder(
+internal fun selectStoragePermissions(
     canManageExternalStorage: Boolean,
     currentFolderIsAccessibleAndLegacy: Boolean,
-): AnkiDroidFolder {
+): PermissionSet {
     if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.Q || currentFolderIsAccessibleAndLegacy) {
         // match AnkiDroid behaviour before scoped storage - force the use of ~/AnkiDroid,
         // since it's fast & safe up to & including 'Q'
         // If a user upgrades their OS from Android 10 to 11 then storage speed is severely reduced
         // and a user should use one of the below options to provide faster speeds
-        return AnkiDroidFolder.PublicFolder(PermissionSet.LEGACY_ACCESS)
+        return PermissionSet.LEGACY_ACCESS
     }
 
     // If the user can manage external storage, we can access the safe folder & access is fast
     return if (canManageExternalStorage) {
-        AnkiDroidFolder.PublicFolder(PermissionSet.EXTERNAL_MANAGER)
+        PermissionSet.EXTERNAL_MANAGER
     } else {
-        return AnkiDroidFolder.AppPrivateFolder
+        PermissionSet.APP_PRIVATE
     }
 }
 
-fun selectAnkiDroidFolder(context: Context): AnkiDroidFolder {
+fun selectStoragePermissions(context: Context): PermissionSet {
     val canAccessLegacyStorage = Build.VERSION.SDK_INT < Build.VERSION_CODES.Q || Environment.isExternalStorageLegacy()
     val currentFolderIsAccessibleAndLegacy = canAccessLegacyStorage && isLegacyStorage(context, setCollectionPath = false) == true
 
-    return selectAnkiDroidFolder(
+    return selectStoragePermissions(
         canManageExternalStorage = Permissions.canManageExternalStorage(context),
         currentFolderIsAccessibleAndLegacy = currentFolderIsAccessibleAndLegacy,
     )
 }
+
+/** The folder where AnkiDroid data is saved. See [selectStoragePermissions]. */
+fun selectAnkiDroidFolder(context: Context): AnkiDroidFolder =
+    if (selectStoragePermissions(context) == PermissionSet.APP_PRIVATE) {
+        AnkiDroidFolder.APP_PRIVATE
+    } else {
+        AnkiDroidFolder.PUBLIC
+    }
 
 /**
  * Configures either hardware or software rendering

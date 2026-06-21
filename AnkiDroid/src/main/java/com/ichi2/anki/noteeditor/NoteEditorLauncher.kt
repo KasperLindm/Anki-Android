@@ -21,13 +21,11 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
 import android.os.Parcelable
-import androidx.core.os.bundleOf
-import com.ichi2.anim.ActivityTransitionAnimation
 import com.ichi2.anki.AnkiActivity
 import com.ichi2.anki.NoteEditorActivity
 import com.ichi2.anki.NoteEditorFragment
 import com.ichi2.anki.NoteEditorFragment.Companion.NoteEditorCaller
-import com.ichi2.anki.browser.CardBrowserViewModel
+import com.ichi2.anki.common.ui.TransitionDirection
 import com.ichi2.anki.libanki.CardId
 import com.ichi2.anki.libanki.DeckId
 import com.ichi2.anki.utils.Destination
@@ -68,10 +66,10 @@ sealed interface NoteEditorLauncher : Destination {
         val imageUri: Uri?,
     ) : NoteEditorLauncher {
         override fun toBundle(): Bundle =
-            bundleOf(
-                NoteEditorFragment.EXTRA_CALLER to NoteEditorCaller.IMG_OCCLUSION.value,
-                NoteEditorFragment.EXTRA_IMG_OCCLUSION to imageUri,
-            )
+            Bundle().apply {
+                putInt(NoteEditorFragment.EXTRA_CALLER, NoteEditorCaller.IMG_OCCLUSION.value)
+                putParcelable(NoteEditorFragment.EXTRA_IMG_OCCLUSION, imageUri)
+            }
     }
 
     /**
@@ -92,35 +90,30 @@ sealed interface NoteEditorLauncher : Destination {
         val deckId: DeckId? = null,
     ) : NoteEditorLauncher {
         override fun toBundle(): Bundle =
-            bundleOf(
-                NoteEditorFragment.EXTRA_CALLER to NoteEditorCaller.DECKPICKER.value,
-            ).also { bundle ->
-                deckId?.let { deckId -> bundle.putLong(NoteEditorFragment.EXTRA_DID, deckId) }
+            Bundle().apply {
+                putInt(NoteEditorFragment.EXTRA_CALLER, NoteEditorCaller.DECKPICKER.value)
+                deckId?.let { deckId -> putLong(NoteEditorFragment.EXTRA_DID, deckId) }
             }
     }
 
     /**
      * Represents adding a note to the NoteEditor from the card browser.
-     * @property viewModel The view model containing data from the card browser.
+     * @property searchTerms The current search terms from the card browser.
+     * @property deckId The card browser's last deck, used as the deck for the new note.
      */
     data class AddNoteFromCardBrowser(
-        val viewModel: CardBrowserViewModel,
-        val inCardBrowserActivity: Boolean = false,
+        val searchTerms: String,
+        val deckId: DeckId?,
     ) : NoteEditorLauncher {
-        override fun toBundle(): Bundle {
-            val fragmentArgs =
-                bundleOf(
-                    NoteEditorFragment.EXTRA_CALLER to NoteEditorCaller.CARDBROWSER_ADD.value,
-                    NoteEditorFragment.EXTRA_TEXT_FROM_SEARCH_VIEW to viewModel.searchTerms,
-                    NoteEditorFragment.IN_CARD_BROWSER_ACTIVITY to inCardBrowserActivity,
-                )
-            if (viewModel.lastDeckId?.let { id -> id > 0 } == true) {
-                fragmentArgs.putLong(NoteEditorFragment.EXTRA_DID, viewModel.lastDeckId!!)
+        override fun toBundle(): Bundle =
+            Bundle().apply {
+                putInt(NoteEditorFragment.EXTRA_CALLER, NoteEditorCaller.CARDBROWSER_ADD.value)
+                putString(NoteEditorFragment.EXTRA_TEXT_FROM_SEARCH_VIEW, searchTerms)
+                putBoolean(NoteEditorFragment.IN_CARD_BROWSER_ACTIVITY, false)
+                if (deckId != null && deckId > 0) {
+                    putLong(NoteEditorFragment.EXTRA_DID, deckId)
+                }
             }
-            return bundleOf(
-                NoteEditorActivity.FRAGMENT_ARGS_EXTRA to fragmentArgs,
-            )
-        }
     }
 
     /**
@@ -128,25 +121,13 @@ sealed interface NoteEditorLauncher : Destination {
      * @property animation The animation direction to use when transitioning.
      */
     data class AddNoteFromReviewer(
-        val animation: ActivityTransitionAnimation.Direction? = null,
+        val animation: TransitionDirection? = null,
     ) : NoteEditorLauncher {
-        override fun toBundle(): Bundle {
-            val fragmentArgs =
-                bundleOf(
-                    NoteEditorFragment.EXTRA_CALLER to NoteEditorCaller.REVIEWER_ADD.value,
-                ).also { bundle ->
-                    animation?.let { animation ->
-                        bundle.putParcelable(
-                            AnkiActivity.FINISH_ANIMATION_EXTRA,
-                            animation as Parcelable,
-                        )
-                    }
-                }
-
-            return bundleOf(
-                NoteEditorActivity.FRAGMENT_ARGS_EXTRA to fragmentArgs,
-            )
-        }
+        override fun toBundle(): Bundle =
+            Bundle().apply {
+                putInt(NoteEditorFragment.EXTRA_CALLER, NoteEditorCaller.REVIEWER_ADD.value)
+                animation?.let { putParcelable(AnkiActivity.FINISH_ANIMATION_EXTRA, it as Parcelable) }
+            }
     }
 
     /**
@@ -158,29 +139,33 @@ sealed interface NoteEditorLauncher : Destination {
         val sharedText: String,
     ) : NoteEditorLauncher {
         override fun toBundle(): Bundle =
-            bundleOf(
-                NoteEditorFragment.EXTRA_CALLER to NoteEditorCaller.INSTANT_NOTE_EDITOR.value,
-                Intent.EXTRA_TEXT to sharedText,
-            )
+            Bundle().apply {
+                putInt(NoteEditorFragment.EXTRA_CALLER, NoteEditorCaller.INSTANT_NOTE_EDITOR.value)
+                putString(Intent.EXTRA_TEXT, sharedText)
+            }
     }
 
     /**
-     * Represents editing a card in the NoteEditor.
-     * @property cardId The ID of the card to edit.
+     * Opens the NoteEditor for the current selection (card or note).
+     * @property cardIds The selected card ID when editing a card, or the IDs of cards of the same note when editing a note.
      * @property animation The animation direction.
+     * @property inCardBrowserActivity True if opened within Card Browser Activity.
      */
-    data class EditCard(
-        val cardId: CardId,
-        val animation: ActivityTransitionAnimation.Direction,
+    data class EditSelection(
+        val cardIds: List<CardId>,
+        val animation: TransitionDirection,
         val inCardBrowserActivity: Boolean = false,
     ) : NoteEditorLauncher {
         override fun toBundle(): Bundle =
-            bundleOf(
-                NoteEditorFragment.EXTRA_CALLER to NoteEditorCaller.EDIT.value,
-                NoteEditorFragment.EXTRA_CARD_ID to cardId,
-                AnkiActivity.FINISH_ANIMATION_EXTRA to animation as Parcelable,
-                NoteEditorFragment.IN_CARD_BROWSER_ACTIVITY to inCardBrowserActivity,
-            )
+            Bundle().apply {
+                putInt(NoteEditorFragment.EXTRA_CALLER, NoteEditorCaller.EDIT.value)
+                // To handle single card selection
+                putLong(NoteEditorFragment.EXTRA_CARD_ID, cardIds.first())
+                // To handle multi select and note edit
+                putLongArray(NoteEditorFragment.EXTRA_CARD_IDS, cardIds.toLongArray())
+                putParcelable(AnkiActivity.FINISH_ANIMATION_EXTRA, animation as Parcelable)
+                putBoolean(NoteEditorFragment.IN_CARD_BROWSER_ACTIVITY, inCardBrowserActivity)
+            }
     }
 
     /**
@@ -191,10 +176,10 @@ sealed interface NoteEditorLauncher : Destination {
         val cardId: CardId,
     ) : NoteEditorLauncher {
         override fun toBundle(): Bundle =
-            bundleOf(
-                NoteEditorFragment.EXTRA_CALLER to NoteEditorCaller.PREVIEWER_EDIT.value,
-                NoteEditorFragment.EXTRA_EDIT_FROM_CARD_ID to cardId,
-            )
+            Bundle().apply {
+                putInt(NoteEditorFragment.EXTRA_CALLER, NoteEditorCaller.PREVIEWER_EDIT.value)
+                putLong(NoteEditorFragment.EXTRA_EDIT_FROM_CARD_ID, cardId)
+            }
     }
 
     /**
@@ -209,12 +194,11 @@ sealed interface NoteEditorLauncher : Destination {
         val tags: List<String>? = null,
     ) : NoteEditorLauncher {
         override fun toBundle(): Bundle =
-            bundleOf(
-                NoteEditorFragment.EXTRA_CALLER to NoteEditorCaller.NOTEEDITOR.value,
-                NoteEditorFragment.EXTRA_DID to deckId,
-                NoteEditorFragment.EXTRA_CONTENTS to fieldsText,
-            ).also { bundle ->
-                tags?.let { tags -> bundle.putStringArray(NoteEditorFragment.EXTRA_TAGS, tags.toTypedArray()) }
+            Bundle().apply {
+                putInt(NoteEditorFragment.EXTRA_CALLER, NoteEditorCaller.NOTEEDITOR.value)
+                putLong(NoteEditorFragment.EXTRA_DID, deckId)
+                putString(NoteEditorFragment.EXTRA_CONTENTS, fieldsText)
+                tags?.let { tags -> putStringArray(NoteEditorFragment.EXTRA_TAGS, tags.toTypedArray()) }
             }
     }
 }

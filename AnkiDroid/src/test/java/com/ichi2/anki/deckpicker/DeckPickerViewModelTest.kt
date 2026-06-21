@@ -35,6 +35,7 @@ import org.hamcrest.Matchers.equalTo
 import org.junit.Test
 import org.junit.runner.RunWith
 import timber.log.Timber
+import kotlin.test.assertEquals
 
 /** Test of [DeckPickerViewModel] */
 @RunWith(AndroidJUnit4::class)
@@ -182,5 +183,60 @@ class DeckPickerViewModelTest : RobolectricTest() {
 
     companion object {
         private const val EXPECTED_CARDS: Int = 3
+    }
+
+    @Test
+    fun `ensure collapsed decks are also deleted`() {
+        runTest {
+            val deckIdA = addDeck("A")
+            val subDeckIdA1 = addDeck("A::A1")
+            val subDeckIdA2 = addDeck("A::A2")
+            // add other decks as well as control
+            addDeck("B")
+            addDeck("B:B1")
+            viewModel.flowOfDisableShortcuts.test {
+                viewModel.reloadDeckCounts().join()
+                viewModel.disableDeckAndChildrenShortcuts(deckIdA)
+                val actual = awaitItem()
+                val expected =
+                    listOf(
+                        deckIdA.toString(),
+                        subDeckIdA1.toString(),
+                        subDeckIdA2.toString(),
+                    )
+                assertEquals(expected, actual)
+            }
+        }
+    }
+
+    @Test
+    fun `request context menu - flow`() {
+        runTest {
+            val deckId = addDeck("Deck A")
+
+            viewModel.flowOfShowContextMenu.test {
+                viewModel.requestContextMenu(deckId).join()
+
+                assertEquals(deckId, awaitItem())
+            }
+        }
+    }
+
+    @Test
+    fun `request right click context menu - flow`() {
+        runTest {
+            val deckId = addDeck("Deck B")
+            val x = 10f
+            val y = 20f
+
+            viewModel.flowOfShowRightClickContextMenu.test {
+                viewModel.requestRightClickContextMenu(deckId, x, y).join()
+
+                val item = awaitItem()
+                assertEquals(deckId, item.deckId)
+                assertEquals(x, item.x)
+                assertEquals(y, item.y)
+            }
+        }
     }
 }

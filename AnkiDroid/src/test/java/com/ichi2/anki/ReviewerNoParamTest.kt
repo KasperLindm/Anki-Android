@@ -27,19 +27,19 @@ import com.ichi2.anki.cardviewer.Gesture.SWIPE_RIGHT
 import com.ichi2.anki.cardviewer.Gesture.SWIPE_UP
 import com.ichi2.anki.cardviewer.GestureProcessor
 import com.ichi2.anki.cardviewer.ViewerCommand
+import com.ichi2.anki.common.preferences.sharedPrefs
 import com.ichi2.anki.libanki.Consts
 import com.ichi2.anki.libanki.DeckId
 import com.ichi2.anki.model.WhiteboardPenColor
-import com.ichi2.anki.preferences.sharedPrefs
 import com.ichi2.anki.reviewer.Binding
 import com.ichi2.anki.reviewer.FullScreenMode
 import com.ichi2.anki.reviewer.FullScreenMode.Companion.setPreference
 import com.ichi2.anki.reviewer.MappableBinding.Companion.toPreferenceString
 import com.ichi2.anki.reviewer.ReviewerBinding
+import com.ichi2.anki.settings.enums.NightTheme
 import com.ichi2.anki.utils.ext.addBinding
 import com.ichi2.testutils.common.Flaky
 import com.ichi2.testutils.common.OS
-import com.ichi2.themes.Theme
 import com.ichi2.themes.Themes.currentTheme
 import org.hamcrest.MatcherAssert.assertThat
 import org.hamcrest.Matchers.equalTo
@@ -312,7 +312,7 @@ class ReviewerNoParamTest : RobolectricTest() {
     /** Enables a gesture (without changing the overall setting of whether gestures are allowed)  */
     private fun enableGesture(gesture: Gesture) {
         val prefs = targetContext.sharedPrefs()
-        ViewerCommand.FLIP_OR_ANSWER_EASE1.addBinding(
+        ViewerCommand.ANSWER_AGAIN.addBinding(
             prefs,
             ReviewerBinding.fromGesture(gesture),
         )
@@ -363,7 +363,7 @@ class ReviewerNoParamTest : RobolectricTest() {
         addBasicNote("Hello", "World")
 
         val reviewer = startReviewer()
-        currentTheme = Theme.DARK
+        currentTheme = NightTheme.DARK
         reviewer.toggleWhiteboard()
 
         return reviewer.whiteboard

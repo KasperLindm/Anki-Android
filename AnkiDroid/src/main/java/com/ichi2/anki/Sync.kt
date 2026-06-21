@@ -1,23 +1,24 @@
-/***************************************************************************************
- * Copyright (c) 2022 Ankitects Pty Ltd <http://apps.ankiweb.net>                       *
- *                                                                                      *
- * This program is free software; you can redistribute it and/or modify it under        *
- * the terms of the GNU General Public License as published by the Free Software        *
- * Foundation; either version 3 of the License, or (at your option) any later           *
- * version.                                                                             *
- *                                                                                      *
- * This program is distributed in the hope that it will be useful, but WITHOUT ANY      *
- * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A      *
- * PARTICULAR PURPOSE. See the GNU General Public License for more details.             *
- *                                                                                      *
- * You should have received a copy of the GNU General Public License along with         *
- * this program.  If not, see <http://www.gnu.org/licenses/>.                           *
- ****************************************************************************************/
+/*
+ * Copyright (c) 2022 Ankitects Pty Ltd <http://apps.ankiweb.net>
+ *
+ * This program is free software; you can redistribute it and/or modify it under
+ * the terms of the GNU General Public License as published by the Free Software
+ * Foundation; either version 3 of the License, or (at your option) any later
+ * version.
+ *
+ * This program is distributed in the hope that it will be useful, but WITHOUT ANY
+ * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
+ * PARTICULAR PURPOSE. See the GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along with
+ * this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
 
 package com.ichi2.anki
 
 import androidx.annotation.StringRes
 import androidx.appcompat.app.AlertDialog
+import anki.collection.Progress
 import anki.sync.SyncAuth
 import anki.sync.SyncCollectionResponse
 import anki.sync.syncAuth
@@ -30,7 +31,7 @@ import com.ichi2.anki.observability.ChangeManager.notifySubscribersAllValuesChan
 import com.ichi2.anki.settings.Prefs
 import com.ichi2.anki.settings.enums.ShouldFetchMedia
 import com.ichi2.anki.snackbar.showSnackbar
-import com.ichi2.anki.ui.internationalization.toSentenceCase
+import com.ichi2.anki.ui.internationalization.sentenceCase
 import com.ichi2.anki.worker.SyncMediaWorker
 import com.ichi2.preferences.VersatileTextWithASwitchPreference
 import com.ichi2.utils.NetworkUtils
@@ -70,6 +71,7 @@ fun syncAuth(): SyncAuth? {
             if (resolvedEndpoint != null) {
                 this.endpoint = resolvedEndpoint
             }
+            this.ioTimeoutSecs = Prefs.networkTimeoutSecs
         }
     }
 }
@@ -102,22 +104,27 @@ fun DeckPicker.handleNewSync(
     val deckPicker = this
     launchCatchingTask {
         try {
-            when (conflict) {
-                ConflictResolution.FULL_DOWNLOAD -> handleDownload(deckPicker, auth, deckPicker.mediaUsnOnConflict)
-                ConflictResolution.FULL_UPLOAD -> handleUpload(deckPicker, auth, deckPicker.mediaUsnOnConflict)
-                null -> {
-                    handleNormalSync(deckPicker, auth, syncMedia)
+            try {
+                when (conflict) {
+                    ConflictResolution.FULL_DOWNLOAD -> handleDownload(deckPicker, auth, deckPicker.mediaUsnOnConflict)
+                    ConflictResolution.FULL_UPLOAD -> handleUpload(deckPicker, auth, deckPicker.mediaUsnOnConflict)
+                    null -> {
+                        handleNormalSync(deckPicker, auth, syncMedia)
+                    }
                 }
+            } catch (exc: BackendSyncException.BackendSyncAuthFailedException) {
+                // auth failed; log out
+                updateLogin("", "")
+                throw exc
             }
-        } catch (exc: BackendSyncException.BackendSyncAuthFailedException) {
-            // auth failed; log out
-            updateLogin("", "")
-            throw exc
+            withCol { notetypes.clearCache() }
+            notifySubscribersAllValuesChanged(deckPicker)
+            refreshState()
+        } finally {
+            // Always update last sync time to prevent infinite retry loops
+            // when sync fails (e.g., collection too large). See issue #19776
+            setLastSyncTimeToNow()
         }
-        withCol { notetypes.clearCache() }
-        notifySubscribersAllValuesChanged(deckPicker)
-        setLastSyncTimeToNow()
-        refreshState()
     }
 }
 
@@ -210,9 +217,11 @@ private suspend fun handleNormalSync(
 
 private fun fullDownloadProgress(title: String): ProgressContext.() -> Unit =
     {
-        if (progress.hasFullSync()) {
-            text = title
-            amount = progress.fullSync.run { Pair(transferred, total) }
+        fun Progress.FullSync.toAmount() = ProgressContext.Amount(transferred.toLong(), total.toLong())
+
+        text = title
+        if (progress.hasFullSync() && progress.fullSync.total > 0) {
+            amount = progress.fullSync.toAmount()
         }
     }
 
@@ -223,8 +232,10 @@ private suspend fun handleDownload(
 ) {
     Timber.i("Sync: Full collection download requested")
     deckPicker.withProgress(
+        progressContext = ProgressContext.ofBytes(context = deckPicker).copy(separator = "\n"),
         extractProgress = fullDownloadProgress(TR.syncDownloadingFromAnkiweb()),
         onCancel = ::cancelSync,
+        manualCancelButton = R.string.dialog_cancel,
     ) {
         withCol {
             try {
@@ -256,8 +267,10 @@ private suspend fun handleUpload(
 ) {
     Timber.i("Sync: Full collection upload requested")
     deckPicker.withProgress(
+        progressContext = ProgressContext.ofBytes(context = deckPicker).copy(separator = "\n"),
         extractProgress = fullDownloadProgress(TR.syncUploadingToAnkiweb()),
         onCancel = ::cancelSync,
+        manualCancelButton = R.string.dialog_cancel,
     ) {
         withCol {
             close(downgrade = false, forFullSync = true)
@@ -302,7 +315,7 @@ suspend fun monitorMediaSync(deckPicker: DeckPicker) {
         withContext(Dispatchers.Main) {
             AlertDialog
                 .Builder(deckPicker)
-                .setTitle(TR.syncMediaLogTitle().toSentenceCase(deckPicker, R.string.sentence_sync_media_log))
+                .setTitle(with(deckPicker) { TR.sentenceCase.mediaSyncLog })
                 .setMessage("")
                 .setPositiveButton(R.string.dialog_continue) { _, _ ->
                     scope.cancel()

@@ -15,20 +15,27 @@
  */
 package com.ichi2.anki.ui.windows.permissions
 
+import android.Manifest
 import android.content.Intent
 import android.net.Uri
 import android.os.Build
+import android.os.Bundle
 import android.provider.Settings
 import androidx.activity.result.ActivityResultLauncher
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.LayoutRes
 import androidx.annotation.RequiresApi
-import androidx.annotation.StringRes
-import androidx.core.os.bundleOf
 import androidx.core.view.allViews
+import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.setFragmentResult
 import com.ichi2.anki.R
-import com.ichi2.anki.showThemedToast
+import com.ichi2.anki.common.annotations.NeedsTest
+import com.ichi2.anki.common.permissions.hasPermission
+import com.ichi2.anki.settings.Prefs
+import com.ichi2.utils.Permissions.openAppSettingsScreen
+import com.ichi2.utils.Permissions.requestPermissionThroughDialogOrSettings
+import com.ichi2.utils.Permissions.showToastAndOpenAppSettingsScreen
 import timber.log.Timber
 
 /**
@@ -48,31 +55,26 @@ abstract class PermissionsFragment(
 
     protected fun hasAllPermissions() = permissionsItems.all { it.areGranted }
 
+    private val internetLauncher =
+        registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted ->
+            if (isGranted) {
+                // No need to explicitly do anything, onResume handles updating the UI
+                Timber.i("Internet permission granted")
+            } else {
+                Timber.i("Internet permission denied")
+                showToastAndOpenAppSettingsScreen(
+                    getString(R.string.permission_required_message, getString(R.string.internet_access_title)),
+                )
+            }
+        }
+
     override fun onResume() {
         super.onResume()
         permissionsItems.forEach { it.updateSwitchCheckedStatus() }
-        setFragmentResult(PERMISSIONS_FRAGMENT_RESULT_KEY, bundleOf(HAS_ALL_PERMISSIONS_KEY to hasAllPermissions()))
-    }
-
-    /**
-     * Opens the Android settings for AnkiDroid if the device provide this feature.
-     * Lets a user grant any missing permissions which have been permanently denied
-     */
-    private fun openAppSettingsScreen() {
-        Timber.i("launching ACTION_APPLICATION_DETAILS_SETTINGS")
-        startActivity(
-            Intent(
-                Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
-                Uri.fromParts("package", requireActivity().packageName, null),
-            ),
+        setFragmentResult(
+            PERMISSIONS_FRAGMENT_RESULT_KEY,
+            Bundle().apply { putBoolean(HAS_ALL_PERMISSIONS_KEY, hasAllPermissions()) },
         )
-    }
-
-    protected fun showToastAndOpenAppSettingsScreen(
-        @StringRes message: Int,
-    ) {
-        showThemedToast(requireContext(), message, false)
-        openAppSettingsScreen()
     }
 
     /** Opens the Android 'MANAGE_ALL_FILES' page if the device provides this feature */
@@ -106,23 +108,39 @@ abstract class PermissionsFragment(
         }
     }
 
+    @NeedsTest("Shows the permission item when INTERNET permission is denied")
+    @NeedsTest("Hides the permission item when INTERNET permission is already granted")
+    protected fun PermissionsItem.initializeInternetPermissionItem() {
+        if (hasPermission(requireContext(), Manifest.permission.INTERNET)) {
+            // If internet permission is already granted (which is the case for most of devices), hide the permission item.
+            this.isVisible = false
+            return
+        }
+        // On devices such as Xiaomi, which allow user to deny internet permissions, show internet permission item.
+        setOnPermissionsRequested { areAlreadyGranted ->
+            if (!areAlreadyGranted) {
+                Timber.d("Requesting for internet permission")
+                requestPermissionThroughDialogOrSettings(
+                    requireActivity(),
+                    Manifest.permission.INTERNET,
+                    Prefs::internetPermissionRequested,
+                    internetLauncher,
+                )
+            }
+        }
+    }
+
     /**
      * If these permissions are already granted, open the OS settings to allow the user to disable them, as
      * it is impossible to programmatically revoke a permission. If the permissions have not been granted,
-     * use [permissionRequestLauncher] to try and grant them. Note that [permissionRequestLauncher] also falls back
-     * to opening the OS settings if the dialog fails to show up. This may happen if the user has previously
-     * denied the permissions multiple times, selected "don't ask again" on the permissions dialog, etc.
+     * execute the callback.
      */
-    protected fun PermissionsItem.offerToGrantOrRevokeOnClick(
-        permissionRequestLauncher: ActivityResultLauncher<Array<String>>,
-        permissions: Array<String>,
-    ) {
+    protected fun PermissionsItem.revokeIfGrantedOnClickElse(callback: () -> Unit) {
         setOnPermissionsRequested { areAlreadyGranted ->
             if (areAlreadyGranted) {
-                // Offer the ability to revoke the permission
                 showToastAndOpenAppSettingsScreen(R.string.revoke_permissions)
             } else {
-                permissionRequestLauncher.launch(permissions)
+                callback()
             }
         }
     }

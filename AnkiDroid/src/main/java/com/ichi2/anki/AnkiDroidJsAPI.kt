@@ -1,21 +1,19 @@
-/****************************************************************************************
- * Copyright (c) 2020 David Allison <davidallisongithub@gmail.com>                      *
- * Copyright (c) 2020 Mani infinyte01@gmail.com                                         *
- *                                                                                      *
- *                                                                                      *
- * This program is free software; you can redistribute it and/or modify it under        *
- * the terms of the GNU General Public License as published by the Free Software        *
- * Foundation; either version 3 of the License, or (at your option) any later           *
- * version.                                                                             *
- *                                                                                      *
- * This program is distributed in the hope that it will be useful, but WITHOUT ANY      *
- * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A      *
- * PARTICULAR PURPOSE. See the GNU General Public License for more details.             *
- *                                                                                      *
- * You should have received a copy of the GNU General Public License along with         *
- * this program.  If not, see http://www.gnu.org/licenses/>.                            *
- *                                                                                      *
- * *************************************************************************************/
+/*
+ * Copyright (c) 2020 David Allison <davidallisongithub@gmail.com>
+ * Copyright (c) 2020 Mani infinyte01@gmail.com
+ *
+ * This program is free software; you can redistribute it and/or modify it under
+ * the terms of the GNU General Public License as published by the Free Software
+ * Foundation; either version 3 of the License, or (at your option) any later
+ * version.
+ *
+ * This program is distributed in the hope that it will be useful, but WITHOUT ANY
+ * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
+ * PARTICULAR PURPOSE. See the GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along with
+ * this program.  If not, see http://www.gnu.org/licenses/>.
+ */
 
 package com.ichi2.anki
 
@@ -35,8 +33,10 @@ import com.ichi2.anki.AnkiDroidJsAPIConstants.ANKI_JS_ERROR_CODE_SUSPEND_CARD
 import com.ichi2.anki.AnkiDroidJsAPIConstants.ANKI_JS_ERROR_CODE_SUSPEND_NOTE
 import com.ichi2.anki.AnkiDroidJsAPIConstants.flagCommands
 import com.ichi2.anki.CollectionManager.withCol
+import com.ichi2.anki.browser.search.SearchString
 import com.ichi2.anki.cardviewer.ViewerCommand
 import com.ichi2.anki.common.annotations.NeedsTest
+import com.ichi2.anki.common.utils.android.showThemedToast
 import com.ichi2.anki.common.utils.ext.stringIterable
 import com.ichi2.anki.libanki.Card
 import com.ichi2.anki.libanki.Collection
@@ -251,7 +251,7 @@ open class AnkiDroidJsAPI(
             "setCardDue" -> {
                 try {
                     val days = apiParams.toInt()
-                    if (days < 0 || days > 9999) {
+                    if (days !in 0..9999) {
                         showDeveloperContact(ANKI_JS_ERROR_CODE_SET_DUE, apiContract.cardSuppliedDeveloperContact)
                         return@withContext convertToByteArray(apiContract, false)
                     }
@@ -259,7 +259,7 @@ open class AnkiDroidJsAPI(
                         activity.rescheduleCards(listOf(currentCard.id), days)
                     }
                     return@withContext convertToByteArray(apiContract, true)
-                } catch (e: NumberFormatException) {
+                } catch (_: NumberFormatException) {
                     showDeveloperContact(ANKI_JS_ERROR_CODE_SET_DUE, apiContract.cardSuppliedDeveloperContact)
                     return@withContext convertToByteArray(apiContract, false)
                 }
@@ -460,9 +460,10 @@ open class AnkiDroidJsAPI(
         withContext(Dispatchers.Main) {
             val cards =
                 try {
-                    searchForRows(apiContract.cardSuppliedData, SortOrder.UseCollectionOrdering(), CardsOrNotes.CARDS)
+                    val searchString = withCol { SearchString.fromUserInput(apiContract.cardSuppliedData) }.getOrThrow()
+                    searchForRows(searchString, SortOrder.UseCollectionOrdering, CardsOrNotes.CARDS)
                         .map { withCol { getCard(it.cardOrNoteId) } }
-                } catch (exc: Exception) {
+                } catch (_: Exception) {
                     activity.webView!!.evaluateJavascript(
                         "console.log('${context.getString(R.string.search_card_js_api_no_results)}')",
                         null,

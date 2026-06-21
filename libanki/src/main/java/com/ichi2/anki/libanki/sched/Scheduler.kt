@@ -1,18 +1,18 @@
-/***************************************************************************************
- * Copyright (c) 2022 Ankitects Pty Ltd <https://apps.ankiweb.net>                      *
- *                                                                                      *
- * This program is free software; you can redistribute it and/or modify it under        *
- * the terms of the GNU General Public License as published by the Free Software        *
- * Foundation; either version 3 of the License, or (at your option) any later           *
- * version.                                                                             *
- *                                                                                      *
- * This program is distributed in the hope that it will be useful, but WITHOUT ANY      *
- * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A      *
- * PARTICULAR PURPOSE. See the GNU General Public License for more details.             *
- *                                                                                      *
- * You should have received a copy of the GNU General Public License along with         *
- * this program.  If not, see <http://www.gnu.org/licenses/>.                           *
- ****************************************************************************************/
+/*
+ * Copyright (c) 2022 Ankitects Pty Ltd <https://apps.ankiweb.net>
+ *
+ * This program is free software; you can redistribute it and/or modify it under
+ * the terms of the GNU General Public License as published by the Free Software
+ * Foundation; either version 3 of the License, or (at your option) any later
+ * version.
+ *
+ * This program is distributed in the hope that it will be useful, but WITHOUT ANY
+ * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
+ * PARTICULAR PURPOSE. See the GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along with
+ * this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
 
 package com.ichi2.anki.libanki.sched
 
@@ -56,11 +56,12 @@ import com.ichi2.anki.libanki.NoteId
 import com.ichi2.anki.libanki.QueueType
 import com.ichi2.anki.libanki.Utils
 import com.ichi2.anki.libanki.utils.LibAnkiAlias
-import com.ichi2.anki.libanki.utils.NotInLibAnki
+import com.ichi2.anki.libanki.utils.NotInPyLib
 import net.ankiweb.rsdroid.RustCleanup
 import timber.log.Timber
 import kotlin.math.ceil
 import kotlin.math.max
+import kotlin.math.roundToLong
 
 /**
  * A parameter for [Scheduler.setDueDate]
@@ -77,7 +78,7 @@ import kotlin.math.max
  * ```
  */
 @JvmInline
-@NotInLibAnki
+@NotInPyLib
 value class SetDueDateDays(
     val value: String,
 )
@@ -152,9 +153,10 @@ open class Scheduler(
         card: Card,
         rating: Rating,
     ) {
-        val top = queuedCards.cardsList.first()
-        val answer = buildAnswer(card, top.states, rating)
-        col.backend.answerCard(answer)
+        val states = col.backend.getSchedulingStates(card.id)
+        col.backend.answerCard(
+            buildAnswer(card = card, states = states, rating = rating),
+        )
         numberOfAnswersRecorded += 1
         // tests assume the card was mutated
         card.load(col)
@@ -229,7 +231,7 @@ open class Scheduler(
      * @throws com.ichi2.anki.libanki.exception.ConfirmModSchemaException
      */
     fun upgradeToV2() {
-        col.modSchema()
+        col.modSchema(check = true)
         col.backend.upgradeScheduler()
         col._loadScheduler()
     }
@@ -650,7 +652,7 @@ open class Scheduler(
             toRelrn = failures
         } while (toRelrn > 1)
         val futureRelrnTotal = relrnTime * futureReps
-        return Math.round((newTotal + relrnTotal + revTotal + futureRelrnTotal) / 60000).toInt()
+        return ((newTotal + relrnTotal + revTotal + futureRelrnTotal) / 60000).roundToLong().toInt()
     }
 
     /** Used only by V1/V2, and unit tests.

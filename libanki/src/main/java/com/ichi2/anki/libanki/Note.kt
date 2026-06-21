@@ -1,19 +1,19 @@
-/****************************************************************************************
- * Copyright (c) 2011 Norbert Nagold <norbert.nagold@gmail.com>                         *
- * Copyright (c) 2014 Houssam Salem <houssam.salem.au@gmail.com>                        *
- *                                                                                      *
- * This program is free software; you can redistribute it and/or modify it under        *
- * the terms of the GNU General Public License as published by the Free Software        *
- * Foundation; either version 3 of the License, or (at your option) any later           *
- * version.                                                                             *
- *                                                                                      *
- * This program is distributed in the hope that it will be useful, but WITHOUT ANY      *
- * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A      *
- * PARTICULAR PURPOSE. See the GNU General Public License for more details.             *
- *                                                                                      *
- * You should have received a copy of the GNU General Public License along with         *
- * this program.  If not, see <http://www.gnu.org/licenses/>.                           *
- ****************************************************************************************/
+/*
+ * Copyright (c) 2011 Norbert Nagold <norbert.nagold@gmail.com>
+ * Copyright (c) 2014 Houssam Salem <houssam.salem.au@gmail.com>
+ *
+ * This program is free software; you can redistribute it and/or modify it under
+ * the terms of the GNU General Public License as published by the Free Software
+ * Foundation; either version 3 of the License, or (at your option) any later
+ * version.
+ *
+ * This program is distributed in the hope that it will be useful, but WITHOUT ANY
+ * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
+ * PARTICULAR PURPOSE. See the GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along with
+ * this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
 
 package com.ichi2.anki.libanki
 
@@ -25,7 +25,7 @@ import com.ichi2.anki.common.utils.emptyStringArray
 import com.ichi2.anki.libanki.Consts.DEFAULT_DECK_ID
 import com.ichi2.anki.libanki.backend.model.toBackendNote
 import com.ichi2.anki.libanki.utils.LibAnkiAlias
-import com.ichi2.anki.libanki.utils.NotInLibAnki
+import com.ichi2.anki.libanki.utils.NotInPyLib
 import java.util.regex.Pattern
 
 @KotlinCleanup("lots to do")
@@ -101,7 +101,7 @@ class Note : Cloneable {
         fMap = Notetypes.fieldMap(notetype)
     }
 
-    @NotInLibAnki
+    @NotInPyLib
     fun numberOfCards(col: Collection): Int = cardIds(col).size
 
     fun cardIds(col: Collection): List<Long> = col.cardIdsOfNote(nid = id)
@@ -148,7 +148,7 @@ class Note : Cloneable {
 
     /** The first card, assuming it exists. */
     @CheckResult
-    @NotInLibAnki
+    @NotInPyLib
     fun firstCard(col: Collection): Card =
         col.getCard(
             col.db.queryLongScalar(
@@ -208,7 +208,7 @@ class Note : Cloneable {
     @LibAnkiAlias("__contains__")
     operator fun contains(key: String): Boolean = fMap!!.containsKey(key)
 
-    @NotInLibAnki
+    @NotInPyLib
     fun setField(
         index: Int,
         value: String,

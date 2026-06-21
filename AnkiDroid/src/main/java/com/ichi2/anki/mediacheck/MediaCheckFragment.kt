@@ -24,22 +24,21 @@ import android.view.Menu
 import android.view.MenuInflater
 import android.view.MenuItem
 import android.view.View
-import android.webkit.WebView
 import android.webkit.WebViewClient
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.MenuHost
 import androidx.core.view.MenuProvider
+import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
-import com.google.android.material.appbar.MaterialToolbar
-import com.google.android.material.button.MaterialButton
 import com.ichi2.anki.CollectionManager.TR
 import com.ichi2.anki.R
 import com.ichi2.anki.SingleFragmentActivity
+import com.ichi2.anki.databinding.FragmentMediaCheckBinding
 import com.ichi2.anki.launchCatchingTask
-import com.ichi2.anki.ui.internationalization.toSentenceCase
+import com.ichi2.anki.ui.internationalization.sentenceCase
 import com.ichi2.anki.withProgress
 import com.ichi2.utils.cancelable
 import com.ichi2.utils.message
@@ -47,6 +46,7 @@ import com.ichi2.utils.negativeButton
 import com.ichi2.utils.positiveButton
 import com.ichi2.utils.show
 import com.ichi2.utils.title
+import dev.androidbroadcast.vbpd.viewBinding
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 
@@ -57,10 +57,7 @@ import kotlinx.coroutines.launch
 class MediaCheckFragment : Fragment(R.layout.fragment_media_check) {
     private val viewModel: MediaCheckViewModel by viewModels()
 
-    private lateinit var deleteMediaButton: MaterialButton
-    private lateinit var tagMissingButton: MaterialButton
-
-    private lateinit var webView: WebView
+    private val binding by viewBinding(FragmentMediaCheckBinding::bind)
 
     override fun onViewCreated(
         view: View,
@@ -68,19 +65,14 @@ class MediaCheckFragment : Fragment(R.layout.fragment_media_check) {
     ) {
         super.onViewCreated(view, savedInstanceState)
 
-        view.findViewById<MaterialToolbar>(R.id.toolbar).apply {
-            setTitle(TR.mediaCheckCheckMediaAction().toSentenceCase(requireContext(), R.string.check_media))
+        binding.toolbar.apply {
+            setTitle(TR.sentenceCase.checkMediaTitle)
             setNavigationOnClickListener {
                 requireActivity().onBackPressedDispatcher.onBackPressed()
             }
         }
 
-        deleteMediaButton = view.findViewById(R.id.delete_used_media_button)
-        tagMissingButton = view.findViewById(R.id.tag_missing_media_button)
-        webView = view.findViewById(R.id.media_check_webview)
-
-        val toolbar = view.findViewById<MaterialToolbar>(R.id.toolbar)
-        (requireActivity() as AppCompatActivity).setSupportActionBar(toolbar)
+        (requireActivity() as AppCompatActivity).setSupportActionBar(binding.toolbar)
 
         launchCatchingTask {
             withProgress(R.string.check_media_message) {
@@ -92,8 +84,8 @@ class MediaCheckFragment : Fragment(R.layout.fragment_media_check) {
             viewModel.mediaCheckResult.collectLatest { result ->
                 updateWebView(result?.report.orEmpty())
                 if (result != null) {
-                    tagMissingButton.visibility = if (result.missingCount != 0) View.VISIBLE else View.GONE
-                    deleteMediaButton.visibility = if (result.unusedCount != 0) View.VISIBLE else View.GONE
+                    binding.tagMissingMediaButton.isVisible = result.missingCount != 0
+                    binding.deleteUsedMediaButton.isVisible = result.unusedCount != 0
                     if (result.haveTrash) setupMenu()
                 }
             }
@@ -113,11 +105,11 @@ class MediaCheckFragment : Fragment(R.layout.fragment_media_check) {
                     menuInflater.inflate(R.menu.media_check_menu, menu)
                     menu.findItem(R.id.action_restore_trash).apply {
                         isVisible = true
-                        title = TR.mediaCheckRestoreTrash().toSentenceCase(requireContext(), R.string.sentence_restore_deleted)
+                        title = TR.sentenceCase.restoreDeleted
                     }
                     menu.findItem(R.id.action_empty_trash).apply {
                         isVisible = true
-                        title = TR.mediaCheckEmptyTrash().toSentenceCase(requireContext(), R.string.sentence_empty_trash)
+                        title = TR.sentenceCase.emptyTrash
                     }
                 }
 
@@ -150,14 +142,14 @@ class MediaCheckFragment : Fragment(R.layout.fragment_media_check) {
             </html>
             """.trimIndent()
 
-        webView.webViewClient = WebViewClient()
-        webView.loadDataWithBaseURL(null, html, "text/html", "UTF-8", null)
+        binding.webView.webViewClient = WebViewClient()
+        binding.webView.loadDataWithBaseURL(null, html, "text/html", "UTF-8", null)
     }
 
     private fun setupButtonListeners() {
-        tagMissingButton.apply {
+        binding.tagMissingMediaButton.apply {
             // mediaCheckAddTag => "Tag Missing"
-            text = TR.mediaCheckAddTag().toSentenceCase(requireContext(), R.string.sentence_tag_missing)
+            text = TR.sentenceCase.tagMissing
 
             setOnClickListener {
                 launchCatchingTask {
@@ -172,12 +164,8 @@ class MediaCheckFragment : Fragment(R.layout.fragment_media_check) {
             }
         }
 
-        deleteMediaButton.apply {
-            text =
-                TR.mediaCheckDeleteUnused().toSentenceCase(
-                    requireContext(),
-                    R.string.sentence_check_media_delete_unused,
-                )
+        binding.deleteUsedMediaButton.apply {
+            text = TR.sentenceCase.checkMediaDeleteUnused
 
             setOnClickListener {
                 deleteConfirmationDialog()

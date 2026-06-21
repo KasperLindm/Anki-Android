@@ -35,30 +35,39 @@ private const val TIME_DAY_LONG = 24 * TIME_HOUR_LONG
  * Return a string representing how much time remains
  *
  * @param context The application's environment.
- * @param time_s The time to format, in seconds
+ * @param timeSeconds The time to format, in seconds
  * @return The time quantity string. Something like "3 minutes left" or "2 hours left".
  */
 fun remainingTime(
     context: Context,
-    time_s: Long,
+    timeSeconds: Long,
 ): String {
     val timeX: Int // Time in unit x
     val remainingSeconds: Int // Time not counted in the number in unit x
     val remaining: Int // Time in the unit smaller than x
     val res = context.resources
-    return if (time_s < TIME_HOUR_LONG) {
+    return if (timeSeconds < TIME_HOUR_LONG) {
         // get time remaining, but never less than 1
         timeX =
             max(
-                (time_s / TIME_MINUTE).roundToInt(),
+                (timeSeconds / TIME_MINUTE).roundToInt(),
                 1,
             )
         res.getQuantityString(R.plurals.reviewer_window_title, timeX, timeX)
         // It used to be minutes only. So the word "minutes" is not
-        // explicitly written in the ressource name.
-    } else if (time_s < TIME_DAY_LONG) {
-        timeX = (time_s / TIME_HOUR_LONG).toInt()
-        remainingSeconds = (time_s % TIME_HOUR_LONG).toInt()
+        // explicitly written in the resource name.
+        /*
+         * NOTE:
+         * The reviewer ETA intentionally omits the "minutes" unit when displaying
+         * values such as "4 hours 12".
+         * Android plural resources support only a single quantity, but this ETA
+         * combines two quantities (hours and minutes). Adding a second unit would
+         * break proper internationalization.
+         * See PR #20033, issues #5626 and #5829.
+         */
+    } else if (timeSeconds < TIME_DAY_LONG) {
+        timeX = (timeSeconds / TIME_HOUR_LONG).toInt()
+        remainingSeconds = (timeSeconds % TIME_HOUR_LONG).toInt()
         remaining =
             (remainingSeconds.toFloat() / TIME_MINUTE).roundToInt()
         res.getQuantityString(
@@ -68,8 +77,8 @@ fun remainingTime(
             remaining,
         )
     } else {
-        timeX = (time_s / TIME_DAY_LONG).toInt()
-        remainingSeconds = (time_s.toFloat() % TIME_DAY_LONG).toInt()
+        timeX = (timeSeconds / TIME_DAY_LONG).toInt()
+        remainingSeconds = (timeSeconds.toFloat() % TIME_DAY_LONG).toInt()
         remaining =
             (remainingSeconds / TIME_HOUR).roundToInt()
         res.getQuantityString(

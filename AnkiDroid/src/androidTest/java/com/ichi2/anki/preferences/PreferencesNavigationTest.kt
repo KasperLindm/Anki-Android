@@ -1,4 +1,4 @@
-/**
+/*
  *  Copyright (c) 2025 Amit Bisht <iamitsbisht07@gmail.com>
  *
  *  This program is free software; you can redistribute it and/or modify it under
@@ -68,7 +68,6 @@ class PreferencesNavigationTest {
         onView(withId(R.id.nav_settings)).perform(click())
         onView(withId(com.bytehamster.lib.preferencesearch.R.id.search)).perform(click())
         onView(allOf(withId(com.bytehamster.lib.preferencesearch.R.id.search), hasFocus())).perform(typeText("Controls"))
-        pressBack()
         // Checking the list of Settings Categories are displayed on the basis of our search "Controls"
         onView(allOf(withResourceName("list"), isAssignableFrom(RecyclerView::class.java))).check(
             matches(

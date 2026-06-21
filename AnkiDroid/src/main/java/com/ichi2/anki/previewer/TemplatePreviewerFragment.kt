@@ -17,47 +17,53 @@ package com.ichi2.anki.previewer
 
 import android.os.Bundle
 import android.view.View
-import android.webkit.WebView
-import androidx.core.os.BundleCompat
-import androidx.core.os.bundleOf
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
-import com.google.android.material.button.MaterialButton
-import com.google.android.material.card.MaterialCardView
 import com.ichi2.anki.R
+import com.ichi2.anki.databinding.FragmentTemplatePreviewerBinding
+import com.ichi2.anki.libanki.CardOrdinal
 import com.ichi2.anki.snackbar.BaseSnackbarBuilderProvider
 import com.ichi2.anki.snackbar.SnackbarBuilder
-import com.ichi2.anki.utils.ext.sharedPrefs
-import com.ichi2.utils.BundleUtils.getNullableInt
+import com.ichi2.anki.workarounds.SafeWebViewLayout
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
+import timber.log.Timber
 
 class TemplatePreviewerFragment :
-    CardViewerFragment(R.layout.template_previewer),
+    CardViewerFragment(R.layout.fragment_template_previewer),
     BaseSnackbarBuilderProvider {
-    override val viewModel: TemplatePreviewerViewModel by viewModels {
-        val arguments = BundleCompat.getParcelable(requireArguments(), ARGS_KEY, TemplatePreviewerArguments::class.java)!!
-        TemplatePreviewerViewModel.factory(arguments)
-    }
-    override val webView: WebView
-        get() = requireView().findViewById(R.id.webview)
+    override val viewModel: TemplatePreviewerViewModel by viewModels()
+
+    lateinit var binding: FragmentTemplatePreviewerBinding
+
+    override val webViewLayout: SafeWebViewLayout get() = binding.webViewLayout
 
     override val baseSnackbarBuilder: SnackbarBuilder
-        get() = { anchorView = this@TemplatePreviewerFragment.view?.findViewById(R.id.show_answer) }
+        get() = { anchorView = binding.showAnswer }
 
     override fun onViewCreated(
         view: View,
         savedInstanceState: Bundle?,
     ) {
+        // binding must be set before super.onViewCreated
+        // as super.onViewCreated depends on webViewLayout, which depends on the binding
+        binding = FragmentTemplatePreviewerBinding.bind(view)
+
+        // The backing NotetypeFile may be missing after process death if the OS cleared
+        // its cache dir. Bail out before the ViewModel is constructed; the constructor
+        // would otherwise throw on `getNotetype()`.
+        if (!TemplatePreviewerArguments.isUsable(requireArguments())) {
+            Timber.w("Notetype file missing on previewer open; finishing")
+            requireActivity().finish()
+            return
+        }
+
         super.onViewCreated(view, savedInstanceState)
 
-        val showAnswerButton =
-            view.findViewById<MaterialButton>(R.id.show_answer).apply {
-                setOnClickListener { viewModel.toggleShowAnswer() }
-            }
+        binding.showAnswer.setOnClickListener { viewModel.toggleShowAnswer() }
         viewModel.showingAnswer
             .onEach { showingAnswer ->
-                showAnswerButton.text =
+                binding.showAnswer.text =
                     if (showingAnswer) {
                         getString(R.string.hide_answer)
                     } else {
@@ -65,30 +71,37 @@ class TemplatePreviewerFragment :
                     }
             }.launchIn(lifecycleScope)
 
-        if (sharedPrefs().getBoolean("safeDisplay", false)) {
-            view.findViewById<MaterialCardView>(R.id.webview_container).elevation = 0F
-        }
-
-        arguments?.getNullableInt(ARG_BACKGROUND_OVERRIDE_COLOR)?.let { color ->
-            view.setBackgroundColor(color)
-        }
+        binding.webViewContainer.setFrameStyle()
     }
+
+    /**
+     * Updates the content displayed in the previewer with the provided fields and tags
+     *
+     * Should not be called for cloze deletions, since they they have dynamic ord
+     *
+     * @param fields The list of field values to display
+     * @param tags The list of tags associated with the note
+     */
+    fun updateContent(
+        fields: List<String>,
+        tags: List<String>,
+    ) {
+        viewModel.updateContent(fields, tags)
+    }
+
+    /**
+     * Retrieves a safe cloze ordinal number for cloze deletions.
+     *
+     * @return The safe cloze ordinal number
+     */
+    suspend fun getSafeClozeOrd(): CardOrdinal = viewModel.getSafeClozeOrd()
 
     companion object {
         const val ARGS_KEY = "templatePreviewerArgs"
-        private const val ARG_BACKGROUND_OVERRIDE_COLOR = "arg_background_override_color"
 
-        /**
-         * @param backgroundOverrideColor optional color to be used as background on the root view
-         * of this fragment
-         */
-        fun newInstance(
-            arguments: TemplatePreviewerArguments,
-            backgroundOverrideColor: Int? = null,
-        ): TemplatePreviewerFragment =
+        fun newInstance(arguments: TemplatePreviewerArguments): TemplatePreviewerFragment =
             TemplatePreviewerFragment().apply {
-                val args = bundleOf(ARGS_KEY to arguments)
-                backgroundOverrideColor?.let { args.putInt(ARG_BACKGROUND_OVERRIDE_COLOR, backgroundOverrideColor) }
+                val args = Bundle().apply { putParcelable(ARGS_KEY, arguments) }
                 this.arguments = args
             }
     }

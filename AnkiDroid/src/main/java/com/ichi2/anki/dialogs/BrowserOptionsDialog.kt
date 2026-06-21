@@ -17,54 +17,48 @@
 package com.ichi2.anki.dialogs
 
 import android.app.Dialog
-import android.content.DialogInterface
 import android.os.Bundle
-import android.view.View
-import android.widget.Button
-import android.widget.CheckBox
-import android.widget.LinearLayout
-import android.widget.RadioButton
-import android.widget.RadioGroup
-import android.widget.TextView
-import androidx.annotation.IdRes
 import androidx.appcompat.app.AppCompatDialogFragment
-import androidx.core.os.bundleOf
 import androidx.fragment.app.activityViewModels
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.ichi2.anki.CollectionManager.TR
 import com.ichi2.anki.R
 import com.ichi2.anki.browser.BrowserColumnSelectionFragment
 import com.ichi2.anki.browser.CardBrowserViewModel
+import com.ichi2.anki.databinding.DialogBrowserOptionsBinding
 import com.ichi2.anki.model.CardsOrNotes
+import com.ichi2.anki.ui.internationalization.sentenceCase
+import com.ichi2.utils.create
+import com.ichi2.utils.negativeButton
+import com.ichi2.utils.positiveButton
 import timber.log.Timber
 
-class BrowserOptionsDialog : AppCompatDialogFragment() {
-    private lateinit var dialogView: View
-
+class BrowserOptionsDialog : AppCompatDialogFragment(R.layout.dialog_browser_options) {
     private val viewModel: CardBrowserViewModel by activityViewModels()
+
+    private lateinit var binding: DialogBrowserOptionsBinding
 
     /** The unsaved value of [CardsOrNotes] */
     private val dialogCardsOrNotes: CardsOrNotes
         get() {
-            @IdRes val selectedButtonId =
-                dialogView.findViewById<RadioGroup>(R.id.select_browser_mode).checkedRadioButtonId
-            return when (selectedButtonId) {
+            return when (binding.selectBrowserMode.checkedRadioButtonId) {
                 R.id.select_cards_mode -> CardsOrNotes.CARDS
                 else -> CardsOrNotes.NOTES
             }
         }
 
-    private val positiveButtonClick = { _: DialogInterface, _: Int ->
+    /** Persists updated options to the ViewModel */
+    fun saveChanges() {
         if (cardsOrNotes != dialogCardsOrNotes) {
             viewModel.setCardsOrNotes(dialogCardsOrNotes)
         }
-        val newTruncate = dialogView.findViewById<CheckBox>(R.id.truncate_checkbox).isChecked
+        val newTruncate = binding.truncateCheckBox.isChecked
 
         if (newTruncate != isTruncated) {
             viewModel.setTruncated(newTruncate)
         }
 
-        val newIgnoreAccent = dialogView.findViewById<CheckBox>(R.id.ignore_accents_checkbox).isChecked
+        val newIgnoreAccent = binding.ignoreAccentsCheckBox.isChecked
         if (newIgnoreAccent != viewModel.shouldIgnoreAccents) {
             viewModel.setIgnoreAccents(newIgnoreAccent)
         }
@@ -90,43 +84,41 @@ class BrowserOptionsDialog : AppCompatDialogFragment() {
     }
 
     override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
-        val layoutInflater = requireActivity().layoutInflater
-        dialogView = layoutInflater.inflate(R.layout.browser_options_dialog, null)
+        binding = DialogBrowserOptionsBinding.inflate(layoutInflater)
 
         if (cardsOrNotes == CardsOrNotes.CARDS) {
-            dialogView.findViewById<RadioButton>(R.id.select_cards_mode).isChecked = true
+            binding.selectCardsMode.isChecked = true
         } else {
-            dialogView.findViewById<RadioButton>(R.id.select_notes_mode).isChecked = true
+            binding.selectNotesMode.isChecked = true
         }
 
-        dialogView.findViewById<CheckBox>(R.id.truncate_checkbox).isChecked = isTruncated
+        binding.truncateCheckBox.isChecked = isTruncated
+        binding.toggleCardsNotesTitle.text = TR.sentenceCase.toggleCardsNotes
+        binding.flagTitle.text = TR.browsingFlag()
 
-        dialogView.findViewById<LinearLayout>(R.id.action_rename_flag).setOnClickListener {
+        binding.renameFlag.setOnClickListener {
             Timber.d("Rename flag clicked")
             val flagRenameDialog = FlagRenameDialog()
             flagRenameDialog.show(parentFragmentManager, "FlagRenameDialog")
             dismiss()
         }
 
-        dialogView.findViewById<Button>(R.id.manage_columns_button).setOnClickListener {
+        binding.manageColumnsButton.setOnClickListener {
             openColumnManager()
         }
 
-        dialogView.findViewById<CheckBox>(R.id.ignore_accents_checkbox).apply {
+        binding.ignoreAccentsCheckBox.apply {
             text = TR.preferencesIgnoreAccentsInSearch()
             isChecked = viewModel.shouldIgnoreAccents
         }
 
-        dialogView.findViewById<TextView>(R.id.browsing_text_view).text = TR.preferencesBrowsing()
+        binding.browsingTextView.text = TR.preferencesBrowsing()
 
-        return MaterialAlertDialogBuilder(requireContext()).run {
-            this.setView(dialogView)
-            this.setTitle(getString(R.string.browser_options_dialog_heading))
-            this.setNegativeButton(getString(R.string.dialog_cancel)) { _: DialogInterface, _: Int ->
-                dismiss()
-            }
-            this.setPositiveButton(getString(R.string.dialog_ok), DialogInterface.OnClickListener(function = positiveButtonClick))
-            this.create()
+        return MaterialAlertDialogBuilder(requireContext()).create {
+            setView(binding.root)
+            setTitle(TR.sentenceCase.browserOptions)
+            positiveButton(R.string.save) { saveChanges() }
+            negativeButton(R.string.dialog_cancel)
         }
     }
 
@@ -147,10 +139,10 @@ class BrowserOptionsDialog : AppCompatDialogFragment() {
             Timber.i("BrowserOptionsDialog::newInstance")
             return BrowserOptionsDialog().apply {
                 arguments =
-                    bundleOf(
-                        CARDS_OR_NOTES_KEY to (cardsOrNotes == CardsOrNotes.CARDS),
-                        IS_TRUNCATED_KEY to isTruncated,
-                    )
+                    Bundle().apply {
+                        putBoolean(CARDS_OR_NOTES_KEY, cardsOrNotes == CardsOrNotes.CARDS)
+                        putBoolean(IS_TRUNCATED_KEY, isTruncated)
+                    }
             }
         }
     }

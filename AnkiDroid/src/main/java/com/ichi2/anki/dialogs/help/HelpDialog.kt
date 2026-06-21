@@ -18,22 +18,22 @@ package com.ichi2.anki.dialogs.help
 import android.app.Dialog
 import android.os.Bundle
 import android.view.View
-import android.widget.LinearLayout
-import android.widget.TextView
 import androidx.activity.addCallback
 import androidx.annotation.VisibleForTesting
 import androidx.appcompat.app.AlertDialog
 import androidx.core.os.BundleCompat
-import androidx.core.os.bundleOf
 import androidx.fragment.app.DialogFragment
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.commit
 import com.ichi2.anki.AnkiDroidApp
 import com.ichi2.anki.R
+import com.ichi2.anki.analytics.AnalyticsConstants.Actions
+import com.ichi2.anki.analytics.AnalyticsConstants.Category
 import com.ichi2.anki.analytics.UsageAnalytics
-import com.ichi2.anki.analytics.UsageAnalytics.Actions
-import com.ichi2.anki.analytics.UsageAnalytics.Category
 import com.ichi2.anki.ankiActivity
+import com.ichi2.anki.databinding.DialogHelpBinding
+import com.ichi2.anki.databinding.FragmentHelpPageBinding
+import com.ichi2.anki.databinding.ItemHelpEntryBinding
 import com.ichi2.anki.dialogs.help.HelpItem.Action.OpenUrl
 import com.ichi2.anki.dialogs.help.HelpItem.Action.OpenUrlResource
 import com.ichi2.anki.dialogs.help.HelpItem.Action.Rate
@@ -43,6 +43,7 @@ import com.ichi2.utils.createAndApply
 import com.ichi2.utils.customView
 import com.ichi2.utils.dp
 import com.ichi2.utils.title
+import dev.androidbroadcast.vbpd.viewBinding
 
 /**
  * [DialogFragment] responsible for showing the help/support menus.
@@ -52,7 +53,7 @@ class HelpDialog : DialogFragment() {
     lateinit var actionsDispatcher: HelpItemActionsDispatcher
 
     override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
-        val customView = requireActivity().layoutInflater.inflate(R.layout.dialog_help, null)
+        val binding = DialogHelpBinding.inflate(requireActivity().layoutInflater)
         ankiActivity?.let { ankiActivity ->
             actionsDispatcher = AnkiActivityHelpActionsDispatcher(ankiActivity)
         }
@@ -63,7 +64,7 @@ class HelpDialog : DialogFragment() {
         return AlertDialog
             .Builder(requireContext())
             .title(requireArguments().getInt(ARG_MENU_TITLE))
-            .customView(customView)
+            .customView(binding.root)
             .createAndApply {
                 // the dialog captures the BACK call so we manually pop the inner FragmentManager
                 // if there's a second page
@@ -109,7 +110,7 @@ class HelpDialog : DialogFragment() {
     private fun newHelpPage(items: Array<HelpItem>) {
         val menuPage =
             HelpPageFragment().apply {
-                arguments = bundleOf(ARG_MENU_ITEMS to items)
+                arguments = Bundle().apply { putParcelableArray(ARG_MENU_ITEMS, items) }
             }
         childFragmentManager.commit {
             replace(R.id.fragment_container, menuPage, PAGE_TAG).addToBackStack(null)
@@ -125,10 +126,10 @@ class HelpDialog : DialogFragment() {
             UsageAnalytics.sendAnalyticsEvent(Category.LINK_CLICKED, Actions.OPENED_HELP_DIALOG)
             return HelpDialog().apply {
                 arguments =
-                    bundleOf(
-                        ARG_MENU_TITLE to R.string.help,
-                        ARG_MENU_ITEMS to mainHelpMenuItems,
-                    )
+                    Bundle().apply {
+                        putInt(ARG_MENU_TITLE, R.string.help)
+                        putParcelableArray(ARG_MENU_ITEMS, mainHelpMenuItems)
+                    }
             }
         }
 
@@ -138,10 +139,10 @@ class HelpDialog : DialogFragment() {
             val privacyItems = childHelpMenuItems.filter { it.parentId == privacyId }
             return HelpDialog().apply {
                 arguments =
-                    bundleOf(
-                        ARG_MENU_TITLE to R.string.help_title_privacy,
-                        ARG_MENU_ITEMS to privacyItems.toTypedArray(),
-                    )
+                    Bundle().apply {
+                        putInt(ARG_MENU_TITLE, R.string.help_title_privacy)
+                        putParcelableArray(ARG_MENU_ITEMS, privacyItems.toTypedArray())
+                    }
             }
         }
 
@@ -156,10 +157,10 @@ class HelpDialog : DialogFragment() {
             val actualMenuItems = supportMenuItems.filterNot { it.action is Rate && !canRateApp }
             return HelpDialog().apply {
                 arguments =
-                    bundleOf(
-                        ARG_MENU_TITLE to R.string.help_title_support_ankidroid,
-                        ARG_MENU_ITEMS to actualMenuItems.toTypedArray(),
-                    )
+                    Bundle().apply {
+                        putInt(ARG_MENU_TITLE, R.string.help_title_support_ankidroid)
+                        putParcelableArray(ARG_MENU_ITEMS, actualMenuItems.toTypedArray())
+                    }
             }
         }
     }
@@ -185,19 +186,15 @@ internal const val ARG_SELECTED_MENU_ITEM = " selected_menu_item"
  * This fragment is responsible for showing a list of menu items in the application's [HelpDialog].
  */
 class HelpPageFragment : Fragment(R.layout.fragment_help_page) {
+    private val binding by viewBinding(FragmentHelpPageBinding::bind)
+
     override fun onViewCreated(
         view: View,
         savedInstanceState: Bundle?,
     ) {
         super.onViewCreated(view, savedInstanceState)
-        val pageContentLayout = view.findViewById<LinearLayout>(R.id.page_content)
         requireArgsHelpEntries().forEach { menuItem ->
-            val contentRow =
-                requireActivity().layoutInflater.inflate(
-                    R.layout.item_help_entry,
-                    pageContentLayout,
-                    false,
-                ) as TextView
+            val contentRow = ItemHelpEntryBinding.inflate(layoutInflater, binding.pageContent, false).root
             contentRow.apply {
                 setText(menuItem.titleResId)
                 setCompoundDrawablesRelativeWithIntrinsicBoundsKt(start = menuItem.iconResId)
@@ -206,10 +203,10 @@ class HelpPageFragment : Fragment(R.layout.fragment_help_page) {
                     UsageAnalytics.sendAnalyticsEvent(Category.LINK_CLICKED, menuItem.analyticsId)
                     parentFragmentManager.setFragmentResult(
                         REQUEST_HELP_PAGE,
-                        bundleOf(ARG_SELECTED_MENU_ITEM to menuItem),
+                        Bundle().apply { putParcelable(ARG_SELECTED_MENU_ITEM, menuItem) },
                     )
                 }
-                pageContentLayout.addView(this)
+                binding.pageContent.addView(this)
             }
         }
     }

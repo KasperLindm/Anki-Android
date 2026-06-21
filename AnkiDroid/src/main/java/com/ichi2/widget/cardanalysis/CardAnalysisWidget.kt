@@ -24,21 +24,25 @@ import android.content.Context
 import android.content.Intent
 import android.view.View
 import android.widget.RemoteViews
-import com.ichi2.anki.AnkiDroidApp
-import com.ichi2.anki.CrashReportService
 import com.ichi2.anki.IntentHandler.Companion.intentToReviewDeckFromShortcuts
 import com.ichi2.anki.R
 import com.ichi2.anki.analytics.UsageAnalytics
+import com.ichi2.anki.common.coroutines.applicationScope
+import com.ichi2.anki.common.crashreporting.CrashReportService
+import com.ichi2.anki.common.destinations.DeckOptionsDestination
+import com.ichi2.anki.common.destinations.DeferredNavigation
+import com.ichi2.anki.common.destinations.toIntent
 import com.ichi2.anki.isCollectionEmpty
 import com.ichi2.anki.libanki.DeckId
 import com.ichi2.anki.libanki.Decks.Companion.NOT_FOUND_DECK_ID
-import com.ichi2.anki.pages.DeckOptionsDestination
+import com.ichi2.anki.pages.fromDeckId
 import com.ichi2.widget.ACTION_UPDATE_WIDGET
 import com.ichi2.widget.AnalyticsWidgetProvider
 import com.ichi2.widget.AppWidgetId
 import com.ichi2.widget.AppWidgetId.Companion.INVALID_APPWIDGET_ID
 import com.ichi2.widget.AppWidgetId.Companion.getAppWidgetId
 import com.ichi2.widget.AppWidgetIds
+import com.ichi2.widget.DayRolloverAlarm
 import com.ichi2.widget.cancelRecurringAlarm
 import com.ichi2.widget.deckpicker.DeckWidgetData
 import com.ichi2.widget.deckpicker.getDeckNameAndStats
@@ -88,7 +92,7 @@ class CardAnalysisWidget : AnalyticsWidgetProvider() {
                 return
             }
 
-            AnkiDroidApp.applicationScope.launch {
+            applicationScope.launch {
                 val isCollectionEmpty = isCollectionEmpty()
                 if (isCollectionEmpty) {
                     showCollectionDeck(context, appWidgetManager, appWidgetId, remoteViews)
@@ -195,7 +199,7 @@ class CardAnalysisWidget : AnalyticsWidgetProvider() {
                 if (!isEmptyDeck) {
                     intentToReviewDeckFromShortcuts(context, deckData.deckId)
                 } else {
-                    DeckOptionsDestination.fromDeckId(deckData.deckId).toIntent(context)
+                    with(DeferredNavigation) { DeckOptionsDestination.fromDeckId(deckData.deckId).toIntent() }
                 }
             val pendingIntent =
                 PendingIntent.getActivity(
@@ -229,6 +233,11 @@ class CardAnalysisWidget : AnalyticsWidgetProvider() {
         }
     }
 
+    override fun onEnabled(context: Context) {
+        super.onEnabled(context)
+        DayRolloverAlarm.scheduleNext(context)
+    }
+
     override fun performUpdate(
         context: Context,
         appWidgetManager: AppWidgetManager,
@@ -243,7 +252,7 @@ class CardAnalysisWidget : AnalyticsWidgetProvider() {
             // Get the selected deck ID internally
             val selectedDeckId = getDeckIdForWidget(context, widgetId)
 
-            /**
+            /*
              * Explanation of behavior when selectedDeckId is empty
              * If selectedDeckId is empty, the widget will retain the previous deck.
              * This behavior ensures that the widget does not display an empty view, which could be
@@ -300,7 +309,7 @@ class CardAnalysisWidget : AnalyticsWidgetProvider() {
                 }
             }
             AppWidgetManager.ACTION_APPWIDGET_OPTIONS_CHANGED -> {
-                // TODO: #17151 not yet handled. Exists to stop ACRA errors
+                Timber.d("ACTION_APPWIDGET_OPTIONS_CHANGED received from CardAnalysisWidget")
             }
             AppWidgetManager.ACTION_APPWIDGET_DELETED -> {
                 Timber.d("ACTION_APPWIDGET_DELETED received")
@@ -324,7 +333,6 @@ class CardAnalysisWidget : AnalyticsWidgetProvider() {
                 CrashReportService.sendExceptionReport(
                     Exception("Unexpected action received: ${intent.action}"),
                     "CardAnalysisWidget - onReceive",
-                    null,
                     onlyIfSilent = true,
                 )
             }

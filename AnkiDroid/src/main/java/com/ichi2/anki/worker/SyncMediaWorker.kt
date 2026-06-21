@@ -83,20 +83,23 @@ class SyncMediaWorker(
                 monitorProgress(backend)
             }
         } catch (cancellationException: CancellationException) {
-            Timber.w(cancellationException)
+            Timber.w(cancellationException, "SyncMediaWorker cancelled (user tapped Cancel or WorkManager cancelled)")
+            notificationManager?.cancel(NotificationId.SYNC_MEDIA)
+            Timber.d("SyncMediaWorker: progress notification cancelled after worker cancellation")
             cancelMediaSync(CollectionManager.getBackend())
             throw cancellationException
         } catch (throwable: Throwable) {
-            Timber.w(throwable)
+            Timber.w(throwable, "SyncMediaWorker failed")
             notify {
                 setContentTitle(CollectionManager.TR.syncMediaFailed())
                 throwable.localizedMessage?.let { message ->
                     setContentText(message)
                 }
             }
+            Timber.d("SyncMediaWorker: showing failure notification")
             return Result.failure()
         }
-        Timber.d("SyncMediaWorker: cancelling notification")
+        Timber.d("SyncMediaWorker: cancelling progress notification (sync completed)")
         notificationManager?.cancel(NotificationId.SYNC_MEDIA)
 
         Timber.d("SyncMediaWorker: success")
@@ -120,7 +123,7 @@ class SyncMediaWorker(
                 val notificationText = syncProgress.run { "$added $removed $checked" }
                 notify(getProgressNotification(notificationText))
             }
-            delay(100)
+            delay(NOTIFICATION_UPDATE_RATE_MS)
         }
     }
 
@@ -174,6 +177,7 @@ class SyncMediaWorker(
     companion object {
         private const val HKEY_KEY = "hkey"
         private const val ENDPOINT_KEY = "endpoint"
+        const val NOTIFICATION_UPDATE_RATE_MS = 500L
 
         fun getWorkRequest(auth: SyncAuth): OneTimeWorkRequest {
             val constraints =

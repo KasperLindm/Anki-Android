@@ -20,7 +20,7 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
-import com.ichi2.anki.DeckSpinnerSelection
+import com.ichi2.anki.common.ALL_DECKS_ID
 import com.ichi2.anki.libanki.Consts
 import com.ichi2.anki.libanki.DeckId
 import timber.log.Timber
@@ -39,7 +39,7 @@ class AddEditReminderDialogViewModel(
      */
     private val dialogMode =
         requireNotNull(
-            savedStateHandle.get<AddEditReminderDialog.DialogMode>(AddEditReminderDialog.DIALOG_MODE_ARGUMENTS_KEY),
+            savedStateHandle.get<AddEditReminderDialog.DialogMode>(AddEditReminderDialog.ARGS_DIALOG_MODE),
         ) { "dialogMode is required" }
 
     private val _time =
@@ -55,20 +55,20 @@ class AddEditReminderDialogViewModel(
      * Here, we set an immediate default value for the deck selected based on the dialog mode.
      * However, it is possible that the deck with this deck ID does not currently exist in the collection
      * (ex. due to a deleted deck, changed collection folder, etc.). Since checking for this case requires
-     * accessing the collection, we handle it in [AddEditReminderDialog.ensureValidDeckSelected].
+     * accessing the collection, we handle it in [AddEditReminderDialog.setInitialDeckSelection].
      */
     private val _deckSelected =
         MutableLiveData(
             when (dialogMode) {
                 is AddEditReminderDialog.DialogMode.Add -> {
                     when (dialogMode.schedulerScope) {
-                        is ReviewReminderScope.Global -> DeckSpinnerSelection.ALL_DECKS_ID
+                        is ReviewReminderScope.Global -> ALL_DECKS_ID
                         is ReviewReminderScope.DeckSpecific -> dialogMode.schedulerScope.did
                     }
                 }
                 is AddEditReminderDialog.DialogMode.Edit -> {
                     when (dialogMode.reminderToBeEdited.scope) {
-                        is ReviewReminderScope.Global -> DeckSpinnerSelection.ALL_DECKS_ID
+                        is ReviewReminderScope.Global -> ALL_DECKS_ID
                         is ReviewReminderScope.DeckSpecific -> dialogMode.reminderToBeEdited.scope.did
                     }
                 }
@@ -76,8 +76,7 @@ class AddEditReminderDialogViewModel(
         )
 
     /**
-     * [com.ichi2.anki.DeckSpinnerSelection.ALL_DECKS_ID] is used to represent All Decks
-     * (i.e. [ReviewReminderScope.Global]) being selected.
+     * [ALL_DECKS_ID] is used to represent All Decks (i.e. [ReviewReminderScope.Global]) being selected.
      */
     val deckSelected: LiveData<DeckId> = _deckSelected
 
@@ -90,26 +89,40 @@ class AddEditReminderDialogViewModel(
         )
     val cardTriggerThreshold: LiveData<Int> = _cardTriggerThreshold
 
+    private val _onlyNotifyIfNoReviews =
+        MutableLiveData(
+            when (dialogMode) {
+                is AddEditReminderDialog.DialogMode.Add -> INITIAL_ONLY_NOTIFY_IF_NO_REVIEWS
+                is AddEditReminderDialog.DialogMode.Edit -> dialogMode.reminderToBeEdited.onlyNotifyIfNoReviews
+            },
+        )
+    val onlyNotifyIfNoReviews: LiveData<Boolean> = _onlyNotifyIfNoReviews
+
     private val _advancedSettingsOpen = MutableLiveData(INITIAL_ADVANCED_SETTINGS_OPEN)
     val advancedSettingsOpen: LiveData<Boolean> = _advancedSettingsOpen
 
     fun setTime(time: ReviewReminderTime) {
-        Timber.d("Updated time to %s", time)
+        Timber.i("Updated time to %s", time)
         _time.value = time
     }
 
     fun setDeckSelected(deckId: DeckId) {
-        Timber.d("Updated deck selected to %s", deckId)
+        Timber.i("Updated deck selected to %s", deckId)
         _deckSelected.value = deckId
     }
 
     fun setCardTriggerThreshold(threshold: Int) {
-        Timber.d("Updated card trigger threshold to %s", threshold)
+        Timber.i("Updated card trigger threshold to %s", threshold)
         _cardTriggerThreshold.value = threshold
     }
 
+    fun toggleOnlyNotifyIfNoReviews() {
+        Timber.i("Toggled onlyNotifyIfNoReviews from %s", _onlyNotifyIfNoReviews.value)
+        _onlyNotifyIfNoReviews.value = !(_onlyNotifyIfNoReviews.value ?: false)
+    }
+
     fun toggleAdvancedSettingsOpen() {
-        Timber.d("Toggled advanced settings open from %s", _advancedSettingsOpen.value)
+        Timber.i("Toggled advanced settings open from %s", _advancedSettingsOpen.value)
         _advancedSettingsOpen.value = !(_advancedSettingsOpen.value ?: false)
     }
 
@@ -126,7 +139,7 @@ class AddEditReminderDialogViewModel(
                 ),
             scope =
                 when (deckSelected.value) {
-                    DeckSpinnerSelection.ALL_DECKS_ID -> ReviewReminderScope.Global
+                    ALL_DECKS_ID -> ReviewReminderScope.Global
                     else ->
                         ReviewReminderScope.DeckSpecific(
                             did = deckSelected.value ?: Consts.DEFAULT_DECK_ID,
@@ -137,6 +150,7 @@ class AddEditReminderDialogViewModel(
                     is AddEditReminderDialog.DialogMode.Add -> true
                     is AddEditReminderDialog.DialogMode.Edit -> dialogMode.reminderToBeEdited.enabled
                 },
+            onlyNotifyIfNoReviews = onlyNotifyIfNoReviews.value ?: INITIAL_ONLY_NOTIFY_IF_NO_REVIEWS,
         )
 
     companion object {
@@ -148,6 +162,13 @@ class AddEditReminderDialogViewModel(
          * This is an Int because that is what the EditText's inputType is.
          */
         private const val INITIAL_CARD_THRESHOLD: Int = 1
+
+        /**
+         * The default value for whether a notification should only be fired if no reviews have been done today
+         * for the corresponding deck / all decks. Since this is set to false, the default behaviour is that
+         * notifications will always be sent, regardless of whether reviews have been done today.
+         */
+        private const val INITIAL_ONLY_NOTIFY_IF_NO_REVIEWS = false
 
         /**
          * Whether the advanced settings dropdown is initially open.

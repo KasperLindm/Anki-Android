@@ -22,6 +22,7 @@ import androidx.test.espresso.matcher.RootMatchers.isDialog
 import androidx.test.espresso.matcher.ViewMatchers.isChecked
 import androidx.test.espresso.matcher.ViewMatchers.isDisplayed
 import androidx.test.espresso.matcher.ViewMatchers.withId
+import androidx.test.espresso.matcher.ViewMatchers.withText
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.ichi2.anki.CollectionManager.TR
 import com.ichi2.anki.R
@@ -34,22 +35,80 @@ import org.junit.runner.RunWith
 @RunWith(AndroidJUnit4::class)
 class ExportDialogFragmentTest : RobolectricTest() {
     @Test
+    fun `collection export options are initialized correctly`() {
+        onExportDialog {
+            // Select export type as anki collection package.
+            onView(withId(R.id.export_type_selector)).inRoot(isDialog()).perform(click())
+            onData(containsString(TR.exportingAnkiCollectionPackage()))
+                .inAdapterView(withId(R.id.export_type_selector))
+                .perform(click())
+
+            // Check that the UI elements are displayed and have the correct text and default values for checkboxes.
+            onView(withId(R.id.collection_include_media))
+                .inRoot(isDialog())
+                .check(matches(isDisplayed()))
+                .check(matches(withText(TR.exportingIncludeMedia())))
+                .check(matches(isChecked()))
+
+            onView(withId(R.id.collection_export_legacy))
+                .inRoot(isDialog())
+                .check(matches(isDisplayed()))
+                .check(matches(withText(TR.exportingSupportOlderAnkiVersions())))
+                .check(matches(not(isChecked())))
+        }
+    }
+
+    @Test
+    fun `apkg export options are initialized correctly`() {
+        onExportDialog {
+            // Select export type as anki deck package.
+            onView(withId(R.id.export_type_selector)).inRoot(isDialog()).perform(click())
+            onData(containsString(TR.exportingAnkiDeckPackage()))
+                .inAdapterView(withId(R.id.export_type_selector))
+                .perform(click())
+
+            // Check that the UI elements are displayed and have the correct text and default values for checkboxes.
+            onView(withId(R.id.apkg_include_media))
+                .inRoot(isDialog())
+                .check(matches(isDisplayed()))
+                .check(matches(withText(TR.exportingIncludeMedia())))
+                .check(matches(isChecked()))
+
+            onView(withId(R.id.apkg_include_deck_configs))
+                .inRoot(isDialog())
+                .check(matches(isDisplayed()))
+                .check(matches(withText(TR.exportingIncludeDeckConfigs())))
+                .check(matches(not(isChecked())))
+
+            onView(withId(R.id.apkg_include_schedule))
+                .inRoot(isDialog())
+                .check(matches(isDisplayed()))
+                .check(matches(withText(TR.exportingIncludeSchedulingInformation())))
+                .check(matches(isChecked()))
+
+            onView(withId(R.id.apkg_export_legacy))
+                .inRoot(isDialog())
+                .check(matches(isDisplayed()))
+                .check(matches(withText(TR.exportingSupportOlderAnkiVersions())))
+                .check(matches(not(isChecked())))
+        }
+    }
+
+    @Test
     fun `Legacy export checkbox(default false) is shown only for collection and apkg`() {
-        launchFragment<ExportDialogFragment>(
-            themeResId = R.style.Theme_Light,
-        ).onFragment {
+        onExportDialog {
             // check legacy checkboxes status for collection export
             onView(withId(R.id.export_type_selector)).inRoot(isDialog()).perform(click())
             onData(containsString(TR.exportingAnkiCollectionPackage()))
                 .inAdapterView(withId(R.id.export_type_selector))
                 .perform(click())
-            onView(withId(R.id.export_legacy_checkbox_collection))
+            onView(withId(R.id.collection_export_legacy))
                 .inRoot(isDialog())
                 .check(matches(isDisplayed()))
-            onView(withId(R.id.export_legacy_checkbox_collection))
+            onView(withId(R.id.collection_export_legacy))
                 .inRoot(isDialog())
                 .check(matches(not(isChecked())))
-            onView(withId(R.id.export_legacy_checkbox_apkg))
+            onView(withId(R.id.apkg_export_legacy))
                 .inRoot(isDialog())
                 .check(matches(not(isDisplayed())))
 
@@ -58,13 +117,13 @@ class ExportDialogFragmentTest : RobolectricTest() {
             onData(containsString(TR.exportingAnkiDeckPackage()))
                 .inAdapterView(withId(R.id.export_type_selector))
                 .perform(click())
-            onView(withId(R.id.export_legacy_checkbox_apkg))
+            onView(withId(R.id.apkg_export_legacy))
                 .inRoot(isDialog())
                 .check(matches(isDisplayed()))
-            onView(withId(R.id.export_legacy_checkbox_apkg))
+            onView(withId(R.id.apkg_export_legacy))
                 .inRoot(isDialog())
                 .check(matches(not(isChecked())))
-            onView(withId(R.id.export_legacy_checkbox_collection))
+            onView(withId(R.id.collection_export_legacy))
                 .inRoot(isDialog())
                 .check(matches(not(isDisplayed())))
 
@@ -73,10 +132,10 @@ class ExportDialogFragmentTest : RobolectricTest() {
             onData(containsString(TR.exportingNotesInPlainText()))
                 .inAdapterView(withId(R.id.export_type_selector))
                 .perform(click())
-            onView(withId(R.id.export_legacy_checkbox_apkg))
+            onView(withId(R.id.apkg_export_legacy))
                 .inRoot(isDialog())
                 .check(matches(not(isDisplayed())))
-            onView(withId(R.id.export_legacy_checkbox_collection))
+            onView(withId(R.id.collection_export_legacy))
                 .inRoot(isDialog())
                 .check(matches(not(isDisplayed())))
 
@@ -85,12 +144,18 @@ class ExportDialogFragmentTest : RobolectricTest() {
             onData(containsString(TR.exportingCardsInPlainText()))
                 .inAdapterView(withId(R.id.export_type_selector))
                 .perform(click())
-            onView(withId(R.id.export_legacy_checkbox_apkg))
+            onView(withId(R.id.apkg_export_legacy))
                 .inRoot(isDialog())
                 .check(matches(not(isDisplayed())))
-            onView(withId(R.id.export_legacy_checkbox_collection))
+            onView(withId(R.id.collection_export_legacy))
                 .inRoot(isDialog())
                 .check(matches(not(isDisplayed())))
         }
     }
+
+    /** Launches [ExportDialogFragment] and executes [action] on the fragment. */
+    private fun onExportDialog(action: ExportDialogFragment.() -> Unit) =
+        launchFragment<ExportDialogFragment>(
+            themeResId = R.style.Theme_Light,
+        ).use { scenario -> scenario.onFragment { action(it) } }
 }

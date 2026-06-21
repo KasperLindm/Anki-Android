@@ -1,21 +1,21 @@
-/****************************************************************************************
- * This program is free software; you can redistribute it and/or modify it under        *
- * the terms of the GNU General Public License as published by the Free Software        *
- * Foundation; either version 3 of the License, or (at your option) any later           *
- * version.                                                                             *
- *                                                                                      *
- * This program is distributed in the hope that it will be useful, but WITHOUT ANY      *
- * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A      *
- * PARTICULAR PURPOSE. See the GNU General Public License for more details.             *
- *                                                                                      *
- * You should have received a copy of the GNU General Public License along with         *
- * this program. If not, see <http://www.gnu.org/licenses/>.                            *
- ****************************************************************************************/
+/*
+ * This program is free software; you can redistribute it and/or modify it under
+ * the terms of the GNU General Public License as published by the Free Software
+ * Foundation; either version 3 of the License, or (at your option) any later
+ * version.
+ *
+ * This program is distributed in the hope that it will be useful, but WITHOUT ANY
+ * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
+ * PARTICULAR PURPOSE. See the GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along with
+ * this program. If not, see <http://www.gnu.org/licenses/>.
+ */
 package com.ichi2.anki
 
 import android.app.Activity
-import android.content.Intent
 import android.os.Bundle
+import android.text.Html
 import android.text.Spanned
 import android.text.method.LinkMovementMethod
 import android.view.LayoutInflater
@@ -30,8 +30,8 @@ import androidx.activity.result.ActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.VisibleForTesting
 import androidx.constraintlayout.widget.Group
-import androidx.core.os.bundleOf
 import androidx.core.text.HtmlCompat
+import androidx.core.text.parseAsHtml
 import androidx.core.view.MenuProvider
 import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
@@ -41,22 +41,34 @@ import anki.collection.OpChanges
 import com.ichi2.anki.CollectionManager.TR
 import com.ichi2.anki.CollectionManager.withCol
 import com.ichi2.anki.backend.stripHTMLScriptAndStyleTags
+import com.ichi2.anki.common.crashreporting.CrashReportService
 import com.ichi2.anki.dialogs.customstudy.CustomStudyDialog
+import com.ichi2.anki.filtered.FilteredDeckOptionsFragment
 import com.ichi2.anki.libanki.Collection
 import com.ichi2.anki.libanki.Decks
 import com.ichi2.anki.observability.ChangeManager
 import com.ichi2.anki.observability.undoableOp
 import com.ichi2.anki.reviewreminders.ReviewReminderScope
-import com.ichi2.anki.reviewreminders.ScheduleReminders
+import com.ichi2.anki.reviewreminders.ScheduleRemindersFragment
 import com.ichi2.anki.settings.Prefs
-import com.ichi2.anki.ui.internationalization.toSentenceCase
+import com.ichi2.anki.ui.internationalization.sentenceCase
 import com.ichi2.anki.utils.ext.showDialogFragment
+import com.ichi2.ui.CollectionMediaImageGetter
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.intellij.lang.annotations.Language
 import timber.log.Timber
 
+/**
+ * Displays an overview of a deck (title, counts, description) and allows studying or modification
+ * of the deck (Unbury, Deck Options, Custom Study)
+ *
+ * Filtered decks may be emptied or rebuilt
+ *
+ * On a tablet, this is the primary screen to study a deck and appears inside [DeckPicker]
+ * On a phone, this is hosted inside [StudyOptionsActivity], opened via the the [DeckPicker] counts
+ */
 class StudyOptionsFragment :
     Fragment(),
     ChangeManager.Subscriber,
@@ -87,7 +99,7 @@ class StudyOptionsFragment :
                 if (currentContentView != CONTENT_CONGRATS) {
                     parentFragmentManager.setFragmentResult(
                         REQUEST_STUDY_OPTIONS_STUDY,
-                        bundleOf(),
+                        Bundle(),
                     )
                 } else {
                     showCustomStudyContextMenu()
@@ -101,7 +113,7 @@ class StudyOptionsFragment :
         savedInstanceState: Bundle?,
     ): View? {
         Timber.i("onCreateView()")
-        val studyOptionsView = inflater.inflate(R.layout.studyoptions_fragment, container, false)
+        val studyOptionsView = inflater.inflate(R.layout.fragment_study_options, container, false)
         fragmented = requireActivity().javaClass != StudyOptionsActivity::class.java
         initAllContentViews(studyOptionsView)
         refreshInterface()
@@ -122,6 +134,9 @@ class StudyOptionsFragment :
         menuInflater: MenuInflater,
     ) {
         menuInflater.inflate(R.menu.study_options_fragment, menu)
+        menu.findItem(R.id.action_rebuild)?.title = TR.actionsRebuild()
+        menu.findItem(R.id.action_custom_study)?.title = TR.sentenceCase.customStudy
+        menu.findItem(R.id.action_unbury)?.title = TR.studyingUnbury()
     }
 
     override fun onResume() {
@@ -182,8 +197,7 @@ class StudyOptionsFragment :
             R.id.action_deck_or_study_options -> {
                 Timber.i("StudyOptionsFragment:: Deck or study options button pressed")
                 if (col!!.decks.isFiltered(col!!.decks.selected())) {
-                    val i = Intent(activity, FilteredDeckOptions::class.java)
-                    i.putExtra("defaultConfig", false)
+                    val i = FilteredDeckOptionsFragment.getIntent(requireActivity(), did = col!!.decks.current().id)
                     Timber.i("Opening filtered deck options")
                     onDeckOptionsActivityResult.launch(i)
                 } else {
@@ -203,7 +217,7 @@ class StudyOptionsFragment :
             R.id.action_schedule_reminders -> {
                 Timber.i("StudyOptionsFragment:: schedule reminders button pressed")
                 val intent =
-                    ScheduleReminders.getIntent(
+                    ScheduleRemindersFragment.getIntent(
                         requireContext(),
                         ReviewReminderScope.DeckSpecific(col!!.decks.current().id),
                     )
@@ -263,24 +277,24 @@ class StudyOptionsFragment :
         try {
             // Switch on or off rebuild/empty/custom study depending on whether or not filtered deck
             if (col != null && col!!.decks.isFiltered(col!!.decks.selected())) {
-                menu.findItem(R.id.action_rebuild).isVisible = true
-                menu.findItem(R.id.action_empty).isVisible = true
-                menu.findItem(R.id.action_custom_study).isVisible = false
-                menu.findItem(R.id.action_deck_or_study_options).setTitle(R.string.menu__study_options)
+                menu.findItem(R.id.action_rebuild)?.isVisible = true
+                menu.findItem(R.id.action_empty)?.isVisible = true
+                menu.findItem(R.id.action_custom_study)?.isVisible = false
+                menu.findItem(R.id.action_deck_or_study_options)?.setTitle(R.string.menu__study_options)
             } else {
-                menu.findItem(R.id.action_rebuild).isVisible = false
-                menu.findItem(R.id.action_empty).isVisible = false
-                menu.findItem(R.id.action_custom_study).isVisible = true
-                menu.findItem(R.id.action_deck_or_study_options).setTitle(R.string.menu__deck_options)
+                menu.findItem(R.id.action_rebuild)?.isVisible = false
+                menu.findItem(R.id.action_empty)?.isVisible = false
+                menu.findItem(R.id.action_custom_study)?.isVisible = true
+                menu.findItem(R.id.action_deck_or_study_options)?.title = TR.sentenceCase.deckOptions
             }
             // Don't show custom study icon if congrats shown
             if (currentContentView == CONTENT_CONGRATS) {
-                menu.findItem(R.id.action_custom_study).isVisible = false
+                menu.findItem(R.id.action_custom_study)?.isVisible = false
             }
             // Use new review reminders system if enabled
-            menu.findItem(R.id.action_schedule_reminders).isVisible = Prefs.newReviewRemindersEnabled
+            menu.findItem(R.id.action_schedule_reminders)?.isVisible = Prefs.newReviewRemindersEnabled
             // Switch on or off unbury depending on if there are cards to unbury
-            menu.findItem(R.id.action_unbury).isVisible = col != null && col!!.sched.haveBuried()
+            menu.findItem(R.id.action_unbury)?.isVisible = col != null && col!!.sched.haveBuried()
         } catch (e: IllegalStateException) {
             if (!CollectionManager.isOpenUnsafe()) {
                 // This will allow a maximum of one invalidate menu attempt in order to workaround
@@ -315,7 +329,7 @@ class StudyOptionsFragment :
                 result.resultCode,
             )
             activity?.invalidateMenu()
-            if (result.resultCode == DeckPicker.RESULT_DB_ERROR || result.resultCode == DeckPicker.RESULT_MEDIA_EJECTED) {
+            if (result.resultCode == DeckPicker.RESULT_MEDIA_EJECTED) {
                 closeStudyOptions(result.resultCode)
                 return@registerForActivityResult
             }
@@ -381,11 +395,8 @@ class StudyOptionsFragment :
             Timber.e("StudyOptionsFragment.mRefreshFragmentListener :: can't refresh")
             return
         }
-        val studyOptionsView = view
         // #5506 If we have no view, short circuit all UI logic
-        if (studyOptionsView == null) {
-            return
-        }
+        val studyOptionsView = view ?: return
 
         val col =
             col
@@ -424,7 +435,7 @@ class StudyOptionsFragment :
             if (!isDynamic) {
                 deckInfoLayout.visibility = View.GONE
                 buttonStart.visibility = View.VISIBLE
-                buttonStart.text = TR.actionsCustomStudy().toSentenceCase(this, R.string.sentence_custom_study)
+                buttonStart.text = TR.sentenceCase.customStudy
             } else {
                 buttonStart.visibility = View.GONE
             }
@@ -450,7 +461,16 @@ class StudyOptionsFragment :
                 }
             }
         if (desc.isNotEmpty()) {
-            textDeckDescription.text = formatDescription(desc)
+            val mediaDir = col.media.dir
+            val imageGetter =
+                CollectionMediaImageGetter(
+                    requireContext(),
+                    textDeckDescription,
+                    mediaDir,
+                    viewLifecycleOwner.lifecycleScope,
+                )
+
+            textDeckDescription.text = formatDescription(desc, imageGetter)
             textDeckDescription.visibility = View.VISIBLE
         } else {
             textDeckDescription.visibility = View.GONE
@@ -531,6 +551,7 @@ class StudyOptionsFragment :
         @VisibleForTesting
         fun formatDescription(
             @Language("HTML") desc: String,
+            imageGetter: Html.ImageGetter? = null,
         ): Spanned {
             // #5715: In deck description, ignore what is in style and script tag
             // Since we don't currently execute the JS/CSS, it's not worth displaying.
@@ -538,7 +559,11 @@ class StudyOptionsFragment :
             // #5188 - compat.fromHtml converts newlines into spaces.
             val withoutWindowsLineEndings = withStrippedTags.replace("\r\n", "<br/>")
             val withoutLinuxLineEndings = withoutWindowsLineEndings.replace("\n", "<br/>")
-            return HtmlCompat.fromHtml(withoutLinuxLineEndings, HtmlCompat.FROM_HTML_MODE_LEGACY)
+
+            return withoutLinuxLineEndings.parseAsHtml(
+                flags = HtmlCompat.FROM_HTML_MODE_LEGACY,
+                imageGetter = imageGetter,
+            )
         }
     }
 

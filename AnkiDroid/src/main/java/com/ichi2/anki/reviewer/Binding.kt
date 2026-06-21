@@ -20,8 +20,8 @@ import android.view.KeyEvent
 import androidx.annotation.VisibleForTesting
 import com.ichi2.anki.cardviewer.Gesture
 import com.ichi2.anki.common.utils.StringUtils
+import com.ichi2.anki.common.utils.ext.ifNotZero
 import com.ichi2.anki.common.utils.lastIndexOfOrNull
-import com.ichi2.anki.utils.ext.ifNotZero
 import timber.log.Timber
 import java.util.Objects
 
@@ -204,7 +204,7 @@ sealed interface Binding {
              */
             fun parse(s: String): Pair<ModifierKeys, String> {
                 val plusIndex = s.lastIndexOfOrNull('+') ?: return Pair(none(), s)
-                val modifiers = fromString(s.substring(0, plusIndex + 1))
+                val modifiers = fromString(s.take(plusIndex + 1))
                 return Pair(modifiers, s.substring(plusIndex + 1))
             }
 

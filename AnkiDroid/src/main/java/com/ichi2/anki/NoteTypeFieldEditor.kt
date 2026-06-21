@@ -1,19 +1,19 @@
-/****************************************************************************************
- * Copyright (c) 2015 Ryan Annis <squeenix@live.ca>                                     *
- * Copyright (c) 2015 Timothy Rae <perceptualchaos2@gmail.com>                          *
- *                                                                                      *
- * This program is free software; you can redistribute it and/or modify it under        *
- * the terms of the GNU General Public License as published by the Free Software        *
- * Foundation; either version 3 of the License, or (at your option) any later           *
- * version.                                                                             *
- *                                                                                      *
- * This program is distributed in the hope that it will be useful, but WITHOUT ANY      *
- * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A      *
- * PARTICULAR PURPOSE. See the GNU General Public License for more details.             *
- *                                                                                      *
- * You should have received a copy of the GNU General Public License along with         *
- * this program.  If not, see <http://www.gnu.org/licenses/>.                           *
- ****************************************************************************************/
+/*
+ * Copyright (c) 2015 Ryan Annis <squeenix@live.ca>
+ * Copyright (c) 2015 Timothy Rae <perceptualchaos2@gmail.com>
+ *
+ * This program is free software; you can redistribute it and/or modify it under
+ * the terms of the GNU General Public License as published by the Free Software
+ * Foundation; either version 3 of the License, or (at your option) any later
+ * version.
+ *
+ * This program is distributed in the hope that it will be useful, but WITHOUT ANY
+ * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
+ * PARTICULAR PURPOSE. See the GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along with
+ * this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
 package com.ichi2.anki
 
 import android.content.Context
@@ -25,17 +25,17 @@ import android.view.ViewGroup
 import android.widget.AdapterView
 import android.widget.ArrayAdapter
 import android.widget.EditText
-import android.widget.ListView
-import android.widget.TextView
 import androidx.annotation.VisibleForTesting
 import androidx.appcompat.app.AlertDialog
 import androidx.core.os.BundleCompat
 import androidx.fragment.app.FragmentManager
-import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.google.android.material.snackbar.Snackbar
 import com.ichi2.anki.CollectionManager.TR
 import com.ichi2.anki.CollectionManager.withCol
 import com.ichi2.anki.common.annotations.NeedsTest
+import com.ichi2.anki.common.utils.android.showThemedToast
+import com.ichi2.anki.databinding.ActivityNoteTypeFieldEditorBinding
+import com.ichi2.anki.databinding.ItemNotetypeFieldBinding
 import com.ichi2.anki.dialogs.ConfirmationDialog
 import com.ichi2.anki.dialogs.LocaleSelectionDialog
 import com.ichi2.anki.dialogs.LocaleSelectionDialog.Companion.KEY_SELECTED_LOCALE
@@ -48,6 +48,7 @@ import com.ichi2.anki.libanki.NotetypeJson
 import com.ichi2.anki.libanki.exception.ConfirmModSchemaException
 import com.ichi2.anki.servicelayer.LanguageHintService.setLanguageHintForField
 import com.ichi2.anki.snackbar.showSnackbar
+import com.ichi2.anki.ui.internationalization.sentenceCase
 import com.ichi2.anki.utils.ext.dismissAllDialogFragments
 import com.ichi2.anki.utils.ext.setCompoundDrawablesRelativeWithIntrinsicBoundsKt
 import com.ichi2.anki.utils.ext.setFragmentResultListener
@@ -56,21 +57,23 @@ import com.ichi2.ui.FixedEditText
 import com.ichi2.utils.customView
 import com.ichi2.utils.getInputField
 import com.ichi2.utils.input
+import com.ichi2.utils.moveCursorToEnd
 import com.ichi2.utils.negativeButton
 import com.ichi2.utils.positiveButton
 import com.ichi2.utils.show
 import com.ichi2.utils.title
-import com.ichi2.widget.WidgetStatus
+import dev.androidbroadcast.vbpd.viewBinding
 import org.json.JSONArray
 import org.json.JSONException
 import timber.log.Timber
 import java.util.Locale
 
 @NeedsTest("perform one action, then another")
-class NoteTypeFieldEditor : AnkiActivity() {
+class NoteTypeFieldEditor : AnkiActivity(R.layout.activity_note_type_field_editor) {
+    private val binding by viewBinding(ActivityNoteTypeFieldEditorBinding::bind)
+
     // Position of the current field selected
     private var currentPos = 0
-    private lateinit var fieldsListView: ListView
     private var fieldNameInput: EditText? = null
 
     // Backing field for [notetype]. Not with _ because it's only allowed for public field.
@@ -94,10 +97,9 @@ class NoteTypeFieldEditor : AnkiActivity() {
             return
         }
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.note_type_field_editor)
-        fieldsListView = findViewById(R.id.fields)
+        setContentView(R.layout.activity_note_type_field_editor)
         enableToolbar()
-        findViewById<TextView>(R.id.notetype_name).text = intent.getStringExtra("title")
+        binding.notetypeName.text = intent.getStringExtra(EXTRA_NOTETYPE_NAME)
         startLoadingCollection()
         setFragmentResultListener(REQUEST_HINT_LOCALE_SELECTION) { _, bundle ->
             val selectedLocale =
@@ -110,13 +112,6 @@ class NoteTypeFieldEditor : AnkiActivity() {
                 addFieldLocaleHint(selectedLocale)
             }
             dismissAllDialogFragments()
-        }
-    }
-
-    override fun onStop() {
-        super.onStop()
-        if (!isFinishing) {
-            WidgetStatus.updateInBackground(this)
         }
     }
 
@@ -138,7 +133,7 @@ class NoteTypeFieldEditor : AnkiActivity() {
      * to finish the activity.
      */
     private fun initialize() {
-        val noteTypeID = intent.getLongExtra("noteTypeID", 0)
+        val noteTypeID = intent.getLongExtra(EXTRA_NOTETYPE_ID, 0)
         val collectionModel = getColUnsafe.notetypes.get(noteTypeID)
         if (collectionModel == null) {
             showThemedToast(this, R.string.field_editor_model_not_available, true)
@@ -148,13 +143,14 @@ class NoteTypeFieldEditor : AnkiActivity() {
         notetype = collectionModel
         noteFields = notetype.fields
         fieldsLabels = notetype.fieldsNames
-        fieldsListView.adapter = NoteFieldAdapter(this, fieldNamesWithKind())
-        fieldsListView.onItemClickListener =
+        binding.fields.adapter = NoteFieldAdapter(this, fieldNamesWithKind())
+        binding.fields.onItemClickListener =
             AdapterView.OnItemClickListener { _, _, position: Int, _ ->
                 showDialogFragment(newInstance(fieldsLabels[position]))
                 currentPos = position
             }
-        findViewById<FloatingActionButton>(R.id.btn_add).setOnClickListener { addFieldDialog() }
+        binding.btnAdd.contentDescription = TR.sentenceCase.addField
+        binding.btnAdd.setOnClickListener { addFieldDialog() }
     }
     // ----------------------------------------------------------------------------
     // CONTEXT MENU DIALOGUES
@@ -202,8 +198,8 @@ class NoteTypeFieldEditor : AnkiActivity() {
             fieldNameInput.isSingleLine = true
             AlertDialog.Builder(this).show {
                 customView(view = fieldNameInput, paddingStart = 64, paddingEnd = 64, paddingTop = 32)
-                title(R.string.model_field_editor_add)
-                positiveButton(R.string.dialog_ok) {
+                title(text = TR.sentenceCase.addField)
+                positiveButton(R.string.menu_add) {
                     // Name is valid, now field is added
                     val fieldName = uniqueName(fieldNameInput)
                     try {
@@ -245,9 +241,9 @@ class NoteTypeFieldEditor : AnkiActivity() {
         fieldName ?: return
         // Name is valid, now field is added
         if (modSchemaCheck) {
-            getColUnsafe.modSchema()
+            getColUnsafe.modSchema(check = true)
         } else {
-            getColUnsafe.modSchemaNoCheck()
+            getColUnsafe.modSchema(check = false)
         }
         launchCatchingTask {
             Timber.d("doInBackgroundAddField")
@@ -266,20 +262,27 @@ class NoteTypeFieldEditor : AnkiActivity() {
     private fun deleteFieldDialog() {
         val confirm =
             Runnable {
-                getColUnsafe.modSchemaNoCheck()
+                getColUnsafe.modSchema(check = false)
                 deleteField()
 
                 // This ensures that the context menu closes after the field has been deleted
-                supportFragmentManager.popBackStackImmediate(null, FragmentManager.POP_BACK_STACK_INCLUSIVE)
+                supportFragmentManager.popBackStackImmediate(
+                    null,
+                    FragmentManager.POP_BACK_STACK_INCLUSIVE,
+                )
             }
 
         if (fieldsLabels.size < 2) {
             showThemedToast(this, resources.getString(R.string.toast_last_field), true)
         } else {
             try {
-                getColUnsafe.modSchema()
+                getColUnsafe.modSchema(check = true)
+                val fieldName = noteFields[currentPos].name
                 ConfirmationDialog().let {
-                    it.setArgs(resources.getString(R.string.field_delete_warning))
+                    it.setArgs(
+                        title = fieldName,
+                        message = resources.getString(R.string.field_delete_warning),
+                    )
                     it.setConfirm(confirm)
                     showDialogFragment(it)
                 }
@@ -326,7 +329,7 @@ class NoteTypeFieldEditor : AnkiActivity() {
         fieldNameInput?.let { fieldNameInput ->
             fieldNameInput.isSingleLine = true
             fieldNameInput.setText(fieldsLabels[currentPos])
-            fieldNameInput.setSelection(fieldNameInput.text!!.length)
+            fieldNameInput.moveCursorToEnd()
             AlertDialog.Builder(this).show {
                 customView(view = fieldNameInput, paddingStart = 64, paddingEnd = 64, paddingTop = 32)
                 title(R.string.model_field_editor_rename)
@@ -345,7 +348,7 @@ class NoteTypeFieldEditor : AnkiActivity() {
                         c.setArgs(resources.getString(R.string.full_sync_confirmation))
                         val confirm =
                             Runnable {
-                                getColUnsafe.modSchemaNoCheck()
+                                getColUnsafe.modSchema(check = false)
                                 try {
                                     renameField()
                                 } catch (e1: ConfirmModSchemaException) {
@@ -403,7 +406,7 @@ class NoteTypeFieldEditor : AnkiActivity() {
 
             Timber.i("Repositioning field from %d to %d", currentPos, newPosition)
             try {
-                getColUnsafe.modSchema()
+                getColUnsafe.modSchema(check = true)
                 repositionField(newPosition - 1)
             } catch (e: ConfirmModSchemaException) {
                 e.log()
@@ -414,7 +417,7 @@ class NoteTypeFieldEditor : AnkiActivity() {
                 val confirm =
                     Runnable {
                         try {
-                            getColUnsafe.modSchemaNoCheck()
+                            getColUnsafe.modSchema(check = false)
                             repositionField(newPosition - 1)
                         } catch (e1: JSONException) {
                             throw RuntimeException(e1)
@@ -469,7 +472,7 @@ class NoteTypeFieldEditor : AnkiActivity() {
      */
     private fun sortByField() {
         try {
-            getColUnsafe.modSchema()
+            getColUnsafe.modSchema(check = true)
             launchCatchingTask { changeSortField(notetype, currentPos) }
         } catch (e: ConfirmModSchemaException) {
             e.log()
@@ -478,7 +481,7 @@ class NoteTypeFieldEditor : AnkiActivity() {
             c.setArgs(resources.getString(R.string.full_sync_confirmation))
             val confirm =
                 Runnable {
-                    getColUnsafe.modSchemaNoCheck()
+                    getColUnsafe.modSchema(check = false)
                     launchCatchingTask { changeSortField(notetype, currentPos) }
                 }
             c.setConfirm(confirm)
@@ -556,6 +559,11 @@ class NoteTypeFieldEditor : AnkiActivity() {
                 if (index == notetype.sortf) NodetypeKind.SORT else NodetypeKind.UNDEFINED,
             )
         }
+
+    companion object {
+        const val EXTRA_NOTETYPE_NAME = "extra_notetype_name"
+        const val EXTRA_NOTETYPE_ID = "extra_notetype_id"
+    }
 }
 
 enum class NodetypeKind {
@@ -572,17 +580,17 @@ internal class NoteFieldAdapter(
         convertView: View?,
         parent: ViewGroup,
     ): View {
-        val view =
-            convertView ?: LayoutInflater
-                .from(context)
-                .inflate(R.layout.item_notetype_field, parent, false)
-
-        val nameTextView: TextView = view.findViewById(R.id.field_name)
+        val binding =
+            if (convertView != null) {
+                ItemNotetypeFieldBinding.bind(convertView)
+            } else {
+                ItemNotetypeFieldBinding.inflate(LayoutInflater.from(context), parent, false)
+            }
 
         getItem(position)?.let {
             val (name, kind) = it
-            nameTextView.text = name
-            nameTextView.setCompoundDrawablesRelativeWithIntrinsicBoundsKt(
+            binding.fieldName.text = name
+            binding.fieldName.setCompoundDrawablesRelativeWithIntrinsicBoundsKt(
                 end =
                     when (kind) {
                         NodetypeKind.SORT -> R.drawable.ic_sort
@@ -590,6 +598,6 @@ internal class NoteFieldAdapter(
                     },
             )
         }
-        return view
+        return binding.root
     }
 }

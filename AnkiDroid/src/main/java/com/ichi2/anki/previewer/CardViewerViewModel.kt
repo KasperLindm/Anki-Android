@@ -15,18 +15,15 @@
  */
 package com.ichi2.anki.previewer
 
-import android.media.MediaPlayer
-import android.net.Uri
 import androidx.annotation.CallSuper
-import androidx.core.net.toFile
+import androidx.annotation.VisibleForTesting
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ichi2.anki.CollectionManager.withCol
 import com.ichi2.anki.OnErrorListener
 import com.ichi2.anki.cardviewer.CardMediaPlayer
-import com.ichi2.anki.cardviewer.MediaErrorBehavior
 import com.ichi2.anki.cardviewer.MediaErrorHandler
-import com.ichi2.anki.cardviewer.MediaErrorListener
 import com.ichi2.anki.launchCatchingIO
 import com.ichi2.anki.libanki.Card
 import com.ichi2.anki.libanki.TtsPlayer
@@ -34,30 +31,35 @@ import com.ichi2.anki.multimedia.getAvTag
 import com.ichi2.anki.multimedia.replaceAvRefsWithPlayButtons
 import com.ichi2.anki.pages.AnkiServer
 import com.ichi2.anki.pages.PostRequestHandler
+import com.ichi2.anki.pages.PostRequestUri
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.flow.MutableSharedFlow
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
 import timber.log.Timber
 
-abstract class CardViewerViewModel :
-    ViewModel(),
+abstract class CardViewerViewModel(
+    val savedStateHandle: SavedStateHandle,
+) : ViewModel(),
     OnErrorListener,
     PostRequestHandler {
     override val onError = MutableSharedFlow<String>()
     val onMediaError = MutableSharedFlow<String>()
     val onTtsError = MutableSharedFlow<TtsPlayer.TtsError>()
-    val mediaErrorHandler = MediaErrorHandler()
+    val mediaErrorHandler =
+        MediaErrorHandler(
+            onMediaError = { viewModelScope.launch { onMediaError.emit(it) } },
+            onTtsError = { viewModelScope.launch { onTtsError.emit(it) } },
+        )
 
     val eval = MutableSharedFlow<String>()
 
-    open val showingAnswer = MutableStateFlow(false)
+    val showingAnswer = savedStateHandle.getMutableStateFlow(KEY_SHOWING_ANSWER, false)
 
     protected val cardMediaPlayer =
         CardMediaPlayer(
             javascriptEvaluator = { launchCatchingIO { eval.emit(it) } },
-            mediaErrorListener = createSoundErrorListener(),
+            mediaErrorListener = mediaErrorHandler,
         ).also {
             addCloseable(it)
         }
@@ -115,7 +117,8 @@ abstract class CardViewerViewModel :
     /** From the [desktop code](https://github.com/ankitects/anki/blob/1ff55475b93ac43748d513794bcaabd5d7df6d9d/qt/aqt/reviewer.py#L358) */
     private suspend fun mungeQA(text: String) = typeAnsFilter(prepareCardTextForDisplay(text))
 
-    private suspend fun prepareCardTextForDisplay(text: String): String =
+    @VisibleForTesting
+    suspend fun prepareCardTextForDisplay(text: String): String =
         replaceAvRefsWithPlayButtons(
             text = withCol { media.escapeMediaFilenames(text) },
             renderOutput = currentCard.await().let { card -> withCol { card.renderOutput(this) } },
@@ -145,6 +148,7 @@ abstract class CardViewerViewModel :
     protected open suspend fun showAnswer() {
         Timber.v("showAnswer()")
         showingAnswer.emit(true)
+        mediaErrorHandler.onCardSideChange()
 
         val card = currentCard.await()
         val answerData = withCol { card.answer(this) }
@@ -153,54 +157,17 @@ abstract class CardViewerViewModel :
         eval.emit("_showAnswer(${Json.encodeToString(answer)}, '${bodyClass()}');")
     }
 
-    private fun createSoundErrorListener(): MediaErrorListener {
-        return object : MediaErrorListener {
-            override fun onError(uri: Uri): MediaErrorBehavior {
-                if (uri.scheme != "file") {
-                    return MediaErrorBehavior.CONTINUE_MEDIA
-                }
-
-                val file = uri.toFile()
-                // There is a multitude of transient issues with the MediaPlayer.
-                // Retrying fixes most of these
-                if (file.exists()) return MediaErrorBehavior.RETRY_MEDIA
-                mediaErrorHandler.processMissingMedia(file) { fileName ->
-                    viewModelScope.launch { onMediaError.emit(fileName) }
-                }
-                return MediaErrorBehavior.CONTINUE_MEDIA
-            }
-
-            override fun onMediaPlayerError(
-                mp: MediaPlayer?,
-                which: Int,
-                extra: Int,
-                uri: Uri,
-            ): MediaErrorBehavior {
-                Timber.w("Media Error: (%d, %d)", which, extra)
-                return onError(uri)
-            }
-
-            override fun onTtsError(
-                error: TtsPlayer.TtsError,
-                isAutomaticPlayback: Boolean,
-            ) {
-                mediaErrorHandler.processTtsFailure(error, isAutomaticPlayback) {
-                    viewModelScope.launch { onTtsError.emit(error) }
-                }
-            }
-        }
-    }
-
     override suspend fun handlePostRequest(
-        uri: String,
+        uri: PostRequestUri,
         bytes: ByteArray,
     ): ByteArray =
-        if (uri.startsWith(AnkiServer.ANKI_PREFIX)) {
-            when (uri.substring(AnkiServer.ANKI_PREFIX.length)) {
-                "i18nResources" -> withCol { i18nResourcesRaw(bytes) }
-                else -> throw IllegalArgumentException("Unhandled Anki request: $uri")
-            }
-        } else {
-            throw IllegalArgumentException("Unhandled POST request: $uri")
+        when (uri.backendMethodName) {
+            null -> throw IllegalArgumentException("Unhandled POST request: $uri")
+            "i18nResources" -> withCol { i18nResourcesRaw(bytes) }
+            else -> throw IllegalArgumentException("Unhandled Anki request: $uri")
         }
+
+    companion object {
+        private const val KEY_SHOWING_ANSWER = "showingAnswer"
+    }
 }

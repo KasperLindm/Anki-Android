@@ -1,21 +1,21 @@
-/****************************************************************************************
- * Copyright (c) 2009 Daniel Svärd <daniel.svard@gmail.com>                             *
- * Copyright (c) 2009 Nicolas Raoul <nicolas.raoul@gmail.com>                           *
- * Copyright (c) 2009 Andrew <andrewdubya@gmail.com>                                    *
- * Copyright (c) 2011 Norbert Nagold <norbert.nagold@gmail.com>                         *
- * Copyright (c) 2018 Mike Hardy <mike@mikehardy.net>                                   *
- *                                                                                      *
- * This program is free software; you can redistribute it and/or modify it under        *
- * the terms of the GNU General Public License as published by the Free Software        *
- * Foundation; either version 3 of the License, or (at your option) any later           *
- * version.                                                                             *
- *                                                                                      *
- * This program is distributed in the hope that it will be useful, but WITHOUT ANY      *
- * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A      *
- * PARTICULAR PURPOSE. See the GNU General Public License for more details.             *
- *                                                                                      *
- * You should have received a copy of the GNU General Public License along with         *
- * this program.  If not, see <http://www.gnu.org/licenses/>.                           *
+/*
+ * Copyright (c) 2009 Daniel Svärd <daniel.svard@gmail.com>
+ * Copyright (c) 2009 Nicolas Raoul <nicolas.raoul@gmail.com>
+ * Copyright (c) 2009 Andrew <andrewdubya@gmail.com>
+ * Copyright (c) 2011 Norbert Nagold <norbert.nagold@gmail.com>
+ * Copyright (c) 2018 Mike Hardy <mike@mikehardy.net>
+ *
+ * This program is free software; you can redistribute it and/or modify it under
+ * the terms of the GNU General Public License as published by the Free Software
+ * Foundation; either version 3 of the License, or (at your option) any later
+ * version.
+ *
+ * This program is distributed in the hope that it will be useful, but WITHOUT ANY
+ * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
+ * PARTICULAR PURPOSE. See the GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along with
+ * this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 package com.ichi2.anki.libanki
 
@@ -120,25 +120,34 @@ class DB(
         return results
     }
 
+    /**
+     * Execute a single SQL statement that does not return data.
+     *
+     * This method discards the undo and study queues unless the statement is a `SELECT`.
+     */
     fun execute(
         sql: String,
         vararg `object`: Any?,
     ) {
-        val s = sql.trim().lowercase()
-        // mark modified?
-        for (mo in MOD_SQL_STATEMENTS) {
-            if (s.startsWith(mo)) {
-                break
-            }
+        // permalink: https://github.com/ankitects/anki/blob/83c615cc7f9aef3c336936fa797671965538f89c/rslib/src/backend/dbproxy.rs#L170-L178
+        if (!sql.lowercase().trim().startsWith("select")) {
+            Timber.i("clearing undo and study queues")
         }
         database.execSQL(sql, `object`)
     }
 
+    /**
+     * Executes a collection of ';'-delimited SQL statements which do not return data.
+     *
+     * This method discards the undo and study queues unless all statements are `SELECT`.
+     */
     @KotlinCleanup("""Use Kotlin string. Change split so that there is no empty string after last ";".""")
     fun executeScript(sql: String) {
-        val queries = java.lang.String(sql).split(";")
+        val queries = sql.split(";")
         for (query in queries) {
-            database.execSQL(query)
+            if (query.isNotEmpty()) {
+                database.execSQL(query)
+            }
         }
     }
 

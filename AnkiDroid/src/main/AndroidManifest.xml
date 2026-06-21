@@ -74,6 +74,11 @@
             <data android:scheme="https" />
         </intent>
         <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <category android:name="android.intent.category.BROWSABLE" />
+            <data android:scheme="http" />
+        </intent>
+        <intent>
             <action android:name="android.intent.action.PROCESS_TEXT" />
             <data android:mimeType="text/plain" />
         </intent>
@@ -111,11 +116,6 @@
         <activity
             android:name="com.ichi2.anki.ui.windows.managespace.ManageSpaceActivity"
             android:exported="true"/>
-        <activity android:name=".DrawingActivity"
-            android:label="@string/drawing"
-            android:exported="false"
-            android:configChanges="keyboardHidden|orientation|screenSize"
-            />
         <activity
             android:name="com.ichi2.anki.IntentHandler"
             android:configChanges="keyboardHidden|orientation|screenSize"
@@ -330,7 +330,6 @@
             android:label="@string/card_browser"
             android:theme="@style/Theme_Dark.Launcher"
             android:exported="true"
-            android:configChanges="keyboardHidden|orientation|screenSize"
             android:parentActivityName=".DeckPicker"
             >
             <intent-filter android:label="@string/card_browser">
@@ -403,13 +402,6 @@
             </intent-filter>
         </activity>
         <activity
-            android:name=".FilteredDeckOptions"
-            android:label="@string/deckpreferences_title"
-            android:exported="false"
-            android:configChanges="keyboardHidden|orientation|screenSize"
-            android:theme="@style/Theme_Light"
-            />
-        <activity
             android:name="com.ichi2.anki.Info"
             android:label="@string/pref_cat_about_title"
             android:exported="false"
@@ -472,6 +464,10 @@
             android:configChanges="orientation|screenSize"
             />
         <activity
+            android:name="com.ichi2.anki.utils.ConfigAwareSingleFragmentActivity"
+            android:exported="false"
+            />
+        <activity
             android:name="com.ichi2.anki.NoteEditorActivity"
             android:exported="false"
             android:configChanges="keyboardHidden|orientation|screenSize"
@@ -492,7 +488,6 @@
         </activity>
         <activity
             android:name=".CardTemplateBrowserAppearanceEditor"
-            android:label="@string/card_template_browser_appearance_title"
             android:exported="false"
             android:configChanges="keyboardHidden|orientation|screenSize"
             />
@@ -616,6 +611,16 @@
             </intent-filter>
         </receiver>
 
+        <!-- #14372: Handles updates after the day rollover (04:00). -->
+        <receiver android:name="com.ichi2.widget.DayRolloverAlarm"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.ichi2.widget.ACTION_ROLLOVER" />
+                <action android:name="android.intent.action.TIMEZONE_CHANGED" />
+                <action android:name="android.intent.action.TIME_SET" />
+            </intent-filter>
+        </receiver>
+
         <receiver
             android:name="com.ichi2.anki.receiver.SdCardReceiver"
             android:enabled="true"
@@ -634,6 +639,11 @@
         </receiver>
 
         <receiver android:name=".services.NotificationService"
+            android:enabled="true"
+            android:exported="false"
+            />
+        <receiver
+            android:name=".services.AlarmManagerService"
             android:enabled="true"
             android:exported="false"
             />

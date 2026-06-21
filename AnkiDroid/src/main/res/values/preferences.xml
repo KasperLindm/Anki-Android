@@ -18,6 +18,7 @@
     <string name="pref_sync_screen_key">syncScreen</string>
     <string name="sync_account_key">syncAccount</string>
     <string name="sync_fetch_media_key">syncFetchMedia</string>
+    <string name="sync_io_timeout_secs_key">syncIoTimeoutSecs</string>
     <string name="automatic_sync_choice_key">automaticSyncMode</string>
     <string name="one_way_sync_key">one_way_sync</string>
     <string name="sync_status_badge_key">showSyncStatusBadge</string>
@@ -27,6 +28,7 @@
     <string name="username_key">username</string>
     <string name="last_sync_time_key">lastSyncTime</string>
     <string name="current_sync_uri_key">currentSyncUri</string>
+    <string name="sync_notifs_request_shown_key">SyncNotifsRequestShown</string>
     <!-- Backup -->
     <string name="pref_backup_limits_screen_key">backupLimitsScreen</string>
     <!-- Editing -->
@@ -67,6 +69,7 @@
     <string name="custom_button_add_card_key">customButtonAddCard</string>
     <string name="custom_button_replay_key">customButtonReplay</string>
     <string name="custom_button_card_info_key">customButtonCardInfo</string>
+    <string name="custom_button_previous_card_info_key">customButtonPreviousCardInfo</string>
     <string name="custom_button_select_tts_key">customButtonSelectTts</string>
     <string name="custom_button_deck_options_key">customButtonDeckOptions</string>
     <string name="custom_button_mark_card_key">customButtonMarkCard</string>
@@ -100,10 +103,10 @@
     <string name="pref_swipe_sensitivity_key">swipeSensitivity</string>
     <string name="pref_controls_tab_layout_key">controlsTabLayout</string>
     <string name="show_answer_command_key">binding_SHOW_ANSWER</string>
-    <string name="answer_again_command_key">binding_FLIP_OR_ANSWER_EASE1</string>
-    <string name="answer_hard_command_key">binding_FLIP_OR_ANSWER_EASE2</string>
-    <string name="answer_good_command_key">binding_FLIP_OR_ANSWER_EASE3</string>
-    <string name="answer_easy_command_key">binding_FLIP_OR_ANSWER_EASE4</string>
+    <string name="answer_again_command_key">binding_ANSWER_AGAIN</string>
+    <string name="answer_hard_command_key">binding_ANSWER_HARD</string>
+    <string name="answer_good_command_key">binding_ANSWER_GOOD</string>
+    <string name="answer_easy_command_key">binding_ANSWER_EASY</string>
     <string name="undo_command_key">binding_UNDO</string>
     <string name="redo_command_key">binding_REDO</string>
     <string name="edit_command_key">binding_EDIT</string>
@@ -129,10 +132,15 @@
     <string name="statistics_command_key">binding_STATISTICS</string>
     <string name="tag_command_key">binding_TAG</string>
     <string name="card_info_command_key">binding_CARD_INFO</string>
+    <string name="previous_card_info_command_key">binding_PREVIOUS_CARD_INFO</string>
     <string name="record_voice_command_key">binding_RECORD_VOICE</string>
     <string name="replay_voice_command_key">binding_REPLAY_VOICE</string>
     <string name="save_voice_command_key">binding_SAVE_VOICE</string>
     <string name="toggle_whiteboard_command_key">binding_TOGGLE_WHITEBOARD</string>
+    <string name="pref_key_whiteboard_toggle_eraser">binding_whiteboard_TOGGLE_ERASER</string>
+    <string name="pref_key_whiteboard_clear">binding_whiteboard_CLEAR</string>
+    <string name="pref_key_whiteboard_undo">binding_whiteboard_UNDO</string>
+    <string name="pref_key_whiteboard_redo">binding_whiteboard_REDO</string>
     <string name="toggle_eraser_command_key">binding_TOGGLE_ERASER</string>
     <string name="clear_whiteboard_command_key">binding_CLEAR_WHITEBOARD</string>
     <string name="change_whiteboard_pen_color_command_key">binding_CHANGE_WHITEBOARD_PEN_COLOR</string>
@@ -157,7 +165,7 @@
     <string name="previewer_mark_key">previewer_MARK</string>
     <string name="previewer_edit_key">previewer_EDIT</string>
     <string name="previewer_replay_media_key">previewer_REPLAY_AUDIO</string>
-    <string name="previewer_backside_only_action_key">previewer_BACKSIDE_ONLY</string>
+    <string name="previewer_backside_only_action_key">previewer_TOGGLE_BACKSIDE_ONLY</string>
     <string name="previewer_flag_red_key">previewer_TOGGLE_FLAG_RED</string>
     <string name="previewer_flag_orange_key">previewer_TOGGLE_FLAG_ORANGE</string>
     <string name="previewer_flag_green_key">previewer_TOGGLE_FLAG_GREEN</string>
@@ -208,8 +216,13 @@
     <!-- Review reminders -->
     <string name="pref_review_reminders_screen_key">reviewRemindersScreen</string>
     <string name="review_reminders_next_free_id">reviewRemindersNextFreeId</string>
+    <string name="reminder_notifs_request_shown_key">reminderNotifsRequestShown</string>
+    <string name="review_reminder_deserialization_errors_key">reviewReminderDeserializationErrors</string>
+    <!-- Notifications -->
+    <string name="notifications_permission_requested_key">notificationsPermissionRequested</string>
+    <string name="record_audio_permission_requested_key">recordAudioPermissionRequested</string>
     <!-- Developer options -->
-    <string name="pref_dev_options_screen_key">devOptionsKey</string>
+    <string name="pref_developer_options_screen_key">devOptionsKey</string>
     <string name="pref_trigger_crash_key">trigger_crash_preference</string>
     <string name="pref_analytics_debug_key">analytics_debug_preference</string>
     <string name="pref_set_database_path_debug_key">debug_set_database_path</string>
@@ -217,14 +230,15 @@
     <string name="pref_corrupt_fsrs_params">debug_corrupt_fsrs_params</string>
     <string name="new_congrats_screen_pref_key">new_congrats_screen</string>
     <string name="new_reviewer_options_key">newReviewerOptions</string>
-    <string name="pref_browser_find_replace">browserFindReplace</string>
     <string name="pref_new_review_reminders">newReviewReminders</string>
-    <string name="dev_options_enabled_by_user_key">devOptionsEnabledByUser</string>
+    <string name="developer_options_enabled_by_user_key">devOptionsEnabledByUser</string>
     <string name="pref_cat_wip_key">workInProgressDevOptions</string>
     <string name="reviewer_port_pref_key">reviewerPort</string>
     <string name="use_fixed_port_pref_key">useFixedPort</string>
     <string name="dev_card_browser_fragmented">cardBrowserFragmented</string>
     <string name="dev_card_browser_search_view">cardBrowserSearchView</string>
+    <string name="dev_bottom_nav_key">devBottomNav</string>
+    <string name="dev_open_tts_voices">openTtsVoices</string>
     <!-- Developer options > Create fake notes -->
     <string name="pref_fill_default_deck_number_key">FillDefaultNumberDeck</string>
     <string name="pref_fill_default_deck_key">FillDefaultDeck</string>
@@ -254,4 +268,6 @@
     <string name="reviewer_frame_style_key">reviewerFrameStyle</string>
     <string name="reviewer_toolbar_position_key">reviewerToolbarPosition</string>
 
+    <!-- Onboarding -->
+    <string name="internet_permission_requested_key">internetPermissionRequested</string>
 </resources>

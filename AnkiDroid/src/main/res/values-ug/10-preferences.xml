@@ -6,43 +6,22 @@
  ~    Instructions for this are available here: https://github.com/ankidroid/Anki-Android/wiki/Translating-AnkiDroid. 
  ~    You may also find the documentation on contributing to Anki useful: https://github.com/ankidroid/Anki-Android/wiki/Contributing   
  ~ 
- ~ Copyright (c) 2009 Andrew <andrewdubya@gmail> 
- ~ Copyright (c) 2009 Edu Zamora <edu.zasu@gmail.com> 
- ~ Copyright (c) 2009 Daniel Svaerd <daniel.svard@gmail.com> 
- ~ Copyright (c) 2009 Nicolas Raoul <nicolas.raoul@gmail.com> 
- ~ Copyright (c) 2010 Norbert Nagold <norbert.nagold@gmail.com> 
- ~ This program is free software; you can redistribute it and/or modify it under 
- ~ the terms of the GNU General Public License as published by the Free Software 
- ~ Foundation; either version 3 of the License, or (at your option) any later 
- ~ version. 
- ~ 
- ~ This program is distributed in the hope that it will be useful, but WITHOUT ANY 
- ~ WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A 
- ~ PARTICULAR PURPOSE. See the GNU General Public License for more details. 
- ~ 
- ~ You should have received a copy of the GNU General Public License along with 
- ~ this program.  If not, see <http://www.gnu.org/licenses/>. 
+ ~ SPDX-License-Identifier: GPL-3.0-or-later
+ ~ SPDX-FileCopyrightText: Copyright (c) 2009 Andrew <andrewdubya@gmail>
+ ~ SPDX-FileCopyrightText: Copyright (c) 2009 Edu Zamora <edu.zasu@gmail.com>
+ ~ SPDX-FileCopyrightText: Copyright (c) 2009 Daniel Svaerd <daniel.svard@gmail.com>
+ ~ SPDX-FileCopyrightText: Copyright (c) 2009 Nicolas Raoul <nicolas.raoul@gmail.com>
+ ~ SPDX-FileCopyrightText: Copyright (c) 2010 Norbert Nagold <norbert.nagold@gmail.com>
  -->
  
 <!--
-~ Copyright (c) 2009 Andrew <andrewdubya@gmail>
-~ Copyright (c) 2009 Edu Zamora <edu.zasu@gmail.com>
-~ Copyright (c) 2009 Daniel Svärd <daniel.svard@gmail.com>
-~ Copyright (c) 2009 Nicolas Raoul <nicolas.raoul@gmail.com>
-~ Copyright (c) 2010 Norbert Nagold <norbert.nagold@gmail.com>
-~
-~ This program is free software; you can redistribute it and/or modify it under
-~ the terms of the GNU General Public License as published by the Free Software
-~ Foundation; either version 3 of the License, or (at your option) any later
-~ version.
-~
-~ This program is distributed in the hope that it will be useful, but WITHOUT ANY
-~ WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
-~ PARTICULAR PURPOSE. See the GNU General Public License for more details.
-~
-~ You should have received a copy of the GNU General Public License along with
-~ this program.  If not, see <http://www.gnu.org/licenses/>.
--->
+  ~ SPDX-License-Identifier: GPL-3.0-or-later
+  ~ SPDX-FileCopyrightText: Copyright (c) 2009 Andrew <andrewdubya@gmail>
+  ~ SPDX-FileCopyrightText: Copyright (c) 2009 Edu Zamora <edu.zasu@gmail.com>
+  ~ SPDX-FileCopyrightText: Copyright (c) 2009 Daniel Svärd <daniel.svard@gmail.com>
+  ~ SPDX-FileCopyrightText: Copyright (c) 2009 Nicolas Raoul <nicolas.raoul@gmail.com>
+  ~ SPDX-FileCopyrightText: Copyright (c) 2010 Norbert Nagold <norbert.nagold@gmail.com>
+  -->
 <resources xmlns:tools="http://schemas.android.com/tools">
     <!-- generic strings -->
     <string name="disabled">چەكلەنگەن</string>
@@ -129,7 +108,6 @@
     <string name="tts_summ">ئەگەر ئاۋاز ھۆججىتى بولمىسا سوئال ۋە جاۋابنى ئۈنلۈك ئوقۇيدۇ</string>
     <!-- Sync -->
     <string name="sync_fetch_missing_media" maxLength="41">قەدەمداشلىغاندا ۋاسىتىگە ئېرىشىدۇ</string>
-    <string name="sync_account" maxLength="41">AnkiWeb ھېساباتى</string>
     <string name="sync_account_summ_logged_out">تىزىملىنىپ كىرمىگەن</string>
     <string name="automatic_sync_choice" maxLength="41">ئۆزلۈكىدىن قەدەمداش</string>
     <string name="automatic_sync_choice_summ">ئەگەر ئاخىرقى قەدەمداشلىغان ۋاقىت 10 مىنۇتتىن ئاشقان بولسا ئەپ قوزغالغان/چېكىنگەندە ئۆزلۈكىدىن قەدەمداشلايدۇ.
@@ -158,8 +136,6 @@
     <string name="select_locale_title">تىل تاللىنىدۇ</string>
     <string name="software_render" maxLength="41">كارتىنى قاتتىق دېتالدا رەڭلەشنى چەكلەيدۇ</string>
     <string name="software_render_summ">قاتتىق دېتالدا رەڭلەشنىڭ سۈرئىتى تېز ئەمما مەسىلە بولۇشى مۇمكىن، بولۇپمۇ ‪Android 8/8.1 ‬نەشرىدە. ئەگەر كارتا تەكرارلايدىغان ئىشلەتكۈچى ئارايۈزىنىڭ بىر قىسمىنى كۆرەلمىسىڭىز، بۇ تەڭشەكنى سىناپ بېقىڭ.</string>
-    <string name="safe_display" maxLength="41">بىخەتەر كۆرسىتىش ھالىتى</string>
-    <string name="safe_display_summ">بارلىق جانلاندۇرۇمنى چەكلەپ كارتا سىزىشتا بىخەتەر ئۇسۇلنى ئىشلىتىدۇ. E-ink ئۈسكۈنىسى بۇنىڭغا ئېھتىياجلىق بولۇشى مۇمكىن.</string>
     <string name="disable_extended_text_ui" maxLength="41">تاق بۆلەك تەھرىرلەش ھالىتىنى چەكلەيدۇ</string>
     <!--See: multimedia_editor_popup_cloze. We can\'t use format strings as this is auto-generated-->
     <string name="disable_extended_text_ui_summ">توغرىسىغا ھالەتتە مەزمۇن تىزىملىكىدە «بوش ئورۇن تولدۇرۇش» قا يول قويىدۇ.</string>
@@ -173,6 +149,8 @@
     <string name="show_estimates_summ">جاۋاب توپچىنىڭ ئۈستىدە كېيىنكى قېتىم تەكرارلايدىغان ۋاقىتنى كۆرسىتىدۇ</string>
     <string name="show_large_answer_buttons" maxLength="41">چوڭ جاۋاب توپچىنى كۆرسىتىدۇ</string>
     <string name="show_large_answer_buttons_summ">جاۋاب توپچىنى 2 قۇر كۆرسىتىدۇ</string>
+    <string name="remove_animations" maxLength="41">Remove animations</string>
+    <string name="remove_animations_summary">Also enabled if animations are removed on the system settings</string>
     <string name="show_top_bar" maxLength="41">چوققا بالداقنى كۆرسەت</string>
     <string name="show_top_bar_summary">چوققا بالداقتا كارتا سانى، جاۋاب سانىغۇچ، بايراق ۋە بەلگىنى كۆرسىتىدۇ</string>
     <string name="show_progress" maxLength="41">قالغانلىرىنى كۆرسەت</string>
@@ -208,8 +186,6 @@
     <string name="pref_cat_reviewer" maxLength="41">ئۆگىنىش ئېكرانى</string>
     <string name="show_deck_title" maxLength="41">دەستە ماۋزۇسىنى كۆرسەت</string>
     <string name="accessibility" maxLength="41">قوشۇمچە ئىقتىدار</string>
-    <!-- Paste clipboard image as png option -->
-    <string name="paste_as_png" maxLength="41">سۈرەتنى png سۈپىتىدە چاپلاش تاختىسىغا چاپلايدۇ</string>
     <string name="exit_via_double_tap_back" maxLength="41">قايت ئىككى قېتىم چېكىلسە قايتىدۇ/چېكىنىدۇ</string>
     <string name="exit_via_double_tap_back_summ">ئېھتىياتسىزلىقتىن ئۆگىنىش ئېكرانى ياكى ئەپتىن ئايرىلىشنىڭ ئالدىنى ئالىدۇ</string>
     <!-- Allow all files in media imports -->
@@ -223,7 +199,7 @@
         If not set, the default AnkiWeb server will be used instead.
         <a href="%s">تەپسىلاتى</a>
         ]]></string>
-    <string name="custom_sync_server_base_url_title" maxLength="41">قەدەمداش تور ئادرېسى</string>
+    <string name="custom_sync_server_base_url_title" maxLength="41">Sync URL</string>
     <string name="custom_sync_certificate_title" maxLength="41">ئىختىيارى يىلتىز گۇۋاھنامىسى (PEM)</string>
     <!-- Key Bindings -->
     <string name="keyboard">ھەرپتاختا</string>
@@ -243,16 +219,7 @@
     <string name="studyoptions_limit_select_tags">بەلگە تاللىنىدۇ</string>
     <!-- Deck configurations -->
     <string name="deck_conf_general" maxLength="41" comment="Label of the submenu for the general options of new deck">ئادەتتىكى</string>
-    <string name="deck_conf_cram_filter" maxLength="41">سۈزگۈچ</string>
     <string name="deck_conf_cram_search" maxLength="41" comment="Label of a text field that contains a search query.">ئىزدە</string>
-    <string name="deck_conf_cram_limit" maxLength="41">چېكى</string>
-    <string name="deck_conf_cram_order" maxLength="41">كارتا تاللاش ئۇسۇلى</string>
-    <string name="deck_conf_cram_reschedule" maxLength="41" comment="Title of the box labelled by deck_conf_cram_reschedule_summ">قايتا كۈنتەرتىپلە</string>
-    <string name="deck_conf_cram_reschedule_summ">بۇ دەستىدىكى جاۋاب بېرىش ئەھۋالىمغا ئاساسەن كارتىنى قايتىدىن كۈنتەرتىپكە تىزىدۇ</string>
-    <string name="deck_conf_cram_filter_2_check">ئىككىنچى سۈزگۈچنى قوزغات</string>
-    <string name="deck_conf_cram_steps_summ" maxLength="41">ئىختىيارى ئۆگىنىش ئارىلىقى</string>
-    <string name="deck_conf_cram_preview_delays" maxLength="41">ئالدىن كۆزىتىشنى كېچىكتۈرۈش</string>
-    <string name="deck_conf_cram_preview_delays_summ">بىر نەچچە سېكۇنت كېچىكىدۇ.  0 كارتىنى ئەسلى دەستىگە قايتۇرىدۇ.</string>
     <!-- analytics options -->
     <string name="analytics_dialog_title">AnkiDroid نى ياخشىلاشقا ياردەملىشىڭ!</string>
     <string name="analytics_title" maxLength="41">ئىقتىدار ئىشلىتىشنى ھەمبەھىرلەيدۇ</string>
@@ -288,6 +255,10 @@
     <string name="user_action_8" maxLength="28">ئىشلەتكۈچىنىڭ 8-مەشغۇلاتى</string>
     <string name="user_action_9" maxLength="28">ئىشلەتكۈچىنىڭ 9-مەشغۇلاتى</string>
     <string name="toggle_auto_advance" maxLength="28">ئۆزلۈكىدىن ئىلگىرىلەشنى ئالماشتۇرىدۇ</string>
+    <string name="enable_auto_advance" maxLength="28">Enable auto advance</string>
+    <string name="disable_auto_advance" maxLength="28">Disable auto advance</string>
+    <string name="enable_voice_recording" maxLength="28">Enable voice recording</string>
+    <string name="disable_voice_recording" maxLength="28">Disable voice recording</string>
     <!-- Select card side -->
     <string name="card_side_selection_title">كارتا يۈزى تاللىنىدۇ</string>
     <string name="card_side_question">سوئال</string>
@@ -390,6 +361,9 @@
     <string name="new_study_screen_summ"><![CDATA[ياخشىلانغان ئۆگىنىش ئېكرانى ھازىرقىنىڭ ئورنىنى ئالىدۇ. كونا ئېكراندىكى بەزى ئىقتىدارلار ئۆزگەردى ياكى چىقىرىۋېتىلدى. <a href="%1$s">قايتۇرما ئىنكاس</a> ياكى <a href="%2$s">كەمتۈك</a> دوكلاتى يوللاڭ.]]></string>
     <string name="show_answer_feedback" maxLength="41">جاۋاب قايتۇرما ئىنكاسىنى كۆرسىتىدۇ</string>
     <string name="screen" maxLength="41">ئېكران</string>
+    <string name="only_answer" maxLength="41" comment="Configuration of the \'Answer\' commands to only answer the card">جاۋابلا</string>
+    <string name="flip_and_answer" maxLength="41" comment="Configuration of the \'Answer\' commands to answer the card if on the answer side, and flip it if on the question side">ئۆرۈ ۋە جاۋاب</string>
     <!--Keyboard shortcuts dialog-->
     <string name="open_settings" comment="Description of the shortcut that opens the app settings">تەڭشەكنى ئاچ</string>
+    <string name="related_settings_title" comment="Title of the section for related settings">Related settings</string>
 </resources>

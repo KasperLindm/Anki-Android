@@ -36,14 +36,13 @@ import com.ichi2.anki.R
 import com.ichi2.anki.dialogs.help.HelpDialog
 import com.ichi2.anki.pages.RemoveAccountFragment
 import com.ichi2.anki.settings.Prefs
-import com.ichi2.anki.ui.internationalization.toSentenceCase
+import com.ichi2.anki.ui.internationalization.sentenceCase
 import com.ichi2.anki.utils.ext.isCompactWidth
 import com.ichi2.anki.utils.ext.removeFragmentFromContainer
 import com.ichi2.anki.utils.ext.showDialogFragment
 import timber.log.Timber
-import kotlin.getValue
 
-class LoggedInFragment : Fragment(R.layout.my_account_logged_in) {
+class LoggedInFragment : Fragment(R.layout.fragment_my_account_logged_in) {
     // if the 'remove account' fragment is open, close it first
     private val onRemoveAccountBackCallback =
         object : OnBackPressedCallback(false) {
@@ -67,7 +66,7 @@ class LoggedInFragment : Fragment(R.layout.my_account_logged_in) {
         activity.setSupportActionBar(toolbar)
 
         activity.supportActionBar?.apply {
-            title = TR.preferencesAccount().toSentenceCase(requireContext(), R.string.sync_account)
+            title = TR.sentenceCase.ankiWebAccount
             setDisplayHomeAsUpEnabled(true)
             setDisplayShowHomeEnabled(true)
         }
@@ -78,7 +77,10 @@ class LoggedInFragment : Fragment(R.layout.my_account_logged_in) {
         view.findViewById<TextView>(R.id.username_logged_in).text = Prefs.username
 
         view.findViewById<Button>(R.id.privacy_policy_button).setOnClickListener { openAnkiDroidPrivacyPolicy() }
-        view.findViewById<Button>(R.id.logout_button).setOnClickListener { logout() }
+        view.findViewById<Button>(R.id.logout_button).apply {
+            text = TR.sentenceCase.logOut
+            setOnClickListener { logout() }
+        }
         view.findViewById<Button>(R.id.remove_account_button).setOnClickListener { openRemoveAccountScreen() }
 
         loggedInLogo = view.findViewById(R.id.login_logo)

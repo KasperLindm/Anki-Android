@@ -18,6 +18,7 @@
 package com.ichi2.anki.account
 
 import android.app.Activity.RESULT_OK
+import android.content.Intent
 import android.content.res.Configuration
 import android.os.Build
 import android.os.Bundle
@@ -25,36 +26,42 @@ import android.view.KeyEvent
 import android.view.View
 import android.widget.Button
 import android.widget.ImageView
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.net.toUri
 import androidx.core.view.isVisible
 import androidx.core.widget.doOnTextChanged
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentManager
+import androidx.fragment.app.commit
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
 import com.google.android.material.appbar.MaterialToolbar
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.textfield.TextInputEditText
 import com.google.android.material.textfield.TextInputLayout
 import com.ichi2.anki.CollectionManager.TR
+import com.ichi2.anki.DeckPicker
 import com.ichi2.anki.R
 import com.ichi2.anki.account.AccountActivity.Companion.START_FROM_DECKPICKER
 import com.ichi2.anki.dialogs.help.HelpDialog
 import com.ichi2.anki.getEndpoint
 import com.ichi2.anki.snackbar.showSnackbar
-import com.ichi2.anki.ui.internationalization.toSentenceCase
+import com.ichi2.anki.ui.internationalization.sentenceCase
 import com.ichi2.anki.utils.ext.isCompactWidth
 import com.ichi2.anki.utils.ext.showDialogFragment
 import com.ichi2.anki.utils.hideKeyboard
 import com.ichi2.anki.utils.openUrl
 import com.ichi2.anki.withProgress
 import com.ichi2.ui.TextInputEditField
+import com.ichi2.utils.Permissions
+import com.ichi2.utils.negativeButton
+import com.ichi2.utils.positiveButton
+import com.ichi2.utils.show
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import timber.log.Timber
 
-class LoginFragment : Fragment(R.layout.my_account) {
+class LoginFragment : Fragment(R.layout.fragment_my_account) {
     private val viewModel: LoginViewModel by viewModels()
 
     private lateinit var username: TextInputEditText
@@ -63,11 +70,6 @@ class LoginFragment : Fragment(R.layout.my_account) {
     private lateinit var passwordLayout: TextInputLayout
     private lateinit var loginLogo: ImageView
     private lateinit var loginButton: Button
-
-    private val notificationPermissionLauncher =
-        registerForActivityResult(ActivityResultContracts.RequestPermission()) {
-            Timber.i("notification permission: %b", it)
-        }
 
     override fun onViewCreated(
         view: View,
@@ -80,7 +82,7 @@ class LoginFragment : Fragment(R.layout.my_account) {
         activity.setSupportActionBar(toolbar)
 
         activity.supportActionBar?.apply {
-            title = TR.preferencesAccount().toSentenceCase(requireContext(), R.string.sync_account)
+            title = TR.sentenceCase.ankiWebAccount
             setDisplayHomeAsUpEnabled(true)
             setDisplayShowHomeEnabled(true)
         }
@@ -95,6 +97,7 @@ class LoginFragment : Fragment(R.layout.my_account) {
         password = view.findViewById(R.id.password)
         loginLogo = view.findViewById(R.id.login_logo)
         loginButton = view.findViewById(R.id.login_button)
+        loginButton.text = TR.sentenceCase.logIn
 
         initListeners()
         initObservers()
@@ -111,7 +114,6 @@ class LoginFragment : Fragment(R.layout.my_account) {
         initUsernameListeners()
         initPasswordListeners()
         initButtonListeners()
-        initObservers()
     }
 
     private fun initUsernameListeners() {
@@ -211,22 +213,18 @@ class LoginFragment : Fragment(R.layout.my_account) {
             viewModel.loginState.collect { state ->
                 when (state) {
                     is LoginState.Success -> {
+                        Timber.i("Login Successful")
                         val activity = requireActivity()
                         val isForResult = arguments?.getBoolean(START_FROM_DECKPICKER) ?: false
 
+                        // If the user explicitly came from a sync prompt (onboarding/pressing sync)
+                        // then their intent was to sync after login success
                         if (isForResult) {
                             activity.setResult(RESULT_OK)
                             activity.finish()
-                        } else {
-                            AccountActivity.checkNotificationPermission(requireContext(), notificationPermissionLauncher)
-
-                            val fragmentManager = activity.supportFragmentManager
-                            fragmentManager
-                                .beginTransaction()
-                                .replace(R.id.fragment_container, LoggedInFragment())
-                                .commit()
-                            fragmentManager.popBackStack(null, FragmentManager.POP_BACK_STACK_INCLUSIVE)
+                            return@collect
                         }
+                        showLoginSuccessDialog()
                     }
                     is LoginState.Error -> {
                         showSnackbar(text = state.exception.message.toString())
@@ -234,6 +232,51 @@ class LoginFragment : Fragment(R.layout.my_account) {
                     is LoginState.Idle -> { /* Not needed */ }
                 }
             }
+        }
+    }
+
+    /**
+     * Displays a dialog asking if a user would like to sync after a login success
+     *
+     * * **Positive:** opens the Deck Picker and starts a sync
+     * * **Negative:** continues to [LoggedInFragment]
+     */
+    private fun showLoginSuccessDialog() {
+        /** @see LoggedInFragment */
+        fun showLoggedInView() {
+            Timber.i("Showing LoggedIn view")
+            val fragmentManager = requireActivity().supportFragmentManager
+            fragmentManager.popBackStack(
+                null,
+                FragmentManager.POP_BACK_STACK_INCLUSIVE,
+            )
+            fragmentManager.commit {
+                replace(R.id.fragment_container, LoggedInFragment())
+            }
+            Permissions.requestNotificationPermissionsForSyncing(requireActivity())
+        }
+
+        /** @see DeckPicker.onNewIntent */
+        fun openDeckPickerAndSync() {
+            Timber.i("Opening Deck Picker for Sync")
+            val intent =
+                DeckPicker.getIntent(
+                    requireContext(),
+                    autoSync = true,
+                )
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
+            startActivity(intent)
+            requireActivity().finish()
+        }
+
+        MaterialAlertDialogBuilder(requireContext()).show {
+            Timber.i("Showing dialog: 'Sync now?'")
+            setTitle(R.string.login_successful)
+            setIcon(R.drawable.ic_sync)
+            setMessage(R.string.sync_now)
+            positiveButton(R.string.button_sync) { openDeckPickerAndSync() }
+            negativeButton(R.string.dialog_continue) { showLoggedInView() }
+            setOnCancelListener { showLoggedInView() }
         }
     }
 

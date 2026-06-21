@@ -1,18 +1,18 @@
-/****************************************************************************************
- * Copyright (c) 2015 Timothy Rae <perceptualchaos2@gmail.com>                          *
- *                                                                                      *
- * This program is free software; you can redistribute it and/or modify it under        *
- * the terms of the GNU General Public License as published by the Free Software        *
- * Foundation; either version 3 of the License, or (at your option) any later           *
- * version.                                                                             *
- *                                                                                      *
- * This program is distributed in the hope that it will be useful, but WITHOUT ANY      *
- * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A      *
- * PARTICULAR PURPOSE. See the GNU General Public License for more details.             *
- *                                                                                      *
- * You should have received a copy of the GNU General Public License along with         *
- * this program.  If not, see <http://www.gnu.org/licenses/>.                           *
- ****************************************************************************************/
+/*
+ * Copyright (c) 2015 Timothy Rae <perceptualchaos2@gmail.com>
+ *
+ * This program is free software; you can redistribute it and/or modify it under
+ * the terms of the GNU General Public License as published by the Free Software
+ * Foundation; either version 3 of the License, or (at your option) any later
+ * version.
+ *
+ * This program is distributed in the hope that it will be useful, but WITHOUT ANY
+ * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
+ * PARTICULAR PURPOSE. See the GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along with
+ * this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
 
 package com.ichi2.anki
 
@@ -28,10 +28,15 @@ import androidx.core.content.FileProvider
 import androidx.core.content.IntentCompat
 import androidx.work.WorkManager
 import com.ichi2.anki.common.annotations.NeedsTest
+import com.ichi2.anki.common.coroutines.applicationScope
+import com.ichi2.anki.common.permissions.hasLegacyStorageAccessPermission
+import com.ichi2.anki.common.permissions.isExternalStorageManagerCompat
+import com.ichi2.anki.common.utils.android.showThemedToast
 import com.ichi2.anki.common.utils.trimToLength
 import com.ichi2.anki.dialogs.DialogHandler.Companion.storeMessage
 import com.ichi2.anki.dialogs.DialogHandlerMessage
 import com.ichi2.anki.dialogs.requireDeckPickerOrShowError
+import com.ichi2.anki.exception.SystemStorageException
 import com.ichi2.anki.libanki.DeckId
 import com.ichi2.anki.noteeditor.NoteEditorLauncher
 import com.ichi2.anki.servicelayer.ScopedStorageService
@@ -40,13 +45,12 @@ import com.ichi2.anki.ui.windows.reviewer.ReviewerFragment
 import com.ichi2.anki.utils.MimeTypeUtils
 import com.ichi2.anki.worker.SyncWorker
 import com.ichi2.utils.FileUtil
+import com.ichi2.utils.ImportResult
 import com.ichi2.utils.ImportUtils.handleFileImport
 import com.ichi2.utils.ImportUtils.isInvalidViewIntent
 import com.ichi2.utils.ImportUtils.showImportUnsuccessfulDialog
 import com.ichi2.utils.IntentUtil.resolveMimeType
 import com.ichi2.utils.NetworkUtils
-import com.ichi2.utils.Permissions
-import com.ichi2.utils.Permissions.hasLegacyStorageAccessPermission
 import com.ichi2.utils.copyToClipboard
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -85,12 +89,12 @@ class IntentHandler : AbstractIntentHandler() {
         when (launchType) {
             LaunchType.FILE_IMPORT ->
                 runIfStoragePermissions {
-                    handleFileImport(fileIntent, reloadIntent, action)
+                    handleFileImport(intent, reloadIntent, action)
                     finish()
                 }
             LaunchType.TEXT_IMPORT ->
                 runIfStoragePermissions {
-                    onSelectedCsvForImport(fileIntent)
+                    onSelectedCsvForImport(intent)
                     finish()
                 }
             LaunchType.IMAGE_IMPORT ->
@@ -124,15 +128,6 @@ class IntentHandler : AbstractIntentHandler() {
             failureMessageId = R.string.about_ankidroid_error_copy_debug_info,
         )
     }
-
-    private val fileIntent: Intent
-        get() {
-            return if (intent.action == Intent.ACTION_SEND) {
-                IntentCompat.getParcelableExtra(intent, Intent.EXTRA_STREAM, Intent::class.java) ?: intent
-            } else {
-                intent
-            }
-        }
 
     /**
      * Execute the runnable if one of the two following conditions are satisfied:
@@ -213,16 +208,19 @@ class IntentHandler : AbstractIntentHandler() {
         }
 
         // Start DeckPicker if we correctly processed ACTION_VIEW
-        if (importResult.isSuccess) {
-            deleteImportedDeck(intent.data?.path)
-            reloadIntent.action = action
-            reloadIntent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
-            startActivity(reloadIntent)
-            finish()
-        } else {
-            Timber.i("File import failed")
-            // Don't import the file if it didn't load properly or doesn't have apkg extension
-            showImportUnsuccessfulDialog(this, importResult.humanReadableMessage, true)
+        when (importResult) {
+            is ImportResult.Success -> {
+                deleteImportedDeck(intent.data?.path)
+                reloadIntent.action = action
+                reloadIntent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
+                startActivity(reloadIntent)
+                finish()
+            }
+            is ImportResult.Failure -> {
+                Timber.i("File import failed")
+                // Don't import the file if it didn't load properly or doesn't have apkg extension
+                showImportUnsuccessfulDialog(this, importResult, true)
+            }
         }
     }
 
@@ -230,7 +228,7 @@ class IntentHandler : AbstractIntentHandler() {
         // TODO improve the handling of the imported temporary files
         // Launching this scope without tying it to a lifecycle since ,
         // IntentHandler finishes quickly, but deletion may still be in progress
-        AnkiDroidApp.applicationScope.launch(Dispatchers.IO) {
+        applicationScope.launch(Dispatchers.IO) {
             try {
                 val file = File(path!!)
                 val fileUri =
@@ -260,8 +258,7 @@ class IntentHandler : AbstractIntentHandler() {
                 data.data
             }
 
-        val imageOcclusionIntentBuilder = ImageOcclusionIntentBuilder(this)
-        val intentImageOcclusion = imageOcclusionIntentBuilder.buildIntent(imageUri)
+        val intentImageOcclusion = NoteEditorLauncher.ImageOcclusion(imageUri).toIntent(this)
 
         TaskStackBuilder
             .create(this)
@@ -291,7 +288,7 @@ class IntentHandler : AbstractIntentHandler() {
         // TODO improve the handling of the imported temporary files
         // Launching this scope without tying it to a lifecycle since ,
         // IntentHandler finishes quickly, but deletion may still be in progress
-        AnkiDroidApp.applicationScope.launch(Dispatchers.IO) {
+        applicationScope.launch(Dispatchers.IO) {
             try {
                 contentResolver.delete(sharedDeckUri, null, null)
                 Timber.i("onCreate: downloaded shared deck deleted")
@@ -350,6 +347,8 @@ class IntentHandler : AbstractIntentHandler() {
         /** Checks whether storage permissions are granted on the device. If the device is not using legacy storage,
          *  it verifies if the app has been granted the necessary storage access permission.
          *  @return `true`: if granted, otherwise `false` and shows a missing permission toast
+         *
+         * @throws SystemStorageException if `getExternalFilesDir` returns null
          */
         fun grantedStoragePermissions(
             context: Context,
@@ -358,7 +357,7 @@ class IntentHandler : AbstractIntentHandler() {
             val granted =
                 !ScopedStorageService.isLegacyStorage(context) ||
                     hasLegacyStorageAccessPermission(context) ||
-                    Permissions.isExternalStorageManagerCompat()
+                    isExternalStorageManagerCompat()
 
             if (!granted && showToast) {
                 showThemedToast(context, context.getString(R.string.intent_handler_failed_no_storage_permission), false)
@@ -371,7 +370,7 @@ class IntentHandler : AbstractIntentHandler() {
         @CheckResult
         fun getLaunchType(intent: Intent): LaunchType {
             val action = intent.action
-            return if (action == Intent.ACTION_SEND || Intent.ACTION_VIEW == action && isValidViewIntent(intent)) {
+            return if (action == Intent.ACTION_SEND || (Intent.ACTION_VIEW == action && isValidViewIntent(intent))) {
                 val mimeType = intent.resolveMimeType()
                 when {
                     mimeType?.startsWith("image/") == true -> LaunchType.IMAGE_IMPORT

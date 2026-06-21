@@ -22,10 +22,10 @@ import androidx.core.app.PendingIntentCompat
 import androidx.preference.ListPreference
 import androidx.preference.SwitchPreferenceCompat
 import com.ichi2.anki.R
+import com.ichi2.anki.common.android.AdaptionUtil
 import com.ichi2.anki.common.time.TimeManager
 import com.ichi2.anki.services.BootService.Companion.scheduleNotification
 import com.ichi2.anki.services.NotificationService
-import com.ichi2.utils.AdaptionUtil
 
 /**
  * Fragment with preferences related to notifications
@@ -38,7 +38,7 @@ class NotificationsSettingsFragment : SettingsFragment() {
 
     override fun initSubscreen() {
         if (AdaptionUtil.isXiaomiRestrictedLearningDevice) {
-            /** These preferences should be searchable or not based
+            /* These preferences should be searchable or not based
              * on this same condition at [HeaderFragment.configureSearchBar] */
             preferenceScreen.removePreference(requirePreference<SwitchPreferenceCompat>(R.string.pref_notifications_vibrate_key))
             preferenceScreen.removePreference(requirePreference<SwitchPreferenceCompat>(R.string.pref_notifications_blink_key))

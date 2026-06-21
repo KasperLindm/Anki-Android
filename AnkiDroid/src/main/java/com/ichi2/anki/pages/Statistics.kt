@@ -15,10 +15,9 @@
  */
 package com.ichi2.anki.pages
 
-import android.content.Context
-import android.content.Intent
 import android.os.Bundle
 import android.print.PrintAttributes
+import android.print.PrintJob
 import android.print.PrintManager
 import android.view.View
 import androidx.core.content.ContextCompat.getSystemService
@@ -27,18 +26,23 @@ import com.ichi2.anki.CollectionManager.withCol
 import com.ichi2.anki.R
 import com.ichi2.anki.common.time.TimeManager
 import com.ichi2.anki.common.time.getTimestamp
-import com.ichi2.anki.databinding.StatisticsBinding
-import com.ichi2.anki.dialogs.DeckSelectionDialog
+import com.ichi2.anki.databinding.PageStatisticsBinding
+import com.ichi2.anki.dialogs.registerDeckSelectedHandler
+import com.ichi2.anki.dialogs.startDeckSelection
 import com.ichi2.anki.launchCatchingTask
 import com.ichi2.anki.model.SelectableDeck
-import com.ichi2.anki.startDeckSelection
+import com.ichi2.anki.snackbar.showSnackbar
 import com.ichi2.anki.withProgress
 import dev.androidbroadcast.vbpd.viewBinding
+import timber.log.Timber
 
-class Statistics :
-    PageFragment(R.layout.statistics),
-    DeckSelectionDialog.DeckSelectionListener {
-    private val binding by viewBinding(StatisticsBinding::bind)
+class Statistics : PageFragment(R.layout.page_statistics) {
+    override val pagePath: String = "graphs"
+    private val binding by viewBinding(PageStatisticsBinding::bind)
+
+    /** The PrintJob launched by this Fragment */
+    // After killing the app, printManager.printJobs can still list active jobs
+    private var pendingPrintJob: PrintJob? = null
 
     @Suppress("deprecation", "API35 properly handle edge-to-edge")
     override fun onViewCreated(
@@ -46,9 +50,10 @@ class Statistics :
         savedInstanceState: Bundle?,
     ) {
         super.onViewCreated(view, savedInstanceState)
-        webView.isNestedScrollingEnabled = true
 
-        binding.deckName.setOnClickListener { startDeckSelection(all = false, filtered = false) }
+        binding.deckName.setOnClickListener {
+            startDeckSelection(allowAll = false, allowFiltered = false, skipEmptyDefault = true)
+        }
         binding.appBar
             .addLiftOnScrollListener { _, backgroundColor ->
                 activity?.window?.statusBarColor = backgroundColor
@@ -63,6 +68,7 @@ class Statistics :
                 true
             }
         }
+        registerDeckSelectedHandler(action = ::onDeckSelected)
         requireActivity().launchCatchingTask {
             withProgress {
                 val deckName =
@@ -76,18 +82,25 @@ class Statistics :
      * It uses the Android PrintManager service to create a print job, based on the content of the WebView.
      * The resulting output is a PDF document. **/
     private fun exportWebViewContentAsPDF() {
-        val printManager = getSystemService(requireContext(), PrintManager::class.java)
+        if (pendingPrintJob?.isActive == true) {
+            Timber.w("Duplicate print attempted - skipping")
+            showSnackbar(R.string.already_in_progress)
+            return
+        }
+        Timber.i("Saving Stats to PDF")
+        val printManager = getSystemService(requireContext(), PrintManager::class.java) ?: return
         val currentDateTime = getTimestamp(TimeManager.time)
         val jobName = "${getString(R.string.app_name)}-stats-$currentDateTime"
-        val printAdapter = webView.createPrintDocumentAdapter(jobName)
-        printManager?.print(
-            jobName,
-            printAdapter,
-            PrintAttributes.Builder().build(),
-        )
+        val printAdapter = webViewLayout.createPrintDocumentAdapter(jobName)
+        pendingPrintJob =
+            printManager.print(
+                jobName,
+                printAdapter,
+                PrintAttributes.Builder().build(),
+            )
     }
 
-    override fun onDeckSelected(deck: SelectableDeck?) {
+    private fun onDeckSelected(deck: SelectableDeck?) {
         if (deck == null) return
         require(deck is SelectableDeck.Deck)
         changeDeck(deck.name)
@@ -114,16 +127,13 @@ class Statistics :
             textBox.dispatchEvent(new Event("input", { bubbles: true }));
             textBox.dispatchEvent(new Event("change"));
             """.trimIndent()
-        webView.evaluateJavascript(javascriptCode, null)
+        webViewLayout.evaluateJavascript(javascriptCode, null)
     }
 
     companion object {
         private const val KEY_DECK_NAME = "key_deck_name"
-
-        /**
-         * Note: the title argument is set to null as the [Statistics] fragment is expected to
-         * handle the toolbar content(shows a deck selection spinner).
-         */
-        fun getIntent(context: Context): Intent = getIntent(context, "graphs", null, Statistics::class)
     }
 }
+
+private val PrintJob.isActive: Boolean
+    get() = !isCompleted && !isFailed && !isCancelled

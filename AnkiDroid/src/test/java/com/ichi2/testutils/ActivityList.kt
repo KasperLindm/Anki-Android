@@ -16,6 +16,7 @@
 package com.ichi2.testutils
 
 import android.app.Activity
+import android.appwidget.AppWidgetManager
 import android.content.Context
 import android.content.Intent
 import androidx.annotation.CheckResult
@@ -25,8 +26,6 @@ import com.ichi2.anki.CardTemplateBrowserAppearanceEditor.Companion.INTENT_ANSWE
 import com.ichi2.anki.CardTemplateBrowserAppearanceEditor.Companion.INTENT_QUESTION_FORMAT
 import com.ichi2.anki.CardTemplateEditor
 import com.ichi2.anki.DeckPicker
-import com.ichi2.anki.DrawingActivity
-import com.ichi2.anki.FilteredDeckOptions
 import com.ichi2.anki.Info
 import com.ichi2.anki.IntentHandler
 import com.ichi2.anki.IntentHandler.Companion.getReviewDeckIntent
@@ -47,6 +46,7 @@ import com.ichi2.anki.previewer.CardViewerActivity
 import com.ichi2.anki.ui.windows.managespace.ManageSpaceActivity
 import com.ichi2.anki.ui.windows.permissions.AllPermissionsExplanationActivity
 import com.ichi2.anki.ui.windows.permissions.PermissionsActivity
+import com.ichi2.anki.utils.ConfigAwareSingleFragmentActivity
 import com.ichi2.testutils.ActivityList.ActivityLaunchParam.Companion.get
 import com.ichi2.widget.cardanalysis.CardAnalysisWidgetConfig
 import com.ichi2.widget.deckpicker.DeckPickerWidgetConfig
@@ -76,8 +76,6 @@ object ActivityList {
             // Likely has unhandled intents
             get(Reviewer::class.java),
             get(PreferencesActivity::class.java),
-            get(FilteredDeckOptions::class.java),
-            get(DrawingActivity::class.java),
             // Info has unhandled intents
             get(Info::class.java),
             get(CardTemplateEditor::class.java) { intentForCardTemplateEditor() },
@@ -89,11 +87,12 @@ object ActivityList {
             get(PermissionsActivity::class.java),
             get(AllPermissionsExplanationActivity::class.java),
             get(SingleFragmentActivity::class.java),
+            get(ConfigAwareSingleFragmentActivity::class.java),
             get(CardViewerActivity::class.java),
             get(InstantNoteEditorActivity::class.java),
             get(MultimediaActivity::class.java),
             get(DeckPickerWidgetConfig::class.java),
-            get(CardAnalysisWidgetConfig::class.java),
+            get(CardAnalysisWidgetConfig::class.java) { intentForWidgetConfig() },
             get(AccountActivity::class.java),
         )
 
@@ -107,6 +106,8 @@ object ActivityList {
 
     private fun intentForCardTemplateEditor(): Intent = Intent().apply { putExtra("noteTypeId", 1L) }
 
+    private fun intentForWidgetConfig(): Intent = Intent().apply { putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, 1) }
+
     class ActivityLaunchParam(
         var activity: Class<out Activity>,
         private var intentBuilder: Function<Context, Intent>,
@@ -115,7 +116,9 @@ object ActivityList {
 
         fun build(context: Context): ActivityController<out Activity> =
             Robolectric
-                .buildActivity(activity, intentBuilder.apply(context))
+                .buildActivity(activity, buildIntent(context))
+
+        fun buildIntent(context: Context): Intent = intentBuilder.apply(context)
 
         val className: String = activity.name
 

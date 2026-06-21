@@ -22,10 +22,6 @@ import android.view.KeyEvent.KEYCODE_1
 import android.view.KeyEvent.KEYCODE_2
 import android.view.KeyEvent.KEYCODE_3
 import android.view.KeyEvent.KEYCODE_4
-import android.view.KeyEvent.KEYCODE_BUTTON_A
-import android.view.KeyEvent.KEYCODE_BUTTON_B
-import android.view.KeyEvent.KEYCODE_BUTTON_X
-import android.view.KeyEvent.KEYCODE_BUTTON_Y
 import android.view.KeyEvent.KEYCODE_E
 import android.view.KeyEvent.KEYCODE_F5
 import android.view.KeyEvent.KEYCODE_R
@@ -99,27 +95,6 @@ class ReviewerKeyboardInputTest : RobolectricTest() {
         val underTest = KeyboardInputTestReviewer.displayingAnswer().withButtons(4)
         underTest.handleSpacebar()
         assertThat(underTest.processedAnswer(), equalTo(Rating.GOOD))
-    }
-
-    /** END: DEFAULT IS "GOOD"  */
-    @Test
-    fun gamepadAAnswerFourthButtonOrShowsAnswer() {
-        assertGamepadButtonAnswers(KEYCODE_BUTTON_A, Rating.EASY)
-    }
-
-    @Test
-    fun gamepadBAnswersThirdButtonOrShowsAnswer() {
-        assertGamepadButtonAnswers(KEYCODE_BUTTON_B, Rating.GOOD)
-    }
-
-    @Test
-    fun gamepadXAnswersSecondButtonOrShowsAnswer() {
-        assertGamepadButtonAnswers(KEYCODE_BUTTON_X, Rating.HARD)
-    }
-
-    @Test
-    fun gamepadYAnswersFirstButtonOrShowsAnswer() {
-        assertGamepadButtonAnswers(KEYCODE_BUTTON_Y, Rating.AGAIN)
     }
 
     @Test
@@ -221,19 +196,6 @@ class ReviewerKeyboardInputTest : RobolectricTest() {
         underTest.handleSpacebar()
 
         assertThat("After a second keypress the question should be displayed", !underTest.testIsDisplayingAnswer())
-    }
-
-    private fun assertGamepadButtonAnswers(
-        keycodeButton: Int,
-        rating: Rating,
-    ) {
-        val underTest = KeyboardInputTestReviewer.displayingQuestion()
-        assertThat("Assume: Initially should not display answer", !underTest.didDisplayAnswer())
-        underTest.handleGamepadPress(keycodeButton)
-        assertThat("Initial button should display answer", underTest.didDisplayAnswer())
-        underTest.displayAnswerForTest()
-        underTest.handleGamepadPress(keycodeButton)
-        assertThat(underTest.processedAnswer(), equalTo(rating))
     }
 
     internal class KeyboardInputTestReviewer : Reviewer() {

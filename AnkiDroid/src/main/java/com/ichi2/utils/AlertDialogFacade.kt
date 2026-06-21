@@ -24,15 +24,13 @@ import android.content.DialogInterface.OnClickListener
 import android.text.InputFilter
 import android.view.KeyEvent
 import android.view.LayoutInflater
+import android.view.MotionEvent
 import android.view.View
 import android.widget.ArrayAdapter
 import android.widget.Button
 import android.widget.CheckBox
 import android.widget.EditText
 import android.widget.FrameLayout
-import android.widget.ImageView
-import android.widget.ListView
-import android.widget.TextView
 import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
 import androidx.appcompat.app.AlertDialog
@@ -40,16 +38,43 @@ import androidx.core.widget.doOnTextChanged
 import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import androidx.viewbinding.ViewBinding
 import com.google.android.material.textfield.TextInputLayout
 import com.ichi2.anki.R
-import com.ichi2.themes.Theme
-import com.ichi2.themes.Themes
-import com.ichi2.ui.FixedTextView
-import com.ichi2.utils.HandlerUtils.executeOnMainThread
+import com.ichi2.anki.common.utils.android.HandlerUtils.executeOnMainThread
+import com.ichi2.anki.common.utils.android.getResFromAttr
+import com.ichi2.anki.databinding.DialogAlertDialogCheckboxBinding
+import com.ichi2.anki.databinding.DialogAlertDialogTitleWithHelpBinding
+import com.ichi2.anki.databinding.DialogGenericRecyclerViewBinding
+import com.ichi2.anki.databinding.DialogListviewMessageBinding
 import timber.log.Timber
 
 /** Wraps [DialogInterface.OnClickListener] as we don't need the `which` parameter */
 typealias DialogInterfaceListener = (DialogInterface) -> Unit
+
+/**
+ * - [ValidationResult.VALID] - user may proceed
+ * - [ValidationResult.REJECTED] - user may not proceed (no error)
+ * - [ValidationResult.error] - `error` is displayed to the user
+ */
+@JvmInline
+value class ValidationResult private constructor(
+    val error: String?,
+) {
+    companion object {
+        /** The user may proceed */
+        val VALID = ValidationResult(null)
+
+        /**
+         * The user may not proceed; no error displayed
+         *
+         * Typically for 'obvious' issues, such as not changing a name
+         */
+        val REJECTED = ValidationResult("")
+
+        fun error(message: String) = ValidationResult(message)
+    }
+}
 
 fun DialogInterfaceListener.toClickListener(): OnClickListener = OnClickListener { dialog: DialogInterface, _ -> this(dialog) }
 
@@ -90,9 +115,7 @@ fun AlertDialog.Builder.message(
  */
 fun AlertDialog.Builder.iconAttr(
     @DrawableRes res: Int,
-) = apply {
-    return this.setIcon(Themes.getResFromAttr(this.context, res))
-}
+): AlertDialog.Builder = this.setIcon(getResFromAttr(this.context, res))
 
 fun AlertDialog.Builder.positiveButton(
     @StringRes stringRes: Int? = null,
@@ -145,9 +168,9 @@ fun AlertDialog.Builder.cancelable(cancelable: Boolean): AlertDialog.Builder = t
  * Executes the provided block, then creates an [AlertDialog] with the arguments supplied
  * and immediately displays the dialog
  */
-inline fun AlertDialog.Builder.show(
+inline fun <T : AlertDialog.Builder> T.show(
     enableEnterKeyHandler: Boolean = false, // Make it opt-in
-    block: AlertDialog.Builder.() -> Unit,
+    block: T.() -> Unit,
 ): AlertDialog {
     this.apply { block() }
     val dialog = this.show()
@@ -188,7 +211,7 @@ fun AlertDialog.Builder.createAndApply(block: AlertDialog.() -> Unit): AlertDial
 /**
  * Executes [block] on the [AlertDialog.Builder] instance and returns the initialized [AlertDialog].
  */
-fun AlertDialog.Builder.create(block: AlertDialog.Builder.() -> Unit): AlertDialog {
+fun <T : AlertDialog.Builder> T.create(block: T.() -> Unit): AlertDialog {
     block()
     return create()
 }
@@ -209,8 +232,8 @@ fun AlertDialog.Builder.checkBoxPrompt(
     if (stringRes == null && text == null) {
         throw IllegalArgumentException("either `stringRes` or `text` must be set")
     }
-    val checkBoxView = View.inflate(this.context, R.layout.alert_dialog_checkbox, null)
-    val checkBox = checkBoxView.findViewById<CheckBox>(R.id.checkbox)
+    val binding = DialogAlertDialogCheckboxBinding.inflate(LayoutInflater.from(context))
+    val checkBox = binding.checkbox
 
     val checkBoxLabel = if (stringRes != null) context.getString(stringRes) else text
     checkBox.text = checkBoxLabel
@@ -220,7 +243,7 @@ fun AlertDialog.Builder.checkBoxPrompt(
         onToggle(isChecked)
     }
 
-    return this.setView(checkBoxView)
+    return this.setView(binding.root)
 }
 
 fun AlertDialog.getCheckBoxPrompt(): CheckBox =
@@ -263,10 +286,11 @@ fun AlertDialog.Builder.customView(
 }
 
 fun AlertDialog.Builder.customListAdapter(adapter: RecyclerView.Adapter<*>) {
-    val recyclerView = LayoutInflater.from(context).inflate(R.layout.dialog_generic_recycler_view, null, false) as RecyclerView
+    val binding = DialogGenericRecyclerViewBinding.inflate(LayoutInflater.from(context))
+    val recyclerView = binding.dialogRecyclerView
     recyclerView.adapter = adapter
     recyclerView.layoutManager = LinearLayoutManager(context)
-    this.setView(recyclerView)
+    this.setView(binding.root)
 }
 
 /**
@@ -278,12 +302,13 @@ fun AlertDialog.Builder.customListAdapterWithDecoration(
     adapter: RecyclerView.Adapter<*>,
     context: Context,
 ) {
-    val recyclerView = LayoutInflater.from(context).inflate(R.layout.dialog_generic_recycler_view, null, false) as RecyclerView
+    val binding = DialogGenericRecyclerViewBinding.inflate(LayoutInflater.from(context))
+    val recyclerView = binding.dialogRecyclerView
     recyclerView.adapter = adapter
     recyclerView.layoutManager = LinearLayoutManager(context)
     val dividerItemDecoration = DividerItemDecoration(recyclerView.context, LinearLayoutManager.VERTICAL)
     recyclerView.addItemDecoration(dividerItemDecoration)
-    this.setView(recyclerView)
+    this.setView(binding.root)
 }
 
 /**
@@ -300,6 +325,7 @@ fun AlertDialog.Builder.customListAdapterWithDecoration(
  * @param maxLength if set, the user may not enter more than the supplied number of digits
  * @param inputType see [EditText.setInputType]
  * @param waitForPositiveButton MaterialDialog compat: if `false` [callback] is called on input
+ * @param validator see [ValidationResult]. Valid if `null`, an error is shown if non-null.
  * if `true` [callback] is called when [positiveButton] is pressed
  */
 fun AlertDialog.input(
@@ -310,18 +336,13 @@ fun AlertDialog.input(
     maxLength: Int? = null,
     displayKeyboard: Boolean = false,
     waitForPositiveButton: Boolean = true,
+    validator: ((String) -> ValidationResult)? = null,
     callback: (AlertDialog, CharSequence) -> Unit,
 ): AlertDialog {
     // Builder.setView() may not be called before show()
     if (!this.isShowing) throw IllegalStateException("input() requires .show()")
 
     getInputTextLayout().hint = hint
-    // TODO Fix this:
-    //  Disable the error icon when the black theme is applied. With this theme, showing an error
-    //  makes the wrapped TextInputEditText's outline to disappear around the error icon(#18535, #18596)
-    if (Themes.currentTheme == Theme.BLACK) {
-        getInputTextLayout().errorIconDrawable = null
-    }
 
     getInputField().apply {
         if (displayKeyboard) {
@@ -330,25 +351,33 @@ fun AlertDialog.input(
 
         inputType?.let { this.inputType = it }
 
-        if (!waitForPositiveButton) {
-            doOnTextChanged { text, _, _, _ ->
-                callback(this@input, text ?: "")
+        doOnTextChanged { text, _, _, _ ->
+            val input = text?.toString() ?: ""
+
+            // handle allowEmpty
+            if (!allowEmpty && input.isEmpty()) {
+                this@input.getInputTextLayout().error = null
+                this@input.positiveButton.isEnabled = false
+                return@doOnTextChanged
             }
-        } else {
-            positiveButton.setOnClickListener { callback(this@input, this.text.toString()) }
+
+            // handle validation errors
+            val validationError = validator?.invoke(input)
+            this@input.getInputTextLayout().error = validationError?.error
+            this@input.positiveButton.isEnabled = validationError?.error == null
+            if (validationError != null) return@doOnTextChanged
+
+            // no errors, see if we should fire the callback on every keypress
+            // TODO: this was used to perform additional validation, which should be moved to the
+            //  'validator' parameter,
+            if (!waitForPositiveButton) {
+                callback(this@input, input)
+            }
         }
 
-        if (!allowEmpty) {
-            // this is called after callback() so allowEmpty takes priority
-            doOnTextChanged { text, _, _, _ ->
-                if (waitForPositiveButton) {
-                    // this is the only validation filter we apply - toggle on or off
-                    this@input.positiveButton.isEnabled = !text.isNullOrEmpty()
-                } else if (text.isNullOrEmpty()) {
-                    // potentially other filters in `waitForPositiveButton`.
-                    // WARN: this could be buggy as it does not toggle the button back on
-                    this@input.positiveButton.isEnabled = false
-                }
+        if (waitForPositiveButton) {
+            positiveButton.setOnClickListener {
+                callback(this@input, this.text.toString())
             }
         }
 
@@ -386,6 +415,30 @@ val AlertDialog.neutralButton: Button?
     get() = getButton(DialogInterface.BUTTON_NEUTRAL)
 
 /**
+ * Executes [block] when a touch outside the dialog occurs
+ *
+ * This MUST be called after [show] or inside [AlertDialog.setOnShowListener]
+ *
+ * This will not call [AlertDialog.cancel]
+ */
+fun AlertDialog.handleOutsideTouch(
+    binding: ViewBinding,
+    block: () -> Unit,
+) {
+    val dialogContentView =
+        findViewById(com.google.android.material.R.id.contentPanel)
+            ?: binding.root.parent as? View
+            ?: binding.root
+
+    window?.decorView?.setOnTouchListener { _, event ->
+        if (event.action != MotionEvent.ACTION_DOWN) return@setOnTouchListener false
+        if (dialogContentView.rawHitTest(event)) return@setOnTouchListener false
+        block()
+        true
+    }
+}
+
+/**
  * Extension function for AlertDialog.Builder to set a list of items.
  * Items are not displayed if [AlertDialog.Builder.setMessage] has been called
  *
@@ -413,17 +466,15 @@ fun AlertDialog.Builder.listItemsAndMessage(
     items: List<CharSequence>,
     onClick: (dialog: DialogInterface, index: Int) -> Unit,
 ): AlertDialog.Builder {
-    val dialogView = View.inflate(this.context, R.layout.dialog_listview_message, null)
-    dialogView.findViewById<FixedTextView>(R.id.dialog_message).text = message
-
-    val listView = dialogView.findViewById<ListView>(R.id.dialog_list_view)
-    listView.adapter = ArrayAdapter(context, android.R.layout.simple_list_item_1, items)
+    val binding = DialogListviewMessageBinding.inflate(LayoutInflater.from(context))
+    binding.message.text = message
+    binding.listView.adapter = ArrayAdapter(context, android.R.layout.simple_list_item_1, items)
 
     val dialog = this.create()
-    listView.setOnItemClickListener { _, _, index, _ ->
+    binding.listView.setOnItemClickListener { _, _, index, _ ->
         onClick(dialog, index)
     }
-    return this.setView(dialogView)
+    return this.setView(binding.root)
 }
 
 /**
@@ -438,32 +489,37 @@ fun AlertDialog.Builder.listItemsAndMessage(
  * }
  * ```
  *
- * @param block action executed when the help icon is clicked
- *
+ * @param onHelpClick action executed when the help icon is clicked
+ * @param startIcon optional icon to display at the start of the title
  */
 fun AlertDialog.Builder.titleWithHelpIcon(
     @StringRes stringRes: Int? = null,
     text: String? = null,
-    block: View.OnClickListener,
-) {
+    @DrawableRes startIcon: Int? = null,
+    onHelpClick: View.OnClickListener,
+): AlertDialog.Builder {
     // setup the view for the dialog
-    val customTitleView = LayoutInflater.from(context).inflate(R.layout.alert_dialog_title_with_help, null, false)
-    setCustomTitle(customTitleView)
+    val binding = DialogAlertDialogTitleWithHelpBinding.inflate(LayoutInflater.from(context))
+    setCustomTitle(binding.root)
+
+    if (startIcon != null) {
+        binding.titleIcon.setImageResource(startIcon)
+        binding.titleIcon.visibility = View.VISIBLE
+    }
 
     // apply a custom title
-    val titleTextView = customTitleView.findViewById<TextView>(android.R.id.title)
-
     if (stringRes != null) {
-        titleTextView.setText(stringRes)
+        binding.title.setText(stringRes)
     } else if (text != null) {
-        titleTextView.text = text
+        binding.title.text = text
     }
 
     // set the action when clicking the help icon
-    customTitleView.findViewById<ImageView>(R.id.help_icon).setOnClickListener { v ->
+    binding.helpIcon.setOnClickListener { v ->
         Timber.i("dialog help icon click")
-        block.onClick(v)
+        onHelpClick.onClick(v)
     }
+    return this
 }
 
 /** Calls [AlertDialog.dismiss], ignoring errors */

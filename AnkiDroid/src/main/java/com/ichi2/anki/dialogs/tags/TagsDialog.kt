@@ -14,15 +14,14 @@ import android.view.View
 import android.view.WindowManager
 import android.widget.EditText
 import android.widget.RadioGroup
-import android.widget.TextView
 import androidx.annotation.VisibleForTesting
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.widget.SearchView
 import androidx.appcompat.widget.Toolbar
 import androidx.core.content.ContextCompat
 import androidx.core.os.BundleCompat
-import androidx.core.os.bundleOf
 import androidx.core.view.isVisible
+import androidx.core.widget.doAfterTextChanged
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.flowWithLifecycle
 import androidx.lifecycle.lifecycleScope
@@ -36,6 +35,7 @@ import com.ichi2.anki.R
 import com.ichi2.anki.analytics.AnalyticsDialogFragment
 import com.ichi2.anki.browser.IdsFile
 import com.ichi2.anki.common.annotations.NeedsTest
+import com.ichi2.anki.databinding.DialogTagsBinding
 import com.ichi2.anki.launchCatchingTask
 import com.ichi2.anki.libanki.NoteId
 import com.ichi2.anki.libanki.withCollapsedWhitespace
@@ -47,6 +47,7 @@ import com.ichi2.utils.TagsUtil
 import com.ichi2.utils.customView
 import com.ichi2.utils.getInputField
 import com.ichi2.utils.input
+import com.ichi2.utils.moveCursorToEnd
 import com.ichi2.utils.negativeButton
 import com.ichi2.utils.positiveButton
 import com.ichi2.utils.show
@@ -79,11 +80,11 @@ class TagsDialog : AnalyticsDialogFragment {
         CUSTOM_STUDY,
     }
 
+    private lateinit var binding: DialogTagsBinding
     private var type: DialogType? = null
     private var tagsArrayAdapter: TagsArrayAdapter? = null
     private var toolbarSearchView: AccessibleSearchView? = null
     private var toolbarSearchItem: MenuItem? = null
-    private var noTagsTextView: TextView? = null
     private val listener: TagsDialogListener?
 
     private lateinit var selectedOption: CardStateFilter
@@ -142,12 +143,13 @@ class TagsDialog : AnalyticsDialogFragment {
         noteIds: List<NoteId> = emptyList(),
         checkedTags: ArrayList<String> = arrayListOf(),
     ): TagsDialog {
+        // TODO: checkedTags is unbounded and could exceed the bundle size
         val file = IdsFile(context.cacheDir, noteIds)
-        arguments = this.arguments ?: bundleOf(
-            ARG_TAGS_FILE to file,
-            ARG_DIALOG_TYPE to type,
-            ARG_CHECKED_TAGS to checkedTags,
-        )
+        arguments = this.arguments ?: Bundle().apply {
+            putParcelable(ARG_TAGS_FILE, file)
+            putParcelable(ARG_DIALOG_TYPE, type)
+            putStringArrayList(ARG_CHECKED_TAGS, checkedTags)
+        }
         return this
     }
 
@@ -171,59 +173,55 @@ class TagsDialog : AnalyticsDialogFragment {
 
     @NeedsTest(
         "In EDIT_TAGS dialog, long-clicking a tag should open the add tag dialog with the clicked tag" +
-            "filled as prefix properly. In other dialog types, long-clicking a tag behaves like a short click.",
+            " filled as prefix properly. In other dialog types, long-clicking a tag behaves like a short click.",
     )
     override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
-        val view = layoutInflater.inflate(R.layout.tags_dialog, null)
+        binding = DialogTagsBinding.inflate(layoutInflater)
 
         val positiveText =
             if (type == DialogType.EDIT_TAGS) {
-                getString(R.string.dialog_ok)
+                getString(R.string.dialog_confirm)
             } else {
                 getString(R.string.select)
             }
 
         val tagsListLayout: RecyclerView.LayoutManager = LinearLayoutManager(requireContext())
-        val tagsListRecyclerView =
-            view.findViewById<RecyclerView>(R.id.tags_dialog_tags_list).apply {
-                requestFocus()
-                layoutManager = tagsListLayout
+        binding.tagsList.apply {
+            requestFocus()
+            layoutManager = tagsListLayout
+        }
+        binding.optionsGroup.apply {
+            isVisible = type != DialogType.EDIT_TAGS && type != DialogType.CUSTOM_STUDY
+            for (i in 0 until childCount) {
+                getChildAt(i).id = i
             }
-        val optionsGroup =
-            view.findViewById<RadioGroup>(R.id.tags_dialog_options_radiogroup).apply {
-                isVisible = type != DialogType.EDIT_TAGS && type != DialogType.CUSTOM_STUDY
-                for (i in 0 until childCount) {
-                    getChildAt(i).id = i
-                }
-                check(0)
-            }
-        selectedOption = radioButtonIdToCardState(optionsGroup.checkedRadioButtonId)
-        optionsGroup.setOnCheckedChangeListener { _: RadioGroup?, checkedId: Int ->
+            check(0)
+        }
+        selectedOption = radioButtonIdToCardState(binding.optionsGroup.checkedRadioButtonId)
+        binding.optionsGroup.setOnCheckedChangeListener { _: RadioGroup?, checkedId: Int ->
             selectedOption = radioButtonIdToCardState(checkedId)
         }
 
-        adjustToolbar(view)
+        adjustToolbar(binding.root)
 
         val dialog =
             AlertDialog
                 .Builder(requireActivity())
                 .positiveButton(text = positiveText) { onPositiveButton() }
                 .negativeButton(R.string.dialog_cancel)
-                .customView(view = view)
+                .customView(view = binding.root)
                 .create()
 
         lifecycleScope.launch {
-            val loadingContainer = view.findViewById<View>(R.id.loading_container)
-            val progressTextView = view.findViewById<TextView>(R.id.progress_text)
             val showProgressJob =
                 launch {
                     delay(600)
                     withContext(Dispatchers.Main) {
-                        loadingContainer.visibility = View.VISIBLE
+                        binding.loadingContainer.visibility = View.VISIBLE
                         viewModel.initProgress
                             .flowWithLifecycle(lifecycle)
                             .onEach { progress ->
-                                progressTextView.text =
+                                binding.progressText.text =
                                     when (progress) {
                                         TagsDialogViewModel.InitProgress.Processing ->
                                             getString(R.string.dialog_processing)
@@ -239,11 +237,10 @@ class TagsDialog : AnalyticsDialogFragment {
 
             val tags = viewModel.tags.await()
 
-            tagsArrayAdapter = TagsArrayAdapter(tags) { view.showMaxTagSelectedNotice(tags) }
-            tagsListRecyclerView.adapter = tagsArrayAdapter
-            noTagsTextView = view.findViewById(R.id.tags_dialog_no_tags_textview)
+            tagsArrayAdapter = TagsArrayAdapter(tags) { binding.root.showMaxTagSelectedNotice(tags) }
+            binding.tagsList.adapter = tagsArrayAdapter
             if (tags.isEmpty) {
-                noTagsTextView?.visibility = View.VISIBLE
+                binding.noTagsTextView.visibility = View.VISIBLE
             }
             tagsArrayAdapter?.tagContextAndLongClickListener =
                 if (type == DialogType.EDIT_TAGS) {
@@ -255,7 +252,7 @@ class TagsDialog : AnalyticsDialogFragment {
                     OnContextAndLongClickListener { false }
                 }
             showProgressJob.cancel()
-            loadingContainer.isVisible = false
+            binding.loadingContainer.isVisible = false
             positiveButton?.isEnabled = true
         }
 
@@ -312,12 +309,12 @@ class TagsDialog : AnalyticsDialogFragment {
         }
 
     private fun adjustToolbar(tagsDialogView: View) {
-        val toolbar: Toolbar = tagsDialogView.findViewById(R.id.tags_dialog_toolbar)
+        val toolbar: Toolbar = binding.toolbar.root
         val titleRes = if (type == DialogType.EDIT_TAGS) R.string.card_details_tags else R.string.studyoptions_limit_select_tags
         toolbar.setTitle(titleRes)
 
         val toolbarAddItem = toolbar.menu.findItem(R.id.tags_dialog_action_add)
-        val drawable = ContextCompat.getDrawable(requireContext(), R.drawable.ic_add_white)
+        val drawable = ContextCompat.getDrawable(requireContext(), R.drawable.ic_add)
         drawable?.setTint(requireContext().getColor(R.color.white))
         toolbarAddItem.icon = drawable
 
@@ -375,17 +372,19 @@ class TagsDialog : AnalyticsDialogFragment {
      * @param prefixTag: The tag to be prefilled into the EditText section. A trailing '::' will be appended.
      */
     @NeedsTest("The prefixTag should be prefilled properly")
+    @NeedsTest("Entering an existing tag should show an error and disable the OK button")
+    @NeedsTest("Entering a new valid tag should clear the error and enable the OK button")
     private fun createAddTagDialog(prefixTag: String?) {
         val addTagDialog =
             AlertDialog
                 .Builder(requireActivity())
                 .show {
                     title(text = getString(R.string.add_tag))
-                    positiveButton(R.string.dialog_ok)
+                    positiveButton(R.string.menu_add)
                     negativeButton(R.string.dialog_cancel)
                     setView(R.layout.dialog_generic_text_input)
                 }.input(
-                    hint = getString(R.string.tag_name),
+                    hint = TR.actionsName().dropLastWhile { it == ':' },
                     inputType = InputType.TYPE_CLASS_TEXT,
                     displayKeyboard = true,
                 ) { d: AlertDialog?, input: CharSequence ->
@@ -398,7 +397,47 @@ class TagsDialog : AnalyticsDialogFragment {
             // utilize the addTagFilter to append '::' properly by appending a space to prefixTag
             inputET.setText("$prefixTag ")
         }
-        inputET.setSelection(inputET.text.length)
+        inputET.moveCursorToEnd()
+        val positiveButton =
+            addTagDialog.getButton(AlertDialog.BUTTON_POSITIVE)
+
+        positiveButton.isEnabled = false
+
+        val textInputLayout =
+            inputET.parent?.parent
+                as? com.google.android.material.textfield.TextInputLayout
+
+        inputET.doAfterTextChanged { text ->
+
+            val rawTag = text?.toString()?.trim()
+
+            if (rawTag.isNullOrEmpty()) {
+                textInputLayout?.error = null
+                positiveButton.isEnabled = false
+                return@doAfterTextChanged
+            }
+
+            lifecycleScope.launch {
+                val tags = viewModel.tags.await()
+
+                val normalized =
+                    TagsUtil.getUniformedTag(rawTag)
+
+                val exists =
+                    tags.contains(normalized)
+
+                if (exists) {
+                    textInputLayout?.error =
+                        getString(R.string.tag_already_exists)
+
+                    positiveButton.isEnabled = false
+                } else {
+                    textInputLayout?.error = null
+
+                    positiveButton.isEnabled = true
+                }
+            }
+        }
         addTagDialog.show()
     }
 
@@ -410,9 +449,7 @@ class TagsDialog : AnalyticsDialogFragment {
             val tag = TagsUtil.getUniformedTag(rawTag)
             val feedbackText: String
             if (tags.add(tag)) {
-                if (noTagsTextView!!.isVisible) {
-                    noTagsTextView!!.visibility = View.GONE
-                }
+                binding.noTagsTextView.isVisible = false
                 tags.add(tag)
                 val positiveText = (dialog as? AlertDialog)?.positiveButton?.text ?: getString(R.string.dialog_ok)
                 feedbackText = getString(R.string.tag_editor_add_feedback, tag, positiveText)
@@ -429,7 +466,7 @@ class TagsDialog : AnalyticsDialogFragment {
             }
 
             // Show a snackbar to let the user know the tag was added successfully
-            dialog?.findViewById<View>(R.id.tags_dialog_snackbar)?.showSnackbar(feedbackText)
+            binding.tagsDialogSnackbar.showSnackbar(feedbackText)
         }
     }
 
@@ -457,7 +494,7 @@ class TagsDialog : AnalyticsDialogFragment {
                 }
                 var previousColonsCnt = 0
                 if (dest != null) {
-                    val previousPart = dest.substring(0, destStart)
+                    val previousPart = dest.take(destStart)
                     if (previousPart.endsWith("::")) {
                         previousColonsCnt = 2
                     } else if (previousPart.endsWith(":")) {

@@ -23,19 +23,21 @@ import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.LinearLayoutManager
-import androidx.recyclerview.widget.RecyclerView
-import com.google.android.material.appbar.MaterialToolbar
 import com.google.android.material.snackbar.Snackbar
 import com.ichi2.anki.R
+import com.ichi2.anki.databinding.FragmentPreferencesReviewerMenuBinding
 import com.ichi2.anki.snackbar.showSnackbar
 import com.ichi2.anki.utils.ext.sharedPrefs
+import dev.androidbroadcast.vbpd.viewBinding
 import kotlinx.coroutines.launch
 
 class ReviewerMenuSettingsFragment :
-    Fragment(R.layout.preferences_reviewer_menu),
+    Fragment(R.layout.fragment_preferences_reviewer_menu),
     OnClearViewListener<ReviewerMenuSettingsRecyclerItem>,
     ActionMenuView.OnMenuItemClickListener {
     private lateinit var repository: ReviewerMenuRepository
+
+    private val binding by viewBinding(FragmentPreferencesReviewerMenuBinding::bind)
 
     override fun onViewCreated(
         view: View,
@@ -43,23 +45,21 @@ class ReviewerMenuSettingsFragment :
     ) {
         super.onViewCreated(view, savedInstanceState)
         repository = ReviewerMenuRepository(sharedPrefs())
-        setupRecyclerView(view)
-        view.findViewById<MaterialToolbar>(R.id.toolbar).setNavigationOnClickListener {
+        setupRecyclerView()
+        binding.toolbar.setNavigationOnClickListener {
             requireActivity().onBackPressedDispatcher.onBackPressed()
         }
-        view.findViewById<ReviewerMenuView>(R.id.reviewer_menu_view).apply {
-            setOnMenuItemClickListener(this@ReviewerMenuSettingsFragment)
-        }
+        binding.reviewerMenuView.setOnMenuItemClickListener(this@ReviewerMenuSettingsFragment)
     }
 
-    private fun setupRecyclerView(view: View) {
+    private fun setupRecyclerView() {
         val menuItems = repository.getActionsByMenuDisplayTypes()
 
         fun section(displayType: MenuDisplayType): List<ReviewerMenuSettingsRecyclerItem> =
             listOf(ReviewerMenuSettingsRecyclerItem.DisplayType(displayType)) +
                 menuItems.getValue(displayType).map { ReviewerMenuSettingsRecyclerItem.Action(it) }
 
-        val recyclerViewItems = MenuDisplayType.entries.flatMap { section(it) }
+        val recyclerViewItems = MenuDisplayType.entries.flatMap { section(it) }.toMutableList()
 
         val callback = ReviewerMenuSettingsTouchHelperCallback(recyclerViewItems)
         callback.setOnClearViewListener(this)
@@ -72,7 +72,7 @@ class ReviewerMenuSettingsFragment :
                 }
             }
 
-        view.findViewById<RecyclerView>(R.id.recycler_view).apply {
+        binding.recyclerView.apply {
             setHasFixedSize(true)
             layoutManager = LinearLayoutManager(requireContext())
             this.adapter = adapter
@@ -107,8 +107,9 @@ class ReviewerMenuSettingsFragment :
             disabledActions = disabledActions,
         )
 
-        lifecycleScope.launch {
-            val menu = requireView().findViewById<ReviewerMenuView>(R.id.reviewer_menu_view)
+        if (view == null) return
+        viewLifecycleOwner.lifecycleScope.launch {
+            val menu = binding.reviewerMenuView
             menu.clear()
             menu.addActions(alwaysShowActions, menuOnlyActions)
             menu.setFlagTitles()

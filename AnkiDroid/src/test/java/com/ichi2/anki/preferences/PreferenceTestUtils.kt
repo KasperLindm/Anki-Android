@@ -20,6 +20,7 @@ import androidx.annotation.XmlRes
 import androidx.fragment.app.Fragment
 import com.ichi2.anki.AnkiDroidApp
 import com.ichi2.anki.R
+import com.ichi2.anki.RobolectricTest
 import com.ichi2.anki.cardviewer.ViewerCommand
 import com.ichi2.testutils.getInstanceFromClassName
 import org.xmlpull.v1.XmlPullParser
@@ -30,6 +31,7 @@ object PreferenceTestUtils {
         @XmlRes xml: Int,
         attrName: String,
         namespace: String = AnkiDroidApp.ANDROID_NAMESPACE,
+        excludeTags: Set<String> = emptySet(),
     ): List<String> {
         val occurrences = mutableListOf<String>()
 
@@ -40,10 +42,13 @@ object PreferenceTestUtils {
             }
 
         while (xrp.eventType != XmlPullParser.END_DOCUMENT) {
+            val name = xrp.name
             if (xrp.eventType == XmlPullParser.START_TAG) {
-                val attr = xrp.getAttributeValue(namespace, attrName)
-                if (attr != null) {
-                    occurrences.add(attr)
+                if (name !in excludeTags) {
+                    val attr = xrp.getAttributeValue(namespace, attrName)
+                    if (attr != null) {
+                        occurrences.add(attr)
+                    }
                 }
             }
             xrp.next()
@@ -56,6 +61,7 @@ object PreferenceTestUtils {
         @XmlRes xml: Int,
         attrNames: List<String>,
         namespace: String = AnkiDroidApp.ANDROID_NAMESPACE,
+        excludeTags: Set<String> = emptySet(),
     ): List<Map<String, String>> {
         val occurrences = mutableListOf<Map<String, String>>()
 
@@ -67,8 +73,10 @@ object PreferenceTestUtils {
 
         while (xrp.eventType != XmlPullParser.END_DOCUMENT) {
             if (xrp.eventType == XmlPullParser.START_TAG) {
-                val attrValues = attrNames.associateWith { xrp.getAttributeValue(namespace, it) }
-                occurrences.add(attrValues)
+                if (xrp.name !in excludeTags) {
+                    val attrValues = attrNames.associateWith { xrp.getAttributeValue(namespace, it) }
+                    occurrences.add(attrValues)
+                }
             }
             xrp.next()
         }
@@ -99,14 +107,14 @@ object PreferenceTestUtils {
         return fragments.distinctBy { it::class } // and remove any repeated fragments
     }
 
-    fun attrValueToString(
-        value: String,
-        context: Context,
-    ): String =
-        if (value.startsWith("@")) {
-            context.getString(value.substring(1).toInt())
+    context(test: RobolectricTest)
+    fun String.resValue(): String = resValue(test.targetContext)
+
+    fun String.resValue(context: Context): String =
+        if (this.startsWith("@")) {
+            context.getString(this.substring(1).toInt())
         } else {
-            value
+            this
         }
 
     fun attrToStringArray(
@@ -117,13 +125,25 @@ object PreferenceTestUtils {
     fun getKeysFromXml(
         context: Context,
         @XmlRes xml: Int,
-    ): List<String> = getAttrFromXml(context, xml, "key").map { attrValueToString(it, context) }
+        excludeCategories: Boolean = false,
+    ): List<String> {
+        val exclusions =
+            if (excludeCategories) {
+                setOf("PreferenceCategory", "com.ichi2.anki.preferences.ExtendedPreferenceCategory")
+            } else {
+                emptySet()
+            }
+        return getAttrFromXml(context, xml, "key", excludeTags = exclusions)
+            .map { it.resValue(context) }
+    }
 
     fun getAllPreferenceKeys(context: Context): Set<String> =
         getAllPreferencesFragments(context)
             .filterIsInstance<PreferenceXmlSource>()
             .map { it.preferenceResource }
-            .flatMapTo(hashSetOf()) { getKeysFromXml(context, it) } + ViewerCommand.entries.map { it.preferenceKey }
+            .flatMapTo(hashSetOf()) {
+                getKeysFromXml(context, it, excludeCategories = false)
+            } + ViewerCommand.entries.map { it.preferenceKey }
 
     fun getAllCustomButtonKeys(context: Context): Set<String> {
         val keys = getKeysFromXml(context, R.xml.preferences_custom_buttons).toMutableSet()
@@ -132,5 +152,5 @@ object PreferenceTestUtils {
         return keys
     }
 
-    fun getDevOptionsKeys(context: Context): Set<String> = getKeysFromXml(context, R.xml.preferences_dev_options).toSet()
+    fun getDeveloperOptionsKeys(context: Context): Set<String> = getKeysFromXml(context, R.xml.preferences_developer_options).toSet()
 }

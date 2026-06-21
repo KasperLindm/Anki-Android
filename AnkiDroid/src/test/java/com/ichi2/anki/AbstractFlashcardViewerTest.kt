@@ -4,17 +4,15 @@ package com.ichi2.anki
 
 import android.content.Intent
 import android.os.Build
+import android.os.Bundle
 import android.os.Parcelable
 import android.webkit.RenderProcessGoneDetail
 import androidx.annotation.CheckResult
 import androidx.core.os.BundleCompat
-import androidx.core.os.bundleOf
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.SdkSuppress
 import anki.config.ConfigKey
 import anki.scheduler.CardAnswer.Rating
-import com.ichi2.anim.ActivityTransitionAnimation
-import com.ichi2.anim.ActivityTransitionAnimation.Direction
 import com.ichi2.anki.AbstractFlashcardViewer.Companion.toAnimationTransition
 import com.ichi2.anki.AbstractFlashcardViewer.Signal
 import com.ichi2.anki.AbstractFlashcardViewer.Signal.Companion.toSignal
@@ -22,11 +20,13 @@ import com.ichi2.anki.AnkiActivity.Companion.FINISH_ANIMATION_EXTRA
 import com.ichi2.anki.NoteEditorFragment.Companion.NoteEditorCaller
 import com.ichi2.anki.cardviewer.Gesture
 import com.ichi2.anki.cardviewer.ViewerCommand
+import com.ichi2.anki.common.preferences.sharedPrefs
+import com.ichi2.anki.common.ui.TransitionDirection
 import com.ichi2.anki.libanki.testutils.ext.addNote
 import com.ichi2.anki.libanki.testutils.ext.createBasicTypingNoteType
 import com.ichi2.anki.libanki.testutils.ext.newNote
+import com.ichi2.anki.noteeditor.openNoteEditorWithArgs
 import com.ichi2.anki.observability.undoableOp
-import com.ichi2.anki.preferences.sharedPrefs
 import com.ichi2.anki.reviewer.AutomaticAnswer
 import com.ichi2.anki.reviewer.AutomaticAnswerAction
 import com.ichi2.anki.reviewer.AutomaticAnswerSettings
@@ -209,21 +209,21 @@ class AbstractFlashcardViewerTest : RobolectricTest() {
             val expectedAnimation =
                 AbstractFlashcardViewer.getAnimationTransitionFromGesture(gesture)
             val expectedInverseAnimation =
-                ActivityTransitionAnimation.getInverseTransition(expectedAnimation)
+                expectedAnimation.invert()
 
             val animation = gesture.toAnimationTransition().invert()
             val bundle =
-                bundleOf(
-                    NoteEditorFragment.EXTRA_CALLER to NoteEditorCaller.EDIT.value,
-                    NoteEditorFragment.EXTRA_CARD_ID to viewer.currentCard!!.id,
-                    FINISH_ANIMATION_EXTRA to animation as Parcelable,
-                )
-            val noteEditor = NoteEditorTest().openNoteEditorWithArgs(bundle)
+                Bundle().apply {
+                    putInt(NoteEditorFragment.EXTRA_CALLER, NoteEditorCaller.EDIT.value)
+                    putLong(NoteEditorFragment.EXTRA_CARD_ID, viewer.currentCard!!.id)
+                    putParcelable(FINISH_ANIMATION_EXTRA, animation as Parcelable)
+                }
+            val noteEditor = openNoteEditorWithArgs(bundle)
             val actualInverseAnimation =
                 BundleCompat.getParcelable(
                     noteEditor.requireArguments(),
                     FINISH_ANIMATION_EXTRA,
-                    Direction::class.java,
+                    TransitionDirection::class.java,
                 )
             assertEquals(expectedInverseAnimation, actualInverseAnimation)
         }
@@ -237,11 +237,11 @@ class AbstractFlashcardViewerTest : RobolectricTest() {
         val viewer: NonAbstractFlashcardViewer = getViewer(true)
 
         assertThat("Displaying question", viewer.isDisplayingAnswer, equalTo(false))
-        viewer.executeCommand(ViewerCommand.FLIP_OR_ANSWER_EASE4)
+        viewer.executeCommand(ViewerCommand.ANSWER_EASY)
 
         assertThat("Displaying answer", viewer.isDisplayingAnswer, equalTo(true))
 
-        viewer.executeCommand(ViewerCommand.FLIP_OR_ANSWER_EASE4)
+        viewer.executeCommand(ViewerCommand.ANSWER_EASY)
 
         assertThat(viewer.answered, notNullValue())
     }
@@ -267,8 +267,8 @@ class AbstractFlashcardViewerTest : RobolectricTest() {
 
             assertThat("A note type with a language hint (japanese) should use it", viewer.hintLocale, equalTo("ja"))
 
-            viewer.executeCommand(ViewerCommand.FLIP_OR_ANSWER_EASE4)
-            viewer.executeCommand(ViewerCommand.FLIP_OR_ANSWER_EASE4)
+            viewer.executeCommand(ViewerCommand.ANSWER_EASY)
+            viewer.executeCommand(ViewerCommand.ANSWER_EASY)
 
             assertThat("A default note type should have no preference", viewer.hintLocale, nullValue())
         }

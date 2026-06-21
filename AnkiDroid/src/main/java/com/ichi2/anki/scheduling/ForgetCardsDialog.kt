@@ -19,20 +19,21 @@ package com.ichi2.anki.scheduling
 import android.app.Dialog
 import android.os.Bundle
 import androidx.core.content.edit
-import androidx.core.os.bundleOf
 import androidx.fragment.app.DialogFragment
-import com.google.android.material.checkbox.MaterialCheckBox
+import androidx.fragment.app.Fragment
+import androidx.fragment.app.FragmentActivity
+import androidx.fragment.app.setFragmentResultListener
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.snackbar.Snackbar
-import com.ichi2.anki.AnkiActivity
 import com.ichi2.anki.CollectionManager.TR
 import com.ichi2.anki.R
 import com.ichi2.anki.common.annotations.NeedsTest
+import com.ichi2.anki.common.preferences.sharedPrefs
+import com.ichi2.anki.databinding.DialogForgetCardsBinding
 import com.ichi2.anki.launchCatchingTask
 import com.ichi2.anki.libanki.CardId
 import com.ichi2.anki.libanki.sched.Scheduler
 import com.ichi2.anki.observability.undoableOp
-import com.ichi2.anki.preferences.sharedPrefs
 import com.ichi2.anki.snackbar.showSnackbar
 import com.ichi2.anki.utils.ext.setFragmentResultListener
 import com.ichi2.anki.utils.openUrl
@@ -94,45 +95,44 @@ class ForgetCardsDialog : DialogFragment() {
                 resetRepetitionAndLapseCounts = getBoolean(ARG_RESET_REPETITION, false)
             }
         }
-        val contentView =
-            layoutInflater.inflate(R.layout.dialog_forget_cards, null).apply {
-                findViewById<MaterialCheckBox>(R.id.restore_original_position)!!.apply {
-                    isChecked = restoreOriginalPositionIfPossible
-                    setOnCheckedChangeListener { _, isChecked ->
-                        restoreOriginalPositionIfPossible = isChecked
-                    }
-                    text = TR.schedulingRestorePosition()
-                }
-                findViewById<MaterialCheckBox>(R.id.reset_lapse_counts)!!.apply {
-                    isChecked = resetRepetitionAndLapseCounts
-                    setOnCheckedChangeListener { _, isChecked ->
-                        resetRepetitionAndLapseCounts = isChecked
-                    }
-                    text = TR.schedulingResetCounts()
-                }
+        val binding = DialogForgetCardsBinding.inflate(layoutInflater)
+
+        binding.restoreOriginalPosition.apply {
+            isChecked = restoreOriginalPositionIfPossible
+            setOnCheckedChangeListener { _, isChecked ->
+                restoreOriginalPositionIfPossible = isChecked
             }
+            text = TR.schedulingRestorePosition()
+        }
+        binding.resetLapseCounts.apply {
+            isChecked = resetRepetitionAndLapseCounts
+            setOnCheckedChangeListener { _, isChecked ->
+                resetRepetitionAndLapseCounts = isChecked
+            }
+            text = TR.schedulingResetCounts()
+        }
+
         return MaterialAlertDialogBuilder(requireContext()).create {
             // BUG: this is 'Reset Card'/'Forget Card' in Anki Desktop (24.04)
-            // title(text = TR.actionsForgetCard().toSentenceCase(R.string.sentence_forget_cards))
             // "Reset card progress" is less explicit on the singular/plural dimension
             titleWithHelpIcon(stringRes = R.string.reset_card_dialog_title) {
                 requireContext().openUrl(R.string.link_help_forget_cards)
             }
-            positiveButton(R.string.dialog_ok) {
+            positiveButton(R.string.reset) {
                 sharedPrefs.edit {
                     putBoolean(ARG_RESTORE_ORIGINAL, restoreOriginalPositionIfPossible)
                     putBoolean(ARG_RESET_REPETITION, resetRepetitionAndLapseCounts)
                 }
                 parentFragmentManager.setFragmentResult(
                     REQUEST_KEY_FORGET,
-                    bundleOf(
-                        ARG_RESTORE_ORIGINAL to restoreOriginalPositionIfPossible,
-                        ARG_RESET_REPETITION to resetRepetitionAndLapseCounts,
-                    ),
+                    Bundle().apply {
+                        putBoolean(ARG_RESTORE_ORIGINAL, restoreOriginalPositionIfPossible)
+                        putBoolean(ARG_RESET_REPETITION, resetRepetitionAndLapseCounts)
+                    },
                 )
             }
             negativeButton(R.string.dialog_cancel)
-            setView(contentView)
+            setView(binding.root)
         }
     }
 
@@ -155,7 +155,7 @@ class ForgetCardsDialog : DialogFragment() {
  *
  * @param cardsIdsProducer lambda which returns the list of cards for which to reset the progress
  */
-internal fun AnkiActivity.registerOnForgetHandler(cardsIdsProducer: suspend () -> List<CardId>) {
+internal fun FragmentActivity.registerOnForgetHandler(cardsIdsProducer: suspend () -> List<CardId>) {
     setFragmentResultListener(ForgetCardsDialog.REQUEST_KEY_FORGET) { _, bundle ->
         forgetCards(
             cardsIdsProducer = cardsIdsProducer,
@@ -165,7 +165,23 @@ internal fun AnkiActivity.registerOnForgetHandler(cardsIdsProducer: suspend () -
     }
 }
 
-private fun AnkiActivity.forgetCards(
+/**
+ * Listen for requests from [ForgetCardsDialog] and triggers backend calls to reset progress for
+ * current selected/reviewed card/cards. Callers need to supply the list of cards ids.
+ *
+ * @param cardsIdsProducer lambda which returns the list of cards for which to reset the progress
+ */
+internal fun Fragment.registerOnForgetHandler(cardsIdsProducer: suspend () -> List<CardId>) {
+    setFragmentResultListener(ForgetCardsDialog.REQUEST_KEY_FORGET) { _, bundle ->
+        activity?.forgetCards(
+            cardsIdsProducer = cardsIdsProducer,
+            restoreOriginalPositionIfPossible = bundle.getBoolean(ForgetCardsDialog.ARG_RESTORE_ORIGINAL),
+            resetRepetitionAndLapseCounts = bundle.getBoolean(ForgetCardsDialog.ARG_RESET_REPETITION),
+        )
+    }
+}
+
+private fun FragmentActivity.forgetCards(
     cardsIdsProducer: suspend () -> List<CardId>,
     restoreOriginalPositionIfPossible: Boolean,
     resetRepetitionAndLapseCounts: Boolean,

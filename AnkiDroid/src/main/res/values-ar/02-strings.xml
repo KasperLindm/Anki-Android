@@ -6,55 +6,35 @@
  ~    Instructions for this are available here: https://github.com/ankidroid/Anki-Android/wiki/Translating-AnkiDroid. 
  ~    You may also find the documentation on contributing to Anki useful: https://github.com/ankidroid/Anki-Android/wiki/Contributing   
  ~ 
- ~ Copyright (c) 2009 Andrew <andrewdubya@gmail> 
- ~ Copyright (c) 2009 Edu Zamora <edu.zasu@gmail.com> 
- ~ Copyright (c) 2009 Daniel Svaerd <daniel.svard@gmail.com> 
- ~ Copyright (c) 2009 Nicolas Raoul <nicolas.raoul@gmail.com> 
- ~ Copyright (c) 2010 Norbert Nagold <norbert.nagold@gmail.com> 
- ~ This program is free software; you can redistribute it and/or modify it under 
- ~ the terms of the GNU General Public License as published by the Free Software 
- ~ Foundation; either version 3 of the License, or (at your option) any later 
- ~ version. 
- ~ 
- ~ This program is distributed in the hope that it will be useful, but WITHOUT ANY 
- ~ WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A 
- ~ PARTICULAR PURPOSE. See the GNU General Public License for more details. 
- ~ 
- ~ You should have received a copy of the GNU General Public License along with 
- ~ this program.  If not, see <http://www.gnu.org/licenses/>. 
+ ~ SPDX-License-Identifier: GPL-3.0-or-later
+ ~ SPDX-FileCopyrightText: Copyright (c) 2009 Andrew <andrewdubya@gmail>
+ ~ SPDX-FileCopyrightText: Copyright (c) 2009 Edu Zamora <edu.zasu@gmail.com>
+ ~ SPDX-FileCopyrightText: Copyright (c) 2009 Daniel Svaerd <daniel.svard@gmail.com>
+ ~ SPDX-FileCopyrightText: Copyright (c) 2009 Nicolas Raoul <nicolas.raoul@gmail.com>
+ ~ SPDX-FileCopyrightText: Copyright (c) 2010 Norbert Nagold <norbert.nagold@gmail.com>
  -->
  
 <!--
-~ Copyright (c) 2009 Andrew <andrewdubya@gmail>
-~ Copyright (c) 2009 Edu Zamora <edu.zasu@gmail.com>
-~ Copyright (c) 2009 Daniel Svärd <daniel.svard@gmail.com>
-~ Copyright (c) 2009 Nicolas Raoul <nicolas.raoul@gmail.com>
-~ Copyright (c) 2010 Norbert Nagold <norbert.nagold@gmail.com>
-~
-~ This program is free software; you can redistribute it and/or modify it under
-~ the terms of the GNU General Public License as published by the Free Software
-~ Foundation; either version 3 of the License, or (at your option) any later
-~ version.
-~
-~ This program is distributed in the hope that it will be useful, but WITHOUT ANY
-~ WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
-~ PARTICULAR PURPOSE. See the GNU General Public License for more details.
-~
-~ You should have received a copy of the GNU General Public License along with
-~ this program.  If not, see <http://www.gnu.org/licenses/>.
--->
+  ~ SPDX-License-Identifier: GPL-3.0-or-later
+  ~ SPDX-FileCopyrightText: Copyright (c) 2009 Andrew <andrewdubya@gmail>
+  ~ SPDX-FileCopyrightText: Copyright (c) 2009 Edu Zamora <edu.zasu@gmail.com>
+  ~ SPDX-FileCopyrightText: Copyright (c) 2009 Daniel Svärd <daniel.svard@gmail.com>
+  ~ SPDX-FileCopyrightText: Copyright (c) 2009 Nicolas Raoul <nicolas.raoul@gmail.com>
+  ~ SPDX-FileCopyrightText: Copyright (c) 2010 Norbert Nagold <norbert.nagold@gmail.com>
+  -->
 <resources xmlns:tools="http://schemas.android.com/tools">
     <!-- Navigation drawer strings -->
     <string name="drawer_open">فتح القائمة</string>
     <string name="drawer_close">أغلق القائمة</string>
     <string name="note_message">تم حفظ الملحوظة</string>
+    <!-- Note editor screen -->
     <string name="CardEditorCardDeck">رزمة البطاقة:</string>
     <string name="CardEditorNoteDeck">الرزمة:</string>
     <string name="CardEditorModel">النوع:</string>
     <string name="CardEditorTags">الوسوم: %1$s</string>
     <string name="CardEditorCards">البطاقات: %1$s</string>
     <string name="edit_occlusions">تحرير الصور المُعَمَّاة</string>
-    <string name="tag_name">اسم الوسم</string>
+    <string name="paste_from_clipboard" maxLength="28">لصق من الحافظة</string>
     <string name="add_new_filter_tags">إضافة وفرز الوسوم</string>
     <string name="add_tag" maxLength="28">إضافة وسم</string>
     <string name="check_all_tags" maxLength="28">تحديد/إلغاء تحديد كل الوسوم</string>
@@ -70,7 +50,6 @@
     <string name="whiteboard_align_left" comment="Option to align the whiteboard toolbar on the left" maxLength="28">شمال</string>
     <string name="whiteboard_align_bottom" comment="Option to align the whiteboard toolbar on the bottom" maxLength="28">أسفل</string>
     <string name="whiteboard_align_right" comment="Option to align the whiteboard toolbar on the right" maxLength="28">يمين</string>
-    <string name="whiteboard_clear" comment="Button text to clear the whiteboard" maxLength="28">محو</string>
     <string name="whiteboard_more_options" comment="Tooltip of the whiteboard \'More\' button" maxLength="28">مزيد من الخيارات</string>
     <string name="whiteboard_remove_brush_message">أواثق أنك تود إزالة هذه الفرشة من لوحة الألوان خاصتك؟</string>
     <string name="whiteboard_ink_eraser" comment="Title of the whiteboard Ink eraser">حبر</string>
@@ -84,6 +63,7 @@
     <string name="disable_eraser" maxLength="28">تعطيل الممحاة</string>
     <string name="hide_whiteboard" maxLength="28">إخفاء السبورة</string>
     <string name="clear_whiteboard" maxLength="28">محو السَّبورة</string>
+    <string name="hide_toolbar" maxLength="28">إخفاء شريط الأدوات</string>
     <string name="replay_media" maxLength="28">إعادة تشغيل الوسائط</string>
     <string name="leech_suspend_notification">عُلِّمت البطاقة كمستعصية وعُلِّقت</string>
     <string name="leech_notification">عُلِّمت البطاقة كمستعصية</string>
@@ -97,6 +77,10 @@
     <string name="webview_crash_loop_dialog_content">فَشِلَ ويب فيو الخاص بالنظام في عرض البطاقة %1$s.\n %2$s</string>
     <string name="slide_to_cancel" comment="Message shown when pressing the record button">اسحب للإلغاء</string>
     <string name="filter_by_flags" maxLength="41">الأعلام</string>
+    <!-- filtered deck options -->
+    <string name="filtered_option_delay_again">فاصل مجددًا</string>
+    <string name="filtered_option_delay_hard">فاصل صعب</string>
+    <string name="filtered_option_delay_good">فاصل جيد</string>
     <!-- Custom study options -->
     <string name="custom_study_loading_tags">يتم بناء مجموعة الوسوم&#8230;</string>
     <!-- Study options -->
@@ -122,7 +106,6 @@
     <string name="close">أغلق</string>
     <string name="select">حدد</string>
     <string name="field_remapping">%1$s (من «%2$s»)</string>
-    <string name="confirm_map_cards_to_nothing">ستُحذف البطاقات غير المُوزعة. ستُحذف أي ملحوظة ليس لها بطاقات.  أواثق أنك ترغب بذلك؟</string>
     <string name="missing_note_type">لا يوجد نوع ملحوظات</string>
     <string name="card_previewer_empty_front_indicator" comment="Extra text appended onto a tab title in the card previewer so that the user can see at a glance whether a card has no front.">%1$s (فارغ)</string>
     <!-- Image cropper -->
@@ -159,9 +142,6 @@
     <string name="preview_progress_bar_text" comment="What card we are on out of how many in card previewer progress bar">%1$d من %2$d</string>
     <string name="rename" comment="Confirm that the renaming action should be processed." maxLength="28">إعادة تسمية</string>
     <string name="checks_action" maxLength="28">تحقق</string>
-    <string name="check_db" maxLength="28">فحص قاعدة البيانات</string>
-    <string name="check_media" maxLength="28">فحص الوسائط</string>
-    <string name="empty_cards" maxLength="28">بطاقات فارغة</string>
     <string name="unknown_type_field_warning">إدخال الجواب: حقل مجهول %s</string>
     <string name="delete_deck" comment="Message on a progress bar starting a deck is being deleted.">جارٍ حذف الرزمة&#8230;</string>
     <string name="info_rate">قيِّم آنكي درويد</string>
@@ -176,7 +156,8 @@
     <string name="import_error_not_apkg_extension">لا يحتوي اسم الملف «%s» على ملحق «.apkg» أو «.colpkg»</string>
     <string name="import_error_load_imported_database">استبدالات قاعدة بيانات آنكي «.anki2» ليست مدعومة بعد. الرجاء الاطلاع على الدليل حول تعليمات الاستبدال.</string>
     <string name="import_error_content_provider">تعذر استيراد المِلَفّ المحدد تلقائيًا بواسطة آنكي درويد. الرجاء الاطّلاع على دليل المستخدم لكيفية استيراد ملفات آنكي يدويًا: \n%s</string>
-    <string name="import_error_copy_to_cache">فشل تخزين الملف مؤقتًا (ربما بسبب نفاد مساحة التخزين)</string>
+    <string name="import_error_copy_to_cache_title">فشل تخزين الملف مؤقتًا</string>
+    <string name="import_error_copy_to_cache_explanation" comment="The substitution is a list of suggested fixes in bullet point form">غالباً ما يحدث هذا نتيجة لخلل في التطبيق الذي استعملته لاختيار الملف. جرب الحلول التالية رجاءاً:\n\n%s</string>
     <string name="import_interrupted">تمت مقاطعة الاستيراد: لقد أُغلق آنكي درويد</string>
     <string name="export_ready_title">المُصَدَّر مُعدّ</string>
     <string name="export_send_no_handlers">لا توجد تطبيقات متاحة للتعامل مع «apkg». يتم الحفظ&#8230;</string>
@@ -195,15 +176,14 @@
     <string name="export_choice_save_to">حفظ في</string>
     <string name="export_saving_exported_collection">يتم حفظ الملف المُصَدَّر&#8230;</string>
     <string name="study_options" comment="Name for a preference category in Filtered deck (aka Cram deck, aka Custom study) options" maxLength="28">الخيارات</string>
-    <string name="menu__deck_options" maxLength="28">خيارات الرزمة</string>
     <string name="menu__study_options" comment="Menu item that opens options for a Filtered deck (aka Cram deck, aka Custom study)">خيارات الدراسة</string>
     <string name="select_tts" maxLength="28">تعيين لغة تحويل النص إلى كلام</string>
-    <string name="custom_study" maxLength="28">دراسة مخصصة</string>
     <string name="dyn_deck_desc">هذه رزمة خاصة للدراسة خارج الجدول المعتاد. ستعود البطاقات إلى رزمها الأصلية تلقائيًا بعد مراجعتها. يؤدي حذف هذه الرزمة من قائمة الرزم إلى إعادة كل البطاقات المتبقية إلى رزمها الأصلية.</string>
-    <string name="steps_error">يجب أن تكون الخطوات أعدادًا أكبر من الصفر</string>
-    <string name="steps_min_error">تلزمك خطوة واحدة في الأقل</string>
     <string name="tag_editor_add_feedback">انقر «%2$s» لتُأكِّد إضافة «%1$s»</string>
     <string name="tag_editor_add_feedback_existing">تم تحديد الوسم الموجود «%1$s»</string>
+    <string name="tag_already_exists">الوسم موجود</string>
+    <string name="error_name_exists">الاِسم موجود</string>
+    <string name="warning_find_and_replace">فكر في إنشاء نسخة احتياطية من الشاشة الرئيسة قبل استخدام هذا الخِيار!</string>
     <!-- Time spans -->
     <!-- Currently only used if exporting APKG fails -->
     <string name="apk_share_error">حدث خطأ أثناء مشاركة ملف «apkg»</string>
@@ -215,15 +195,17 @@
     <!-- The name of the deck which corrupt cards will be moved to -->
     <!-- Deckpicker Background -->
     <string name="background_image_title" maxLength="41">الخلفية</string>
-    <string name="choose_an_image" maxLength="41">اختيار صورة</string>
     <string name="remove_wallpaper_image" maxLength="41">إزالة الخلفية</string>
-    <string name="remove_background_image">هل تريد إزالة الخلفية؟</string>
+    <string name="remove_background_image">ءأنت واثق من إزالة الخلفية؟</string>
     <!-- Card Template Browser Appearance -->
     <string name="restore_default" maxLength="28">استعادة الافتراضي</string>
-    <string name="reviewer_tts_cloze_spoken_replacement">فارغ</string>
     <!-- Whiteboard eraser mode toggle message in Reviewer -->
     <string name="white_board_eraser_enabled">تم تفعيل وضع الممحاة</string>
     <string name="white_board_eraser_disabled">تم تعطيل وضع الممحاة</string>
+    <string comment="Progress amount e.g. \'28 MB/141 MB\'. %1$s is the current amount, %2$s is the max." name="progress_amount_bytes">%1$s/%2$s</string>
+    <string name="media_file_size_warning_title">مِلف الوسائط كبير جدًا</string>
+    <string name="media_file_size_warning_message" comment="1$s: File name, 2$s: File size, 3$s: The size limit (e.g. 100MB)">المِلف «%1$s» (%2$s) يفوق حد آنكي ويب الذي هو %3$s ولا يمكن مزامنته. أتريد إضافته مع ذلك؟</string>
+    <string name="media_file_size_add_anyway">إضافة على أي حال</string>
     <!-- Whiteboard save image message in the Study Screen -->
     <string name="white_board_image_save_failed">فشل حفظ صورة السبورة. %s</string>
     <string name="white_board_image_saved">تم حفظ صورة السبورة في %s</string>
@@ -245,6 +227,7 @@
     <string name="search_decks" maxLength="28">بحث في الرزم</string>
     <string name="ankidroid_init_failed_webview_title">خلل فادح</string>
     <string name="ankidroid_init_failed_webview">يعتمد آنكي درويد على الويب فيو الخاص بالنظام وهو غير متوفر. يمكن أن يَحدث هذا إذا كان النظام قيد التحديث. الرجاء المحاولة مرةً أخرى بعد بضع دقائق.\n\n%s</string>
+    <string name="ankidroid_init_failed_storage">لم يتمكن آنكي درويد من الوصول إلى التخزين نتيجة لخلل في نظام الآندرويد.\n\n%s</string>
     <!-- A Menu item to change the Font Size (currently in the Note Editor) -->
     <string name="menu_font_size" maxLength="28">حجم الخط</string>
     <string name="menu_show_toolbar" comment="Checkable item stating whether the note editor toolbar should be shown" maxLength="28">إظهار شريط الأدوات</string>
@@ -267,17 +250,24 @@
     <string name="note_editor_audio_too_large">المِلَفّ الصوتي كبير جدًا، يرجى إدخال الصوت يدويًا</string>
     <string name="ankidroid_cannot_open_after_backup_try_again" comment="After an Android backup is restored, AnkiDroid opens and shows this message.         Opening AnkiDroid again will work correctly">يتم نسخ أندرويد الإحتياطي. من فضلك حاول مجددًا</string>
     <string name="create_shortcut_error_vivo" comment="iManager is an app on Vivo phones">قد تحتاج إلى استخدام «iManager» للسماح لآنكي درويد بإضافة اختصارات</string>
+    <string name="create_shortcut_error_miui" comment="Keep the message as short, as this is shown in a toast. %s is the app name: \'AnkiDroid\'">اسمح لـ«إختصارات الشاشة الرئيسية» في إعدادات النظام ليتمكن %s من إنشاء الاختصارات</string>
     <string name="create_shortcut_failed" comment="home screen == launcher">لا تسمح شاشتك الرئيسة لآنكي درويد بإضافة اختصارات</string>
     <string name="create_shortcut_error">خلل في إضافة الاختصار: %s</string>
     <string name="note_editor_capitalize" comment="This is for a switch with a checkbox - on: enabled" maxLength="28">ضع الجمل في حروف كبيرة</string>
     <string name="menu_scroll_toolbar" comment="Checkbox stating whether note editor toolbar is scrollable or stacked. Checked: Scroll" maxLength="28">تمرير شريط الأدوات</string>
-    <!-- Symbols used as Button text in IncrementNumberRangePreference -->
+    <!-- Dialog hints -->
+    <string name="dialog_hint_url">الرابط</string>
+    <string name="dialog_hint_certificate">الرخصة</string>
+    <!-- IncrementNumberRangePreference -->
     <string name="plus_sign" comment="Label for increment button in IncrementerNumberRangePreference">+</string>
     <string name="minus_sign" comment="Label for decrement button in IncrementerNumberRangePreference">-</string>
+    <string name="invalid_value" comment="Error message in IncrementerNumberRangePreference when input is not a valid number">قيمة غير صالحة</string>
+    <string name="maximum_value_is" comment="Error message in IncrementerNumberRangePreference. %d is the maximum allowed value">الحد الأعلى هو %d</string>
+    <string name="minimum_value_is" comment="Error message in IncrementerNumberRangePreference. %d is the minimum allowed value">الحد الأسفل هو %d</string>
     <!-- Used for credential empty warning message -->
     <string name="invalid_email">أدخل بريدًا إلكترونيًا صالحًا</string>
     <string name="password_empty">تلزمك كلمة مرور</string>
-    <string name="back_pressed_once">اضغط رجوع مجددًا للخروج</string>
+    <string name="back_pressed_once">عُد للوراء مجددًا لتخرج</string>
     <!-- %% is required to display % symbol. Reference: https://stackoverflow.com/a/16834358 -->
     <string name="percentage">%s%%</string>
     <string name="download_deck">تنزيل الرزمة</string>
@@ -319,6 +309,14 @@
     <!-- Manage note types -->
     <string name="field_editor_model_not_available">فشل الوصول إلى المجموعة. يرجى المحاولة مجددًا!</string>
     <string name="cd_manage_notetypes_add">إضافة نوع جديد من الملاحظات</string>
+    <plurals name="note_types_selected">
+        <item quantity="zero">تم اختيار %d نوع ملحوظة</item>
+        <item quantity="one">تم اختيار %d نوع ملحوظة</item>
+        <item quantity="two">تم اختيار %d نوع ملحوظة</item>
+        <item quantity="few">تم اختيار %d أنواع ملحوظات</item>
+        <item quantity="many">تم اختيار %d نوع ملحوظة</item>
+        <item quantity="other">تم اختيار %d نوع ملحوظة</item>
+    </plurals>
     <!-- App Intro -->
     <string name="intro_ankidroid_tagline_one">ادرس أقل</string>
     <string name="intro_ankidroid_tagline_two">تذكر أكثر</string>
@@ -327,18 +325,15 @@
     <string name="intro_sync_from_ankiweb">مزامنة مع آنكي ويب</string>
     <!-- IntentHandler -->
     <string name="app_not_initialized_new">لم يتم تمهيد آنكي درويد بعد. من فضلك إفتح آنكي درويد وحاول مجددًا</string>
-    <string name="already_logged_in">تم تسجيل الدخول مسبقًا</string>
     <!-- Deck Creation -->
-    <string name="deck_created">كيفية</string>
+    <string name="deck_created">تم إنشاء الرِزمة</string>
     <string name="deck_renamed">أُعيدت تسمية الرِزمة</string>
     <!-- Deck Deletion -->
     <string name="deck_shortcut_doesnt_exist">تم حذف الرزمة. يرجى حذف الاختصار</string>
     <!-- Browser Options Dialog -->
     <string name="show_cards" comment="Label for toggle cards button in BrowserOptionsDialog">بطاقات</string>
     <string name="show_notes" comment="Label for toggle notes button in BrowserOptionsDialog">ملحوظات</string>
-    <string name="toggle_cards_notes">تبديل عرض البطاقات/الملحوظات</string>
     <string name="truncate_content_help">يقتطع كل صف في المتصفح لتظهر أول 3 سطور من المحتوى فقط</string>
-    <string name="browser_options_dialog_heading">خيارات المتصفح</string>
     <string name="audio_saved">تم حفظ التسجيل</string>
     <string name="deleting_selected_notes">حذف الملحوظات المحددة</string>
     <string name="tts_voices_default_text" comment="The default text to speak when selecting     Text to speech voices">أنقر على صوت لتسمعه</string>
@@ -355,7 +350,6 @@
     <string name="format_deck_description_as_markdown">تنسيق كـ Markdown</string>
     <string name="help_button_content_description">مساعدة حول «%s»</string>
     <string name="failed_to_copy">فشل النسخ</string>
-    <string name="card_browser_unavailable_when_notes_mode">غير متوفر في وضع الملحوظات</string>
     <plurals name="unbury_cards_feedback">
         <item quantity="zero">تم إلغاء دفن %d بطاقات</item>
         <item quantity="one">تم إلغاء دفن %d بطاقات</item>
@@ -379,7 +373,6 @@
     <string name="deck_picker_group" comment="Label for the group of shortcuts related to the deck picker">مُخيِّر الرِزم</string>
     <string name="delete_deck_without_confirmation" comment="Description of the shortcut that deletes the deck without asking for confirmation">إحذف الرزم بلا تأكيد</string>
     <string name="note_editor_group" comment="Label for the group of shortcuts related to the note editor">محرر الملحوظات</string>
-    <string name="select_deck" comment="Description of the shortcut that opens the deck selection dialog">اختيار رِزمة</string>
     <string name="select_note_type" comment="Description of the shortcut that shows the note selection spinner">إختر نوع الملحوظة</string>
     <string name="tag_editor" comment="Description of the shortcut that opens the tags dialog">محرر الوسوم</string>
     <string name="card_template_editor_group" comment="Label for the group of shortcuts related to the card template editor">محرر قوالب البطاقات</string>
@@ -389,7 +382,14 @@
     <string name="copy_the_template" comment="Description of the shortcut that copy the template as markdown">نسخ القالب بصيغة «Markdown»</string>
     <string name="edit_browser_appearance" comment="Description of the shortcut that edits the browser appearance of card template">تعديل مظهر المتصفح</string>
     <string name="missing_user_action_dialog_message" comment="%s is the user action number">لم يتم تعيين إجراء رقم %s في نوع الملحوظات هذا. عَيِّنه رجاءًا</string>
+    <string name="feature_not_supported_by_study_screen">لدى هذه البطاقة ميزات غير متاحة حالياً في شاشة الدراسة الجديدة.</string>
     <string name="directory_inaccessible_info">تعلم أكثر عن كيفية إستعادة الإتاحة هنا %s أو إذهب إلى الإعدادات لتحديث ملف المجموعة.</string>
     <!-- Scheduler Upgrade Required Dialog title-->
     <string name="scheduler_upgrade_required_dialog_title" comment="Shown in a dialog when user has imported a collection using a very old version of the Anki spaced repetition scheduler">يلزمك تطوير المُجَدوِل</string>
+    <!-- Whitespace is OK -->
+    <string name="list_separator" comment="The character and spacing to display between elements of a list, for example \', \' in \'Apple, Banana, Cherry" tools:ignore="TranslationTypo">، </string>
+    <!--Set up date-->
+    <string name="set_due_date_day" comment="Used for setting due date">يوم</string>
+    <string name="set_due_date_date_range">مدة</string>
+    <string comment="Shown when retrying a running action" name="already_in_progress">قيد الإجراء</string>
 </resources>

@@ -23,12 +23,12 @@ import androidx.annotation.VisibleForTesting
 import com.ichi2.anki.AbstractFlashcardViewer.Companion.getMediaBaseUrl
 import com.ichi2.anki.AndroidTtsError
 import com.ichi2.anki.AndroidTtsPlayer
-import com.ichi2.anki.AnkiDroidApp
 import com.ichi2.anki.CollectionHelper.getMediaDirectory
 import com.ichi2.anki.CollectionManager.withCol
 import com.ichi2.anki.cardviewer.MediaErrorBehavior.CONTINUE_MEDIA
 import com.ichi2.anki.cardviewer.MediaErrorBehavior.RETRY_MEDIA
 import com.ichi2.anki.cardviewer.MediaErrorBehavior.STOP_MEDIA
+import com.ichi2.anki.common.android.appContext
 import com.ichi2.anki.common.annotations.NeedsTest
 import com.ichi2.anki.libanki.AvTag
 import com.ichi2.anki.libanki.Card
@@ -98,7 +98,7 @@ class CardMediaPlayer : Closeable {
         this.mediaErrorListener = mediaErrorListener
         this.soundTagPlayer =
             SoundTagPlayer(
-                soundUriBase = getMediaBaseUrl(getMediaDirectory(AnkiDroidApp.instance)),
+                soundUriBase = getMediaBaseUrl(getMediaDirectory(appContext)),
                 videoPlayer = VideoPlayer(javascriptEvaluator),
             )
         this.ttsPlayer = scope.async { AndroidTtsPlayer.createInstance(scope) }
@@ -109,10 +109,11 @@ class CardMediaPlayer : Closeable {
     /** Serializes playbacks to avoid overloading the thread pool and a potential deadlock */
     private val playbackMutex = Mutex()
 
-    private lateinit var questionAvTags: List<AvTag>
-    private lateinit var answerAvTags: List<AvTag>
+    private var questionAvTags: List<AvTag> = emptyList()
+    private var answerAvTags: List<AvTag> = emptyList()
 
-    lateinit var config: CardSoundConfig
+    var config: CardSoundConfig? = null
+        private set
 
     var isEnabled: Boolean = true
         private set
@@ -126,9 +127,9 @@ class CardMediaPlayer : Closeable {
     var playAvTagsJob: Job? = null
     val isPlaying get() = playAvTagsJob != null
 
-    private var onMediaGroupCompleted: (() -> Unit)? = null
+    private var onMediaGroupCompleted: (suspend () -> Unit)? = null
 
-    fun setOnMediaGroupCompletedListener(listener: (() -> Unit)?) {
+    fun setOnMediaGroupCompletedListener(listener: (suspend () -> Unit)?) {
         onMediaGroupCompleted = listener
     }
 
@@ -140,7 +141,13 @@ class CardMediaPlayer : Closeable {
         this.questionAvTags = renderOutput.questionAvTags
         this.answerAvTags = renderOutput.answerAvTags
 
-        if (!this::config.isInitialized || !config.appliesTo(card) || (this::config.isInitialized && autoPlay != config.autoplay)) {
+        val currentConfig = config
+        val needsConfigUpdate =
+            currentConfig == null ||
+                !currentConfig.appliesTo(card) ||
+                autoPlay != currentConfig.autoplay
+
+        if (needsConfigUpdate) {
             config = withCol { CardSoundConfig.create(this@withCol, card) }
         }
     }
@@ -151,20 +158,21 @@ class CardMediaPlayer : Closeable {
      * Does not affect playback if they are
      */
     suspend fun ensureAvTagsLoaded(card: Card) {
-        if (this::questionAvTags.isInitialized) return
+        if (config?.appliesTo(card) == true) return
 
         Timber.i("loading sounds for card %d", card.id)
         val renderOutput = withCol { card.renderOutput(this) }
         this.questionAvTags = renderOutput.questionAvTags
         this.answerAvTags = renderOutput.answerAvTags
 
-        if (!this::config.isInitialized || !config.appliesTo(card)) {
+        val currentConfig = config
+        if (currentConfig == null || !currentConfig.appliesTo(card)) {
             config = withCol { CardSoundConfig.create(this@withCol, card) }
         }
     }
 
     suspend fun autoplayAllForSide(cardSide: CardSide) {
-        if (config.autoplay) {
+        if (config?.autoplay == true) {
             playAllForSide(cardSide)
         }
     }
@@ -228,11 +236,7 @@ class CardMediaPlayer : Closeable {
 
     override fun close() {
         soundTagPlayer.release()
-        try {
-            ttsPlayer.getCompleted().close()
-        } catch (e: Exception) {
-            Timber.i(e, "ttsPlayer close()")
-        }
+        ttsPlayer.close(logPrefix = "ttsPlayer")
         scope.cancel()
     }
 
@@ -314,14 +318,14 @@ class CardMediaPlayer : Closeable {
         }
 
     /** Whether the provided side has available media */
-    fun hasMedia(displayAnswer: Boolean): Boolean = if (displayAnswer) answerAvTags.any() else questionAvTags.any()
+    fun hasMedia(displayAnswer: Boolean): Boolean = if (displayAnswer) answerAvTags.isNotEmpty() else questionAvTags.isNotEmpty()
 
     /**
      * Replays all sounds for [side], calling [onMediaGroupCompleted] when completed
      */
     suspend fun replayAll(side: SingleCardSide) =
         when (side) {
-            SingleCardSide.BACK -> if (config.replayQuestion) playAllForSide(CardSide.BOTH) else playAllForSide(CardSide.ANSWER)
+            SingleCardSide.BACK -> if (config?.replayQuestion == true) playAllForSide(CardSide.BOTH) else playAllForSide(CardSide.ANSWER)
             SingleCardSide.FRONT -> playAllForSide(CardSide.QUESTION)
         }
 
@@ -351,6 +355,28 @@ class CardMediaPlayer : Closeable {
 
     companion object {
         private const val TTS_PLAYER_TIMEOUT_MS = 2_500L
+    }
+}
+
+/**
+ * Cancels the [Deferred] and safely closes its resulting [Closeable] upon completion.
+ *
+ * The deferred is cancelled immediately.
+ * When it completes, the underlying [Closeable] is closed.
+ *
+ * @param logPrefix Prefix used when logging
+ */
+private fun Deferred<Closeable>.close(logPrefix: String) {
+    this.cancel()
+    this.invokeOnCompletion {
+        try {
+            this.getCompleted().close()
+            Timber.d("$logPrefix closed")
+        } catch (_: CancellationException) {
+            // Ignore: no value was produced, nothing to close
+        } catch (e: Exception) {
+            Timber.w(e, "$logPrefix close()")
+        }
     }
 }
 

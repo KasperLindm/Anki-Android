@@ -1,17 +1,7 @@
-<?xml version="1.0" encoding="utf-8"?><!--
-  ~ Copyright (c) 2025 lukstbit <52494258+lukstbit@users.noreply.github.com>
-  ~
-  ~  This program is free software; you can redistribute it and/or modify it under
-  ~  the terms of the GNU General Public License as published by the Free Software
-  ~  Foundation; either version 3 of the License, or (at your option) any later
-  ~  version.
-  ~
-  ~  This program is distributed in the hope that it will be useful, but WITHOUT ANY
-  ~  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
-  ~  PARTICULAR PURPOSE. See the GNU General Public License for more details.
-  ~
-  ~  You should have received a copy of the GNU General Public License along with
-  ~  this program.  If not, see <http://www.gnu.org/licenses/>.
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  ~ SPDX-License-Identifier: GPL-3.0-or-later
+  ~ SPDX-FileCopyrightText: Copyright (c) 2025 lukstbit <52494258+lukstbit@users.noreply.github.com>
   -->
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
@@ -22,14 +12,29 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:padding="16dp">
+
+        <TextView
+            android:id="@+id/label_warning"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:drawableStart="@drawable/ic_warning"
+            android:drawablePadding="4dp"
+            android:layout_marginHorizontal="8dp"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            android:text="@string/warning_find_and_replace"
+            android:textStyle="italic"
+            />
+
         <TextView
             android:id="@+id/label_find"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/label_warning"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
             android:layout_marginHorizontal="8dp"
+            android:layout_marginTop="8dp"
             tools:text="Find:"/>
         <com.google.android.material.textfield.TextInputLayout
             android:id="@+id/input_search_layout"
@@ -99,7 +104,7 @@
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintEnd_toEndOf="parent" />
         <CheckBox
-            android:id="@+id/check_only_selected_notes"
+            android:id="@+id/only_selected_notes_check_box"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
@@ -111,22 +116,22 @@
             app:layout_constraintHorizontal_bias="0.0"
             tools:text="Selected notes only"/>
         <CheckBox
-            android:id="@+id/check_ignore_case"
+            android:id="@+id/ignore_case_check_box"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:checked="true"
             android:layout_marginStart="2dp"
-            app:layout_constraintTop_toBottomOf="@id/check_only_selected_notes"
+            app:layout_constraintTop_toBottomOf="@id/only_selected_notes_check_box"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintHorizontal_bias="0.0"
             tools:text="Ignore case"/>
         <CheckBox
-            android:id="@+id/check_input_as_regex"
+            android:id="@+id/input_as_regex_check_box"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginStart="2dp"
-            app:layout_constraintTop_toBottomOf="@id/check_ignore_case"
+            app:layout_constraintTop_toBottomOf="@id/ignore_case_check_box"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintHorizontal_bias="0.0"
@@ -137,7 +142,7 @@
             android:id="@+id/content_views_group"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            app:constraint_referenced_ids="label_find,input_search,label_replace,input_replace,label_in,fields_selector,check_only_selected_notes,check_ignore_case,check_input_as_regex"
+            app:constraint_referenced_ids="label_find,input_search,label_replace,input_replace,label_in,fields_selector,only_selected_notes_check_box,ignore_case_check_box,input_as_regex_check_box"
             tools:visibility="visible"/>
 
         <com.google.android.material.progressindicator.CircularProgressIndicator

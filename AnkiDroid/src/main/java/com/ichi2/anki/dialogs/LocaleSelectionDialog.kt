@@ -27,10 +27,10 @@ import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.widget.SearchView
 import androidx.appcompat.widget.Toolbar
-import androidx.core.os.bundleOf
 import androidx.recyclerview.widget.RecyclerView
 import com.ichi2.anki.R
 import com.ichi2.anki.analytics.AnalyticsDialogFragment
+import com.ichi2.anki.databinding.DialogLocaleSelectionBinding
 import com.ichi2.anki.dialogs.LocaleSelectionDialog.LocaleListAdapter.TextViewHolder
 import com.ichi2.anki.servicelayer.LanguageHintService
 import com.ichi2.ui.AccessibleSearchView
@@ -53,16 +53,13 @@ class LocaleSelectionDialog : AnalyticsDialogFragment() {
                 Locale.getAvailableLocales() + IPALanguage,
                 ::sendSelectionResult,
             )
-        val dialogView = layoutInflater.inflate(R.layout.locale_selection_dialog, null)
-        dialogView
-            .findViewById<RecyclerView>(R.id.locale_dialog_selection_list)
-            .adapter = localeAdapter
-        dialogView
-            .findViewById<Toolbar>(R.id.locale_dialog_selection_toolbar)
-            .setupMenuWith(localeAdapter)
+
+        val binding = DialogLocaleSelectionBinding.inflate(layoutInflater)
+        binding.localeDialogSelectionList.adapter = localeAdapter
+        binding.localeDialogSelectionToolbar.setupMenuWith(localeAdapter)
         return AlertDialog.Builder(requireContext()).show {
             cancelable(true)
-            customView(dialogView)
+            customView(binding.root)
         }
     }
 
@@ -97,7 +94,7 @@ class LocaleSelectionDialog : AnalyticsDialogFragment() {
     private fun sendSelectionResult(locale: Locale? = null) {
         parentFragmentManager.setFragmentResult(
             REQUEST_HINT_LOCALE_SELECTION,
-            bundleOf(KEY_SELECTED_LOCALE to locale),
+            Bundle().apply { putSerializable(KEY_SELECTED_LOCALE, locale) },
         )
     }
 
@@ -117,7 +114,7 @@ class LocaleSelectionDialog : AnalyticsDialogFragment() {
             viewType: Int,
         ) = TextViewHolder(
             layoutInflater
-                .inflate(R.layout.locale_dialog_fragment_textview, parent, false) as TextView,
+                .inflate(R.layout.item_locale, parent, false) as TextView,
         )
 
         override fun onBindViewHolder(

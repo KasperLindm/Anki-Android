@@ -25,7 +25,6 @@ import android.view.MotionEvent
 import android.view.View
 import android.widget.ImageView
 import androidx.constraintlayout.widget.ConstraintLayout
-import com.ichi2.anki.R
 import com.ichi2.anki.cardviewer.Gesture
 import com.ichi2.anki.cardviewer.Gesture.SWIPE_DOWN
 import com.ichi2.anki.cardviewer.Gesture.SWIPE_LEFT
@@ -42,6 +41,7 @@ import com.ichi2.anki.cardviewer.Gesture.TAP_TOP_LEFT
 import com.ichi2.anki.cardviewer.Gesture.TAP_TOP_RIGHT
 import com.ichi2.anki.cardviewer.GestureListener
 import com.ichi2.anki.cardviewer.TapGestureMode
+import com.ichi2.anki.databinding.ViewGestureDisplayBinding
 import com.ichi2.anki.settings.Prefs
 import timber.log.Timber
 
@@ -59,6 +59,8 @@ class GestureDisplay
         attributeSet: AttributeSet? = null,
         defStyleAttr: Int = 0,
     ) : ConstraintLayout(context, attributeSet, defStyleAttr) {
+        private val binding = ViewGestureDisplayBinding.inflate(LayoutInflater.from(context), this)
+
         /** Converts a touch event into a call to [setGesture] */
         private val detector: GestureDetector
 
@@ -71,19 +73,13 @@ class GestureDisplay
         /** The last recorded gesture (null if no gestures provided, or if explicitly set)  */
         private var gesture: Gesture? = null
 
-        private var swipeView: ImageView
-
         init {
-            val inflater = LayoutInflater.from(context)
-            inflater.inflate(R.layout.gesture_display, this)
-
             val listener = OnGestureListener.createInstance(this, this::setGesture)
             detector = GestureDetector(context, listener)
             tapGestureMode = listener.getTapGestureMode()
             setTapGestureMode(tapGestureMode)
-            swipeView = findViewById(R.id.swipe_select)
             // if we don't call mutate, state is persisted outside the dialog when we call .setImageLevel
-            swipeView.drawable?.mutate()
+            binding.swipeView.drawable?.mutate()
         }
 
         /** Lists all selectable gestures from this view (excludes null) */
@@ -138,7 +134,7 @@ class GestureDisplay
                     SWIPE_RIGHT -> 4
                     else -> 0
                 }
-            swipeView.setImageLevel(level)
+            binding.swipeView.setImageLevel(level)
         }
 
         /**
@@ -150,31 +146,25 @@ class GestureDisplay
         ) {
             // revert the old change, and implement the new change
             // does nothing if neither are taps
-            tapGestureToView(oldGesture)?.isSelected = false
-            tapGestureToView(gesture)?.isSelected = true
+            binding.tapGestureToView(oldGesture)?.isSelected = false
+            binding.tapGestureToView(gesture)?.isSelected = true
         }
 
         /**
          * Maps from a [Gesture] to an [ImageView].
          * @return The associated [ImageView], or null if input is null, or isn't a tap gesture
          */
-        private fun tapGestureToView(gesture: Gesture?): ImageView? {
-            val viewId = tapGestureToViewId(gesture) ?: return null
-            return findViewById(viewId)
-        }
-
-        /** Maps from a tap gesture to its view Id, or null if the gesture isn't a tap */
-        private fun tapGestureToViewId(gesture: Gesture?): Int? =
+        private fun ViewGestureDisplayBinding.tapGestureToView(gesture: Gesture?): ImageView? =
             when (gesture) {
-                TAP_TOP_LEFT -> R.id.top_left
-                TAP_TOP -> R.id.top_center
-                TAP_TOP_RIGHT -> R.id.top_right
-                TAP_LEFT -> R.id.left
-                TAP_CENTER -> R.id.center
-                TAP_RIGHT -> R.id.right
-                TAP_BOTTOM_LEFT -> R.id.bottom_left
-                TAP_BOTTOM -> R.id.bottom_center
-                TAP_BOTTOM_RIGHT -> R.id.bottom_right
+                TAP_TOP_LEFT -> topLeft
+                TAP_TOP -> topCenter
+                TAP_TOP_RIGHT -> topRight
+                TAP_LEFT -> left
+                TAP_CENTER -> center
+                TAP_RIGHT -> right
+                TAP_BOTTOM_LEFT -> bottomLeft
+                TAP_BOTTOM -> bottomCenter
+                TAP_BOTTOM_RIGHT -> bottomRight
                 else -> null
             }
 
@@ -188,15 +178,13 @@ class GestureDisplay
                     TapGestureMode.NINE_POINT -> View.VISIBLE
                 }
 
-            NINE_POINT_TAP_GESTURES.forEach {
-                val id = tapGestureToViewId(it) ?: return
-                val view = findViewById<ImageView>(id)
-                view.visibility = ninePointVisibility
+            NINE_POINT_TAP_GESTURES.forEach { gesture ->
+                binding.tapGestureToView(gesture)?.visibility = ninePointVisibility
             }
         }
 
         companion object {
-            private val MULTI_FINGER_GESTURES = setOf(Gesture.TWO_FINGER_TAP, Gesture.THREE_FINGER_TAP, Gesture.FOUR_FINGER_TAP)
+            val MULTI_FINGER_GESTURES = listOf(Gesture.TWO_FINGER_TAP, Gesture.THREE_FINGER_TAP, Gesture.FOUR_FINGER_TAP)
 
             val NINE_POINT_TAP_GESTURES = listOf(TAP_TOP_LEFT, TAP_TOP_RIGHT, TAP_CENTER, TAP_BOTTOM_LEFT, TAP_BOTTOM_RIGHT)
         }

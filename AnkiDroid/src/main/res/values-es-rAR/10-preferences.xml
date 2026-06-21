@@ -6,43 +6,22 @@
  ~    Instructions for this are available here: https://github.com/ankidroid/Anki-Android/wiki/Translating-AnkiDroid. 
  ~    You may also find the documentation on contributing to Anki useful: https://github.com/ankidroid/Anki-Android/wiki/Contributing   
  ~ 
- ~ Copyright (c) 2009 Andrew <andrewdubya@gmail> 
- ~ Copyright (c) 2009 Edu Zamora <edu.zasu@gmail.com> 
- ~ Copyright (c) 2009 Daniel Svaerd <daniel.svard@gmail.com> 
- ~ Copyright (c) 2009 Nicolas Raoul <nicolas.raoul@gmail.com> 
- ~ Copyright (c) 2010 Norbert Nagold <norbert.nagold@gmail.com> 
- ~ This program is free software; you can redistribute it and/or modify it under 
- ~ the terms of the GNU General Public License as published by the Free Software 
- ~ Foundation; either version 3 of the License, or (at your option) any later 
- ~ version. 
- ~ 
- ~ This program is distributed in the hope that it will be useful, but WITHOUT ANY 
- ~ WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A 
- ~ PARTICULAR PURPOSE. See the GNU General Public License for more details. 
- ~ 
- ~ You should have received a copy of the GNU General Public License along with 
- ~ this program.  If not, see <http://www.gnu.org/licenses/>. 
+ ~ SPDX-License-Identifier: GPL-3.0-or-later
+ ~ SPDX-FileCopyrightText: Copyright (c) 2009 Andrew <andrewdubya@gmail>
+ ~ SPDX-FileCopyrightText: Copyright (c) 2009 Edu Zamora <edu.zasu@gmail.com>
+ ~ SPDX-FileCopyrightText: Copyright (c) 2009 Daniel Svaerd <daniel.svard@gmail.com>
+ ~ SPDX-FileCopyrightText: Copyright (c) 2009 Nicolas Raoul <nicolas.raoul@gmail.com>
+ ~ SPDX-FileCopyrightText: Copyright (c) 2010 Norbert Nagold <norbert.nagold@gmail.com>
  -->
  
 <!--
-~ Copyright (c) 2009 Andrew <andrewdubya@gmail>
-~ Copyright (c) 2009 Edu Zamora <edu.zasu@gmail.com>
-~ Copyright (c) 2009 Daniel Svärd <daniel.svard@gmail.com>
-~ Copyright (c) 2009 Nicolas Raoul <nicolas.raoul@gmail.com>
-~ Copyright (c) 2010 Norbert Nagold <norbert.nagold@gmail.com>
-~
-~ This program is free software; you can redistribute it and/or modify it under
-~ the terms of the GNU General Public License as published by the Free Software
-~ Foundation; either version 3 of the License, or (at your option) any later
-~ version.
-~
-~ This program is distributed in the hope that it will be useful, but WITHOUT ANY
-~ WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
-~ PARTICULAR PURPOSE. See the GNU General Public License for more details.
-~
-~ You should have received a copy of the GNU General Public License along with
-~ this program.  If not, see <http://www.gnu.org/licenses/>.
--->
+  ~ SPDX-License-Identifier: GPL-3.0-or-later
+  ~ SPDX-FileCopyrightText: Copyright (c) 2009 Andrew <andrewdubya@gmail>
+  ~ SPDX-FileCopyrightText: Copyright (c) 2009 Edu Zamora <edu.zasu@gmail.com>
+  ~ SPDX-FileCopyrightText: Copyright (c) 2009 Daniel Svärd <daniel.svard@gmail.com>
+  ~ SPDX-FileCopyrightText: Copyright (c) 2009 Nicolas Raoul <nicolas.raoul@gmail.com>
+  ~ SPDX-FileCopyrightText: Copyright (c) 2010 Norbert Nagold <norbert.nagold@gmail.com>
+  -->
 <resources xmlns:tools="http://schemas.android.com/tools">
     <!-- generic strings -->
     <string name="disabled">Deshabilitado</string>
@@ -82,7 +61,7 @@
     <string name="button_size" maxLength="41">Tamaño del botón de respuesta</string>
     <string name="card_browser_font_size" maxLength="41">Escalado de fuentes del explorador de tarjetas</string>
     <string name="card_browser_hide_media" maxLength="41">Mostrar nombres de archivo en el navegador de tarjetas</string>
-    <string name="card_browser_hide_media_summary">Display audio filenames in the card browser question/answer fields</string>
+    <string name="card_browser_hide_media_summary">Mostrar nombres de archivos de audio en los campos de pregunta/respuesta del navegador de tarjetas</string>
     <string name="col_path" maxLength="41">Directorio de AnkiDroid</string>
     <string name="fullscreen_review" maxLength="41">Pantalla completa</string>
     <string name="full_screen_off">Apagado</string>
@@ -116,9 +95,9 @@
     <string name="gestures_corner_tap_middle_center" maxLength="41">Tocar el centro</string>
     <string name="gestures_corner_tap_bottom_left" maxLength="41">Tocar abajo a la izquierda</string>
     <string name="gestures_corner_tap_bottom_right" maxLength="41">Tocar abajo a la derecha</string>
-    <string name="gestures_two_finger_tap" maxLength="41">Two-finger tap</string>
-    <string name="gestures_three_finger_tap" maxLength="41">Three-finger tap</string>
-    <string name="gestures_four_finger_tap" maxLength="41">Four-finger tap</string>
+    <string name="gestures_two_finger_tap" maxLength="41">Toque con dos dedos</string>
+    <string name="gestures_three_finger_tap" maxLength="41">Toque con tres dedos</string>
+    <string name="gestures_four_finger_tap" maxLength="41">Toque con cuatro dedos</string>
     <string name="gestures_shake" maxLength="41">Sacudir dispositivo</string>
     <string name="card_browser_enable_external_context_menu" maxLength="41">‘%s’ Menú</string>
     <string name="card_browser_enable_external_context_menu_summary">Habilitar globalmente el menú contextual ‘%s</string>
@@ -129,7 +108,6 @@
     <string name="tts_summ">Lee pregunta y respuesta si no hay un archivo de sonido incluido</string>
     <!-- Sync -->
     <string name="sync_fetch_missing_media" maxLength="41">Buscar archivos media al sincronizar</string>
-    <string name="sync_account" maxLength="41">Cuenta de AnkiWeb</string>
     <string name="sync_account_summ_logged_out">No ha iniciado sesión</string>
     <string name="automatic_sync_choice" maxLength="41">Sincronización automática</string>
     <string name="automatic_sync_choice_summ">Sincronizar automáticamente al abrir / cerrar la aplicación si la última sincronización fue hace más de 10 minutos.</string>
@@ -157,8 +135,6 @@
     <string name="select_locale_title">Seleccionar idioma</string>
     <string name="software_render" maxLength="41">Desactivar el hardware de la tarjeta</string>
     <string name="software_render_summ">El procesamiento de hardware es más rápido, pero puede tener problemas, específicamente en Android 8/8.1. Si no puede ver partes de la interfaz de usuario de la tarjeta, prueba esta opción.</string>
-    <string name="safe_display" maxLength="41">Modo de visualización segura</string>
-    <string name="safe_display_summ">Desactiva todas las animaciones y utiliza un método más seguro para presentar las tarjetas. Los dspositivos de tinta electrónica (e-ink) podrían requerir esta opción.</string>
     <string name="disable_extended_text_ui" maxLength="41">Desactivar modo de edición de un campo</string>
     <!--See: multimedia_editor_popup_cloze. We can\'t use format strings as this is auto-generated-->
     <string name="disable_extended_text_ui_summ">Permite el menú contextual \'huecos\' cuando está en modo horizontal.</string>
@@ -172,6 +148,8 @@
     <string name="show_estimates_summ">Mostrar el tiempo para el próximo repaso encima de los botones de respuesta</string>
     <string name="show_large_answer_buttons" maxLength="41">Mostrar botones de respuestas grandes</string>
     <string name="show_large_answer_buttons_summ">Mostrar botón de respuesta en 2 filas</string>
+    <string name="remove_animations" maxLength="41">Remove animations</string>
+    <string name="remove_animations_summary">Also enabled if animations are removed on the system settings</string>
     <string name="show_top_bar" maxLength="41">Mostrar Barra Superior</string>
     <string name="show_top_bar_summary">Mostrar recuento de cartas, temporizador de respuesta, bandera y marca en la barra superior</string>
     <string name="show_progress" maxLength="41">Mostar restantes</string>
@@ -204,11 +182,9 @@
     <string name="pref_controls_previews_tab" maxLength="41" comment="Name of the tab to configure controls for the previews screen">Vistas previas</string>
     <string name="toggle_backside_only" maxLength="41" comment="Control setting that toggles \'Backside only\' in the previews screen">Activar/desactivar solo la parte trasera</string>
     <!-- Appearance settings -->
-    <string name="pref_cat_reviewer" maxLength="41">Study Screen</string>
+    <string name="pref_cat_reviewer" maxLength="41">Pantalla de Estudio</string>
     <string name="show_deck_title" maxLength="41">Mostrar el título del mazo</string>
     <string name="accessibility" maxLength="41">Accesibilidad</string>
-    <!-- Paste clipboard image as png option -->
-    <string name="paste_as_png" maxLength="41">Pegar imágenes del portapapeles como PNG</string>
     <string name="exit_via_double_tap_back" maxLength="41">Presione dos veces para regresar o salir</string>
     <string name="exit_via_double_tap_back_summ">Para evitar salir accidentalmente de la pantalla de estudio o de la aplicación</string>
     <!-- Allow all files in media imports -->
@@ -222,7 +198,7 @@
         Si no lo estableces, se utilizará el servidor AnkiWeb predeterminado.
         <a href="%s">Más información</a>
         ]]></string>
-    <string name="custom_sync_server_base_url_title" maxLength="41">Sincronizar url</string>
+    <string name="custom_sync_server_base_url_title" maxLength="41">Sync URL</string>
     <string name="custom_sync_certificate_title" maxLength="41">Certificado raíz personalizado (PEM)</string>
     <!-- Key Bindings -->
     <string name="keyboard">Teclado</string>
@@ -235,23 +211,14 @@
     <string name="misc" maxLength="41">Varios</string>
     <!-- Review reminders -->
     <string name="add_reminder" comment="Label for the add reminder button in the screen for adding and editing review reminders">Añadir recordatorio</string>
-    <string name="add_review_reminder" comment="Title of the screen for creating a new review reminder">Add review reminder</string>
-    <string name="edit_review_reminder" comment="Title of the screen for editing an existing review reminder">Edit review reminder</string>
-    <string name="you_have_no_review_reminders" comment="Text that appears in the review reminder editing screen when there are no reminders set">You have no review reminders</string>
+    <string name="add_review_reminder" comment="Title of the screen for creating a new review reminder">Añadir recordatorio de revisión</string>
+    <string name="edit_review_reminder" comment="Title of the screen for editing an existing review reminder">Editar recordatorio de revisión</string>
+    <string name="you_have_no_review_reminders" comment="Text that appears in the review reminder editing screen when there are no reminders set">No tienes recordatorios de revisión</string>
     <!-- studyoptions -->
     <string name="studyoptions_limit_select_tags">Seleccionar etiquetas</string>
     <!-- Deck configurations -->
     <string name="deck_conf_general" maxLength="41" comment="Label of the submenu for the general options of new deck">General</string>
-    <string name="deck_conf_cram_filter" maxLength="41">Filtro</string>
     <string name="deck_conf_cram_search" maxLength="41" comment="Label of a text field that contains a search query.">Buscar</string>
-    <string name="deck_conf_cram_limit" maxLength="41">Limitar a</string>
-    <string name="deck_conf_cram_order" maxLength="41">Tarjetas seleccionadas por</string>
-    <string name="deck_conf_cram_reschedule" maxLength="41" comment="Title of the box labelled by deck_conf_cram_reschedule_summ">Reprogramar</string>
-    <string name="deck_conf_cram_reschedule_summ">Reprogramar las tarjetas basándose en mis respuestas en este mazo</string>
-    <string name="deck_conf_cram_filter_2_check">Activar segundo filtro</string>
-    <string name="deck_conf_cram_steps_summ" maxLength="41">Definir pasos personalizados</string>
-    <string name="deck_conf_cram_preview_delays" maxLength="41">Previsualizar los retrasos</string>
-    <string name="deck_conf_cram_preview_delays_summ">Los retrasos se expresan en segundos. 0 devuelve la tarjeta al mazo original.</string>
     <!-- analytics options -->
     <string name="analytics_dialog_title">¡Ayuda a mejorar AnkiDroid!</string>
     <string name="analytics_title" maxLength="41">Compartir uso de funciones</string>
@@ -261,7 +228,7 @@
     <string name="type_in_answer_focus" maxLength="41">Enfoque \"escribe la respuesta\"</string>
     <string name="type_in_answer_focus_summ">Enfocar automáticamente el campo \"escribir en respuesta\" en la pantalla de estudio</string>
     <!-- About -->
-    <string name="open_changelog">Open changelog</string>
+    <string name="open_changelog">Abrir registro de cambios</string>
     <string name="pref_cat_about_title" maxLength="41">Acerca de</string>
     <string name="contributors_title">Colaboradores</string>
     <string name="about_contributors_description"><![CDATA[Estos son nuestros increíbles <a href=\"%1$s\">colaboradores</a>. ¡También puedes ayudar a AnkiDroid programando, traduciendo, donando y <a href=\"%2$s\">más</a>!]]></string>
@@ -287,6 +254,10 @@
     <string name="user_action_8" maxLength="28">Acción del usuario 8</string>
     <string name="user_action_9" maxLength="28">Acción del usuario 9</string>
     <string name="toggle_auto_advance" maxLength="28">Alternar avance automático</string>
+    <string name="enable_auto_advance" maxLength="28">Enable auto advance</string>
+    <string name="disable_auto_advance" maxLength="28">Disable auto advance</string>
+    <string name="enable_voice_recording" maxLength="28">Enable voice recording</string>
+    <string name="disable_voice_recording" maxLength="28">Disable voice recording</string>
     <!-- Select card side -->
     <string name="card_side_selection_title">Selecciona el lado de la tarjeta</string>
     <string name="card_side_question">Pregunta</string>
@@ -301,8 +272,8 @@
     <string name="pref_cat_experimental" maxLength="41" tools:ignore="UnusedResources">Experimental</string>
     <string name="readtext_deprecation_warn">¡AnkiDroid ha introducido un mecanismo de texto a voz mejor que es compatible con otros clientes Anki y que incluye más voces y mejoras de reproducción de idioma!\n\nPor favor actualice lo antes posible, ya que pronto se quitará esta configuración.</string>
     <string name="readtext_reviewer_warn" tools:ignore="UnusedResources">Por favor actualice al formato de texto a voz nuevo.</string>
-    <string name="pref_fixed_port_title" maxLength="41">localStorage in Study Screen</string>
-    <string name="pref_fixed_port_summary">Enables JavaScript localStorage by using a fixed server port in the Study Screen</string>
+    <string name="pref_fixed_port_title" maxLength="41">localStorage en Pantalla de Estudio</string>
+    <string name="pref_fixed_port_summary">Activa el localStorage de JavaScript usando un puerto fijo del servidor en la Pantalla de Estudio</string>
     <!-- Developer options -->
     <string name="pref_cat_dev_options" maxLength="41">Opciones de desarrollador</string>
     <string name="dev_options_enabled_pref" maxLength="41">Activar opciones de desarrollador</string>
@@ -373,7 +344,7 @@ Puedes restaurar una colección desde una copia de seguridad en el menú de la l
     <string name="hide_system_bars_navigation_bar" comment="Setting option to hide the system navigation bar (the bottom one that can go back, to home, etc)">Barra de navegación</string>
     <string name="hide_system_bars_all_bars" comment="Setting option to hide all the system bars">Todas</string>
     <string name="ignore_display_cutout" maxLength="41">Ignorar el recorte de la pantalla</string>
-    <string name="show_answer_buttons" maxLength="41">Show answer buttons</string>
+    <string name="show_answer_buttons" maxLength="41">Mostrar botones de respuesta</string>
     <string name="hide_hard_and_easy" maxLength="41">Ocultar los botones \"Difícil\" y \"Fácil\"</string>
     <string name="reviewer_frame_style" maxLength="41">Estilo del marco</string>
     <string name="reviewer_frame_style_card" maxLength="41" comment="Style name of the \'Card\' card frame of the Study Screen">Tarjeta</string>
@@ -381,13 +352,16 @@ Puedes restaurar una colección desde una copia de seguridad en el menú de la l
     <string name="reviewer_toolbar_top" maxLength="41" comment="Setting to put the toolbar on the top of the study screen">Superior</string>
     <string name="reviewer_toolbar_bottom" maxLength="41" comment="Setting to put the toolbar on the bottom of the study screen">Inferior</string>
     <string name="reviewer_toolbar_none" maxLength="41" comment="Setting to remove the toolbar from the study screen">Ninguna</string>
-    <string name="toolbar" maxLength="41">Toolbar</string>
-    <string name="toolbar_actions" maxLength="41">Toolbar actions</string>
-    <string name="toolbar_position" maxLength="28">Toolbar position</string>
-    <string name="new_study_screen" maxLength="41">New study screen</string>
-    <string name="new_study_screen_summ"><![CDATA[Improved study screen that will succeed the current one. Some features of the old screen have been changed or removed. Please report any <a href="%1$s">feedback</a> or <a href="%2$s">bugs</a>.]]></string>
+    <string name="toolbar" maxLength="41">Barra de herramientas</string>
+    <string name="toolbar_actions" maxLength="41">Acciones de la barra de herramientas</string>
+    <string name="toolbar_position" maxLength="28">Posición de la barra de herramientas</string>
+    <string name="new_study_screen" maxLength="41">Nueva pantalla de estudio</string>
+    <string name="new_study_screen_summ"><![CDATA[Pantalla de estudio mejorada que acabará sucediendo a la antigua. Algunas funcionalidades de la pantalla antigua han sido cambiadas o eliminadas. Por favor, reporta cualquier <a href="%1$s">sugerencia</a> o <a href="%2$s">fallo.]]></string>
     <string name="show_answer_feedback" maxLength="41">Show answer feedback</string>
-    <string name="screen" maxLength="41">Screen</string>
+    <string name="screen" maxLength="41">Pantalla</string>
+    <string name="only_answer" maxLength="41" comment="Configuration of the \'Answer\' commands to only answer the card">Only answer</string>
+    <string name="flip_and_answer" maxLength="41" comment="Configuration of the \'Answer\' commands to answer the card if on the answer side, and flip it if on the question side">Flip and answer</string>
     <!--Keyboard shortcuts dialog-->
     <string name="open_settings" comment="Description of the shortcut that opens the app settings">Abrir la configuración</string>
+    <string name="related_settings_title" comment="Title of the section for related settings">Related settings</string>
 </resources>

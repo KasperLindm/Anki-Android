@@ -20,15 +20,14 @@ import android.content.Intent
 import android.os.Bundle
 import android.view.View
 import androidx.core.os.BundleCompat
-import androidx.core.os.bundleOf
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.commitNow
 import androidx.lifecycle.lifecycleScope
-import com.google.android.material.appbar.MaterialToolbar
-import com.google.android.material.tabs.TabLayout
-import com.google.android.material.tabs.TabLayout.OnTabSelectedListener
 import com.ichi2.anki.R
+import com.ichi2.anki.databinding.FragmentTemplatePreviewerContainerBinding
 import com.ichi2.anki.previewer.TemplatePreviewerFragment.Companion.ARGS_KEY
+import com.ichi2.anki.utils.ext.doOnTabSelected
+import dev.androidbroadcast.vbpd.viewBinding
 import kotlinx.coroutines.launch
 import timber.log.Timber
 
@@ -36,23 +35,29 @@ import timber.log.Timber
  * Container for [TemplatePreviewerFragment] that works as a standalone page
  * by including a toolbar and a TabLayout for changing the current template.
  */
-class TemplatePreviewerPage : Fragment(R.layout.template_previewer_container) {
+class TemplatePreviewerPage : Fragment(R.layout.fragment_template_previewer_container) {
+    private val binding by viewBinding(FragmentTemplatePreviewerContainerBinding::bind)
+
     override fun onViewCreated(
         view: View,
         savedInstanceState: Bundle?,
     ) {
-        view.findViewById<MaterialToolbar>(R.id.toolbar).setNavigationOnClickListener {
+        binding.toolbar.setNavigationOnClickListener {
             requireActivity().onBackPressedDispatcher.onBackPressed()
         }
 
-        val arguments = BundleCompat.getParcelable(requireArguments(), ARGS_KEY, TemplatePreviewerArguments::class.java)!!
-        val fragment = TemplatePreviewerFragment.newInstance(arguments)
-        childFragmentManager.commitNow {
-            replace(R.id.fragment_container, fragment)
+        val fragment: TemplatePreviewerFragment
+        if (savedInstanceState == null) {
+            val arguments = BundleCompat.getParcelable(requireArguments(), ARGS_KEY, TemplatePreviewerArguments::class.java)!!
+            fragment = TemplatePreviewerFragment.newInstance(arguments)
+            childFragmentManager.commitNow {
+                replace(R.id.fragment_container, fragment)
+            }
+        } else {
+            fragment = childFragmentManager.findFragmentById(R.id.fragment_container) as TemplatePreviewerFragment
         }
 
         val viewModel = fragment.viewModel
-        val tabLayout = view.findViewById<TabLayout>(R.id.tab_layout)
 
         lifecycleScope.launch {
             val cardsWithEmptyFronts = viewModel.cardsWithEmptyFronts?.await()
@@ -63,26 +68,14 @@ class TemplatePreviewerPage : Fragment(R.layout.template_previewer_container) {
                     } else {
                         templateName
                     }
-                val newTab = tabLayout.newTab().setText(tabTitle)
-                tabLayout.addTab(newTab)
+                val newTab = binding.tabLayout.newTab().setText(tabTitle)
+                binding.tabLayout.addTab(newTab)
             }
-            tabLayout.selectTab(tabLayout.getTabAt(viewModel.getCurrentTabIndex()))
-            tabLayout.addOnTabSelectedListener(
-                object : OnTabSelectedListener {
-                    override fun onTabSelected(tab: TabLayout.Tab) {
-                        Timber.v("Selected tab %d", tab.position)
-                        viewModel.onTabSelected(tab.position)
-                    }
-
-                    override fun onTabUnselected(tab: TabLayout.Tab) {
-                        // do nothing
-                    }
-
-                    override fun onTabReselected(tab: TabLayout.Tab) {
-                        // do nothing
-                    }
-                },
-            )
+            binding.tabLayout.selectTab(binding.tabLayout.getTabAt(viewModel.getCurrentTabIndex()))
+            binding.tabLayout.doOnTabSelected { tab ->
+                Timber.v("Selected tab %d", tab.position)
+                viewModel.onTabSelected(tab.position)
+            }
         }
     }
 
@@ -94,7 +87,7 @@ class TemplatePreviewerPage : Fragment(R.layout.template_previewer_container) {
             CardViewerActivity.getIntent(
                 context,
                 TemplatePreviewerPage::class,
-                bundleOf(ARGS_KEY to arguments),
+                Bundle().apply { putParcelable(ARGS_KEY, arguments) },
             )
     }
 }

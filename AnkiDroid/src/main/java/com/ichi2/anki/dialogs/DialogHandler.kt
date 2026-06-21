@@ -1,18 +1,18 @@
-/****************************************************************************************
- * Copyright (c) 2015 Timothy Rae <perceptualchaos2@gmail.com>                          *
- *                                                                                      *
- * This program is free software; you can redistribute it and/or modify it under        *
- * the terms of the GNU General Public License as published by the Free Software        *
- * Foundation; either version 3 of the License, or (at your option) any later           *
- * version.                                                                             *
- *                                                                                      *
- * This program is distributed in the hope that it will be useful, but WITHOUT ANY      *
- * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A      *
- * PARTICULAR PURPOSE. See the GNU General Public License for more details.             *
- *                                                                                      *
- * You should have received a copy of the GNU General Public License along with         *
- * this program.  If not, see <http://www.gnu.org/licenses/>.                           *
- ****************************************************************************************/
+/*
+ * Copyright (c) 2015 Timothy Rae <perceptualchaos2@gmail.com>
+ *
+ * This program is free software; you can redistribute it and/or modify it under
+ * the terms of the GNU General Public License as published by the Free Software
+ * Foundation; either version 3 of the License, or (at your option) any later
+ * version.
+ *
+ * This program is distributed in the hope that it will be useful, but WITHOUT ANY
+ * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
+ * PARTICULAR PURPOSE. See the GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along with
+ * this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
 
 package com.ichi2.anki.dialogs
 
@@ -24,12 +24,11 @@ import com.ichi2.anki.CollectionLoadingErrorDialog
 import com.ichi2.anki.CrashReportData.Companion.toCrashReportData
 import com.ichi2.anki.DeckPicker
 import com.ichi2.anki.IntentHandler
-import com.ichi2.anki.OneWaySyncDialog
 import com.ichi2.anki.R
 import com.ichi2.anki.analytics.UsageAnalytics
+import com.ichi2.anki.common.utils.android.HandlerUtils.getDefaultLooper
 import com.ichi2.anki.dialogs.DialogHandler.Companion.storeMessage
 import com.ichi2.anki.showError
-import com.ichi2.utils.HandlerUtils.getDefaultLooper
 import com.ichi2.utils.ImportUtils
 import timber.log.Timber
 import java.lang.ref.WeakReference
@@ -101,7 +100,7 @@ class DialogHandler(
  *
  * Restoration + handling is performed in [AnkiActivity.onResume].
  * It is assumed that the [DeckPicker] will be the inheritor of AnkiActivity at this time.
- * As this is provided as the intent from [AnkiActivity.showSimpleNotification]
+ * As this is provided as the intent from [AnkiActivity.showExportReadyNotification]
  */
 abstract class DialogHandlerMessage protected constructor(
     val which: WhichDialogHandler,
@@ -124,9 +123,7 @@ abstract class DialogHandlerMessage protected constructor(
                 WhichDialogHandler.MSG_SHOW_COLLECTION_IMPORT_ADD_DIALOG -> ImportUtils.CollectionImportAdd.fromMessage(message)
                 WhichDialogHandler.MSG_SHOW_SYNC_ERROR_DIALOG -> SyncErrorDialog.SyncErrorDialogMessageHandler.fromMessage(message)
                 WhichDialogHandler.MSG_SHOW_DATABASE_ERROR_DIALOG -> DatabaseErrorDialog.ShowDatabaseErrorDialog.fromMessage(message)
-                WhichDialogHandler.MSG_SHOW_ONE_WAY_SYNC_DIALOG -> OneWaySyncDialog.fromMessage(message)
                 WhichDialogHandler.MSG_DO_SYNC -> IntentHandler.Companion.DoSync()
-                WhichDialogHandler.MSG_EXPORT_READY -> ExportReadyDialog.ExportReadyDialogMessage.fromMessage(message)
             }
     }
 
@@ -140,9 +137,7 @@ abstract class DialogHandlerMessage protected constructor(
         MSG_SHOW_COLLECTION_IMPORT_ADD_DIALOG(2),
         MSG_SHOW_SYNC_ERROR_DIALOG(3),
         MSG_SHOW_DATABASE_ERROR_DIALOG(6),
-        MSG_SHOW_ONE_WAY_SYNC_DIALOG(7),
         MSG_DO_SYNC(8),
-        MSG_EXPORT_READY(10),
         ;
 
         companion object {

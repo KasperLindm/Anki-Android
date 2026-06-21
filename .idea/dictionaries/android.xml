@@ -21,12 +21,15 @@
       <w>contextmenu</w>
       <w>customtabs</w>
       <w>fileprovider</w>
+      <w>fonipa</w>
+      <w>foojay</w>
       <w>funcs</w>
       <w>greylist</w>
       <w>greylisted</w>
       <w>gtxt</w>
       <w>instanceof</w>
       <w>keypress</w>
+      <w>kotlinc</w>
       <w>librsdroid</w>
       <w>longclick</w>
       <w>mediaplayer</w>
@@ -37,6 +40,8 @@
       <w>requery</w>
       <w>robo</w>
       <w>runnables</w>
+      <w>searchview</w>
+      <w>searchview's</w>
       <w>securitycenter</w>
       <w>setprop</w>
       <w>snackbar</w>
@@ -45,6 +50,7 @@
       <w>stacktraces</w>
       <w>testutils</w>
       <w>tracesql</w>
+      <w>uint</w>
       <w>ungzip</w>
       <w>ungzipped</w>
       <w>ungzipping</w>

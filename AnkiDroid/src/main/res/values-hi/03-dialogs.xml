@@ -6,47 +6,24 @@
  ~    Instructions for this are available here: https://github.com/ankidroid/Anki-Android/wiki/Translating-AnkiDroid. 
  ~    You may also find the documentation on contributing to Anki useful: https://github.com/ankidroid/Anki-Android/wiki/Contributing   
  ~ 
- ~ Copyright (c) 2009 Andrew <andrewdubya@gmail> 
- ~ Copyright (c) 2009 Edu Zamora <edu.zasu@gmail.com> 
- ~ Copyright (c) 2009 Daniel Svaerd <daniel.svard@gmail.com> 
- ~ Copyright (c) 2009 Nicolas Raoul <nicolas.raoul@gmail.com> 
- ~ Copyright (c) 2010 Norbert Nagold <norbert.nagold@gmail.com> 
- ~ This program is free software; you can redistribute it and/or modify it under 
- ~ the terms of the GNU General Public License as published by the Free Software 
- ~ Foundation; either version 3 of the License, or (at your option) any later 
- ~ version. 
- ~ 
- ~ This program is distributed in the hope that it will be useful, but WITHOUT ANY 
- ~ WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A 
- ~ PARTICULAR PURPOSE. See the GNU General Public License for more details. 
- ~ 
- ~ You should have received a copy of the GNU General Public License along with 
- ~ this program.  If not, see <http://www.gnu.org/licenses/>. 
+ ~ SPDX-License-Identifier: GPL-3.0-or-later
+ ~ SPDX-FileCopyrightText: Copyright (c) 2009 Andrew <andrewdubya@gmail>
+ ~ SPDX-FileCopyrightText: Copyright (c) 2009 Edu Zamora <edu.zasu@gmail.com>
+ ~ SPDX-FileCopyrightText: Copyright (c) 2009 Daniel Svaerd <daniel.svard@gmail.com>
+ ~ SPDX-FileCopyrightText: Copyright (c) 2009 Nicolas Raoul <nicolas.raoul@gmail.com>
+ ~ SPDX-FileCopyrightText: Copyright (c) 2010 Norbert Nagold <norbert.nagold@gmail.com>
  -->
  
 <!--
-~ Copyright (c) 2009 Andrew <andrewdubya@gmail>
-~ Copyright (c) 2009 Edu Zamora <edu.zasu@gmail.com>
-~ Copyright (c) 2009 Daniel Svärd <daniel.svard@gmail.com>
-~ Copyright (c) 2009 Nicolas Raoul <nicolas.raoul@gmail.com>
-~ Copyright (c) 2010 Norbert Nagold <norbert.nagold@gmail.com>
-~
-~ This program is free software; you can redistribute it and/or modify it under
-~ the terms of the GNU General Public License as published by the Free Software
-~ Foundation; either version 3 of the License, or (at your option) any later
-~ version.
-~
-~ This program is distributed in the hope that it will be useful, but WITHOUT ANY
-~ WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
-~ PARTICULAR PURPOSE. See the GNU General Public License for more details.
-~
-~ You should have received a copy of the GNU General Public License along with
-~ this program.  If not, see <http://www.gnu.org/licenses/>.
--->
+  ~ SPDX-License-Identifier: GPL-3.0-or-later
+  ~ SPDX-FileCopyrightText: Copyright (c) 2009 Andrew <andrewdubya@gmail>
+  ~ SPDX-FileCopyrightText: Copyright (c) 2009 Edu Zamora <edu.zasu@gmail.com>
+  ~ SPDX-FileCopyrightText: Copyright (c) 2009 Daniel Svärd <daniel.svard@gmail.com>
+  ~ SPDX-FileCopyrightText: Copyright (c) 2009 Nicolas Raoul <nicolas.raoul@gmail.com>
+  ~ SPDX-FileCopyrightText: Copyright (c) 2010 Norbert Nagold <norbert.nagold@gmail.com>
+  -->
 <resources xmlns:tools="http://schemas.android.com/tools">
-    <string name="check_db_title">डेटाबेस की जाँच करें?</string>
-    <string name="check_db_warning">इसमें बहुत समय लग सकता है</string>
-    <string name="contextmenu_deckpicker_delete_deck" maxLength="28">डेक मिटाएँ</string>
+    <string name="check_db_warning">This may take a long time. Proceed?</string>
     <string name="delete_deck_title">डेक मिटाएँ?</string>
     <plurals name="delete_deck_message">
         <item quantity="one">%1$s में सभी कार्ड हटाएं? इसमें %2$d कार्ड है</item>
@@ -83,11 +60,14 @@
     <string name="restore_backup_choose_another">दुसरे का चयन करें</string>
     <string name="dialog_cancel">रद्द करें</string>
     <string name="dialog_ok">ठीक है</string>
+    <string name="dialog_add" comment="Positive dialog action button label to add \'something\'">Add</string>
+    <string name="restore">Restore</string>
     <string name="dialog_confirm" tools:ignore="UnusedResources">पुष्टि करें</string>
     <string name="dialog_no">नहीं</string>
     <string name="dialog_yes">हाँ</string>
     <string name="dialog_keep">रखना</string>
     <string name="dialog_remove">निकालना</string>
+    <string name="dialog_exit" comment="Label for a button which will exit/finish the current screen">Exit</string>
     <string name="dialog_continue">जारी रखें</string>
     <string name="dialog_processing">प्रोसेसिंग&#8230;</string>
     <string name="dialog_positive_create" comment="Create a new collection, probably erasing the previous one, may be necessary in case of error.">बनाएँ</string>
@@ -102,8 +82,7 @@
     <string name="dialog_invalid_custom_certificate_title">प्रमाणपत्र पार्स करने में त्रुटि</string>
     <string name="dialog_updated_custom_certificate">प्रमाणपत्र अद्यतन किया गया</string>
     <!-- Media checking -->
-    <string name="check_media_title">मीडिया की जांच करें?</string>
-    <string name="check_media_warning">यह बड़े मीडिया संग्रह के साथ एक लंबा समय लग सकता है</string>
+    <string name="check_media_warning">This may take a long time with large media collections. Proceed?</string>
     <string name="check_media_message">मीडिया जांच कर रहा है.. ।</string>
     <string name="check_media_adding_missing_tag">Adding tags&#8230;</string>
     <string name="check_media_tags_added">Tags added</string>
@@ -127,8 +106,6 @@
     <string name="permission_denied">Permission denied</string>
     <string name="recording_permission_denied_message">Microphone permission is necessary for the “Record voice” feature. Please grant it in the app settings.</string>
     <!-- Database Integrity Check -->
-    <string name="integrity_check_startup_title">AnkiDroid अपग्रेड किया गया</string>
-    <string name="integrity_check_startup_content">AnkiDroid को अपग्रेड किया गया है। इस अपग्रेड में संभावित डेटाबेस समस्याओं के लिए फ़िक्सेस शामिल हैं, और हम आपको चेक डेटाबेस चलाने की सलाह देते हैं।</string>
     <string name="integrity_check_continue_anyway">किसी तरह से जारी रखें</string>
     <string name="integrity_check_insufficient_space">चेक डेटाबेस बड़ी मात्रा में अस्थायी storage का उपयोग करता है। \n \n यह दृढ़ता से अनुशंसा की जाती है कि आपके डिवाइस पर कम से कम %s खाली स्थान हो।</string>
     <string name="integrity_check_insufficient_space_extra_content">\n\n आपके पास वर्तमान में %s खाली स्थान है।</string>
@@ -213,8 +190,6 @@
     <string name="dismiss_backup_warning_title">डेटा हानि चेतावनी</string>
     <string name="dismiss_backup_warning_new_user">Due to Android privacy changes, your data and automated backups will be deleted from your phone if the app is uninstalled</string>
     <string name="dismiss_backup_warning_upgrade">Due to Android privacy changes, your data and automated backups will be inaccessible if the app is uninstalled</string>
-    <string name="deck_already_exists">डेक पहले से मौजूद है</string>
-    <string name="empty_deck_name">डेक का नाम खाली नहीं हो सकता</string>
     <string name="create_deck_numeric_hint">यदि आपके पास डेक ऑर्डरिंग समस्याएं हैं (उदाहरण के लिए \'10\' \'2\' से पहले आता है), तो \'2\' को \'02\' से बदलें</string>
     <!-- Set Due Date -->
     <string name="set_due_date_match_interval" comment="when setting a card\'s due date, this checkbox also changes the interval of the card">अंतराल को समान मान पर सेट करें</string>
@@ -254,4 +229,32 @@
     <string name="tts_error_dialog_reason_text">टेक्स्ट टू स्पीच इंजन <b>%1$s</b> निम्नलिखित भाषा का समर्थन नहीं करता: <b>%2$s</b></string>
     <string name="tts_error_dialog_change_button_text">इंजन बदलें</string>
     <string name="tts_error_dialog_supported_voices_button_text">आवाज विकल्प</string>
+    <!-- import_cache_error_resolutions -->
+    <string name="import_error_resolution_try_again">Re-import the file</string>
+    <string name="import_error_resolution_free_up_space">Ensure there is sufficient free space on your device</string>
+    <string name="import_error_resolution_check_internet">Ensure you are connected to the internet</string>
+    <string name="import_error_resolution_copy_to_device">Copy the file to your device and try again with the local file</string>
+    <string name="import_error_resolution_select_file">Open the file using your device’s file browser app</string>
+    <!-- Post-login dialog -->
+    <string name="login_successful">Login successful</string>
+    <string name="sync_now">Sync now?</string>
+    <!--Change Note Type Dialog Fragment-->
+    <string name="card_numbers_unchanged">Card numbers will remain unchanged</string>
+    <!-- Subset of TR.changeNotetypeToFromCloze -->
+    <string name="extra_cloze_deletions_removed">If changing to a regular note type, and there are more cloze deletions than available card templates, any extra cards will be removed.</string>
+    <string name="different_note_types_selected">Please select notes from only one notetype.</string>
+    <string name="error_no_changes_to_save">No changes to save</string>
+    <string name="choose_color">Choose color</string>
+    <!-- Special Fields -->
+    <string name="standard_fields_tab_header" comment="Tab header for inserting non-special fields: {{Front}}">Fields</string>
+    <string name="special_fields_tab_header" comment="Tab header for inserting special fields: {{Deck}}">Special</string>
+    <string name="special_field_example_suffix"><![CDATA[: ‘<b>%1$s</b>’]]></string>
+    <string name="special_field_front_side_help">The front template content. Audio is not automatically played</string>
+    <string name="special_field_deck_help" comment="%s: either blank or \' %s\'">The full deck of the card, including parent decks%s</string>
+    <string name="special_field_subdeck_help" comment="%s: either blank or \' %s\'">The current deck of the card, excluding parent decks%s</string>
+    <string name="special_field_flag_help">Outputs ‘%1$s’, where %2$s is the flag code (%3$s\–%4$s\)</string>
+    <string name="special_field_tags_help" comment="%s: either blank or \' %s\'">The tags of the note%s</string>
+    <string name="special_field_card_id_help" comment="%s: either blank or \' %s\'">The ID of the card%s</string>
+    <string name="special_field_card_help" comment="%s: either blank or \' %s\'">The name of the card template%s</string>
+    <string name="special_field_type_help" comment="%s: either blank or \' %s\'">The name of the note type%s</string>
 </resources>

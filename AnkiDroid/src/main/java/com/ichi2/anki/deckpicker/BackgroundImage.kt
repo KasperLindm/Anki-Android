@@ -17,16 +17,22 @@
 package com.ichi2.anki.deckpicker
 
 import android.content.Context
-import android.graphics.BitmapFactory
+import android.graphics.drawable.Drawable
 import android.net.Uri
 import android.provider.MediaStore
-import androidx.core.content.edit
-import com.ichi2.anki.AnkiDroidApp
+import androidx.annotation.CheckResult
 import com.ichi2.anki.CollectionHelper
+import com.ichi2.anki.DeckPicker
 import com.ichi2.anki.R
 import com.ichi2.anki.preferences.AppearanceSettingsFragment
-import com.ichi2.anki.preferences.sharedPrefs
+import com.ichi2.anki.settings.Prefs
 import com.ichi2.anki.snackbar.showSnackbar
+import com.ichi2.anki.utils.ext.getSizeOfBitmapFromCollection
+import com.ichi2.utils.openInputStreamSafe
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import timber.log.Timber
 import java.io.File
 import java.io.FileInputStream
 import java.io.FileOutputStream
@@ -44,17 +50,89 @@ object BackgroundImage {
     const val MAX_BITMAP_SIZE: Long = 100 * 1024 * 1024
 
     /**
-     * @see shouldBeShown
+     * The name of the file in the collection folder representing the background the user selected
+     * for [DeckPicker].
      */
-    var enabled: Boolean
-        get() = AnkiDroidApp.instance.sharedPrefs().getBoolean("deckPickerBackground", false)
-        set(value) {
-            AnkiDroidApp.instance.sharedPrefs().edit {
-                putBoolean("deckPickerBackground", value)
-            }
+    const val FILENAME = "DeckPickerBackground.png"
+
+    fun shouldBeShown(context: Context) = Prefs.isBackgroundEnabled && getImageFile(context) != null
+
+    /** Outcome of resolving the user's [DeckPicker] background. */
+    sealed interface ResolveResult {
+        /** Either disabled, or no usable image file is present. */
+        data object None : ResolveResult
+
+        /** A drawable ready to assign to a view. */
+        data class Ready(
+            val drawable: Drawable,
+        ) : ResolveResult
+
+        /** Resolving failed in a way the user should be told about. */
+        sealed interface Failure : ResolveResult {
+            fun message(context: Context): String
         }
 
-    fun shouldBeShown(context: Context) = enabled && getImageFile(context) != null
+        /** The bitmap is too large to draw safely. */
+        data object TooLarge : Failure {
+            override fun message(context: Context): String = context.getString(R.string.background_image_too_large)
+        }
+
+        /** Decoding failed for some other reason. */
+        data class Failed(
+            val cause: String?,
+        ) : Failure {
+            override fun message(context: Context): String = context.getString(R.string.failed_to_apply_background_image, cause)
+        }
+    }
+
+    /**
+     * Resolves the configured [DeckPicker] background, applying all OOM/size guards.
+     *
+     * Performs disk I/O and bitmap decoding.
+     *
+     * This method does not throw.
+     */
+    @CheckResult
+    suspend fun resolve(context: Context): ResolveResult {
+        if (!Prefs.isBackgroundEnabled) {
+            Timber.d("No DeckPicker background preference")
+            return ResolveResult.None
+        }
+        val imgFile =
+            getImageFile(context) ?: run {
+                Timber.d("No DeckPicker background image")
+                return ResolveResult.None
+            }
+
+        // 15450 - guard against decoded dimensions that would crash Canvas.
+        val size = context.getSizeOfBitmapFromCollection(FILENAME) ?: return ResolveResult.None
+        if (size.width <= 0 || size.height <= 0) {
+            Timber.w("Decoding background image for dimensions info failed")
+            return ResolveResult.None
+        }
+        if (size.width.toLong() * size.height * BITMAP_BYTES_PER_PIXEL > MAX_BITMAP_SIZE) {
+            Timber.w("DeckPicker background image dimensions too large")
+            return ResolveResult.TooLarge
+        }
+
+        return try {
+            Timber.i("Loading background image selected by user")
+            val drawable =
+                withContext(Dispatchers.IO) {
+                    // 6608 - OOM should be catchable here.
+                    Drawable.createFromPath(imgFile.absolutePath)
+                }
+            if (drawable != null) ResolveResult.Ready(drawable) else ResolveResult.None
+        } catch (e: OutOfMemoryError) {
+            Timber.w(e, "Failed to load background - OOM")
+            ResolveResult.TooLarge
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            Timber.w(e, "Failed to load background")
+            ResolveResult.Failed(cause = e.localizedMessage)
+        }
+    }
 
     sealed interface FileSizeResult {
         data object OK : FileSizeResult
@@ -101,31 +179,14 @@ object BackgroundImage {
         selectedImage: Uri,
     ) {
         val currentAnkiDroidDirectory = CollectionHelper.getCurrentAnkiDroidDirectory(target.requireContext())
-        val imageName = "DeckPickerBackground.png"
-        val destFile = File(currentAnkiDroidDirectory, imageName)
-        (target.requireContext().contentResolver.openInputStream(selectedImage) as FileInputStream).channel.use { sourceChannel ->
+        val destFile = File(currentAnkiDroidDirectory, FILENAME)
+        (target.requireContext().contentResolver.openInputStreamSafe(selectedImage) as FileInputStream).channel.use { sourceChannel ->
             FileOutputStream(destFile).channel.use { destChannel ->
                 destChannel.transferFrom(sourceChannel, 0, sourceChannel.size())
                 target.showSnackbar(R.string.background_image_applied)
             }
         }
-        this.enabled = true
-    }
-
-    data class Size(
-        val width: Int,
-        val height: Int,
-    )
-
-    fun getBackgroundImageDimensions(context: Context): Size {
-        val currentAnkiDroidDirectory = CollectionHelper.getCurrentAnkiDroidDirectory(context)
-        val imageName = "DeckPickerBackground.png"
-        val destFile = File(currentAnkiDroidDirectory, imageName)
-        val bmp = BitmapFactory.decodeFile(destFile.absolutePath)
-        val w = bmp.width
-        val h = bmp.height
-        bmp.recycle()
-        return Size(width = w, height = h)
+        Prefs.isBackgroundEnabled = true
     }
 
     /**
@@ -133,7 +194,7 @@ object BackgroundImage {
      */
     fun remove(context: Context): Boolean {
         val imgFile = getImageFile(context)
-        enabled = false
+        Prefs.isBackgroundEnabled = false
         if (imgFile == null) {
             return true
         }
@@ -143,7 +204,7 @@ object BackgroundImage {
     /** @return a [File] referencing the image, or `null` if the file does not exist */
     private fun getImageFile(context: Context): File? {
         val currentAnkiDroidDirectory = CollectionHelper.getCurrentAnkiDroidDirectory(context)
-        val imgFile = File(currentAnkiDroidDirectory, "DeckPickerBackground.png")
+        val imgFile = File(currentAnkiDroidDirectory, FILENAME)
         if (!imgFile.exists()) {
             return null
         }
